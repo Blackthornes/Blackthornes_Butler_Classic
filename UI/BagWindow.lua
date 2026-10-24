@@ -572,9 +572,17 @@ function BagWindow:BuildFoot()
 end
 
 
-function BagWindow.CanSort()
+--- The game's own bag sort, where the client has one.
+function BagWindow.GameSorts()
     local container = rawget(_G, "C_Container")
     return type(container) == "table" and type(container.SortBags) == "function"
+end
+
+--- Sort shows when the game sorts, or Butler can do it itself (Era has no
+--- bag sort; Logic/BagSort.lua moves the items one at a time).
+function BagWindow.CanSort()
+    if BagWindow.GameSorts() then return true end
+    return ns.BagSort ~= nil and ns.BagSort.CanSort()
 end
 
 -- The sound the game's own bag sort button plays: SOUNDKIT's name when the
@@ -591,8 +599,14 @@ function BagWindow:Sort()
     if InCombat() or not BagWindow.CanSort() then return end
     -- No channel, as the game's button: it follows the player's sound effects.
     local play = rawget(_G, "PlaySound")
-    if type(play) == "function" then pcall(play, BagWindow.SortSound()) end
-    pcall(C_Container.SortBags)
+    if BagWindow.GameSorts() then
+        if type(play) == "function" then pcall(play, BagWindow.SortSound()) end
+        pcall(C_Container.SortBags)
+        return
+    end
+    if ns.BagSort:Running() then return end
+    if ns.BagSort:Start() and type(play) == "function" then pcall(play, BagWindow.SortSound()) end
+    self:UpdateFoot()
 end
 
 function BagWindow:UpdateFoot()
@@ -611,7 +625,10 @@ function BagWindow:UpdateFoot()
         self.emptyBox:SetShown(self.tab == "bags")
         self.emptyBox:SetChecked(ns.BagView:ShowsEmpty())
     end
-    if self.sortButton.SetEnabled then self.sortButton:SetEnabled(not InCombat()) end
+    if self.sortButton.SetEnabled then
+        local busy = ns.BagSort and ns.BagSort:Running()
+        self.sortButton:SetEnabled(not InCombat() and not busy)
+    end
 end
 
 --------------------------------------------------------------------------------
@@ -1265,7 +1282,7 @@ function BagWindow:ProbeText()
         parts[#parts + 1] = "protected " .. tostring(ok and protected or "?")
     end
     parts[#parts + 1] = "SetBagID " .. tostring(any and type(any.SetBagID) == "function" or false)
-    parts[#parts + 1] = "SortBags " .. tostring(BagWindow.CanSort())
+    parts[#parts + 1] = "SortBags " .. tostring(BagWindow.GameSorts()) .. " own sort " .. tostring(ns.BagSort ~= nil and ns.BagSort.CanSort())
     local container = rawget(_G, "C_Item")
     parts[#parts + 1] = "item level " .. tostring(type(rawget(_G, "GetDetailedItemLevelInfo")) == "function"
         or (type(container) == "table" and type(container.GetDetailedItemLevelInfo) == "function"))

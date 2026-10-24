@@ -1316,7 +1316,14 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   did, so every slot stayed flagged), and the template's own blue glow
   (`NewItemTexture`, `BattlepayItemTexture`, its flash) is kept out of
   sight (`QuietTemplateGlow`). Tested in `tools/test_bagnewglow.lua`. Sell and Disenchant stay in the
-  main Butler window. Sort shows only when the game has a bag sort.
+  main Butler window. Sort uses the game's bag sort where there is one; Era has none, so
+  Butler sorts itself (`Logic/BagSort.lua`, the owner said build it,
+  2026-10-24): loose stacks of one item together first, then each item to
+  its place (Hearthstone first, greys last, kinds in `BagSort.CLASS_ORDER`),
+  one move at a time, waiting for both slots to unlock; bags that take only
+  some things are sorted on their own. A fight, something on the cursor or a
+  move that never settles stops it; nothing is dropped or deleted. Tested in
+  `tools/test_bagsort.lua`.
 - **Bank** and **Everyone** tabs are view only: the bank read live at a
   banker, else as Tradeskills last saw it; Everyone is All characters'
   list (needs Tradeskills).
