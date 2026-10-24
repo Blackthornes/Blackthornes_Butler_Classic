@@ -19,6 +19,8 @@ suite.check("the TOC is not Forever's", not toc:find("## Interface: 16001", 1, t
 suite.check("the TOC names a Classic Era interface", toc:find("## Interface: 115", 1, true) ~= nil)
 suite.check("the TOC never names Forever's CurseForge project",
     not toc:find("^## X%-Curse%-Project%-ID:%s*1739020") and not toc:find("\n## X%-Curse%-Project%-ID:%s*1739020"))
+suite.check("the TOC names Butler Classic's CurseForge project",
+    toc:find("\n## X%-Curse%-Project%-ID:%s*1763328") ~= nil)
 suite.check("the TOC leaves out Forever's item table", not toc:find("\nData\\ForeverItems.lua", 1, true))
 suite.check("the TOC keeps the class spells", toc:find("\nData\\ClassSpells.lua", 1, true) ~= nil)
 suite.check("the TOC keeps the quest items", toc:find("\nData\\QuestItems.lua", 1, true) ~= nil)
