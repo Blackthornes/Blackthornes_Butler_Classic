@@ -103,6 +103,44 @@ end
 -- Saved data
 --------------------------------------------------------------------------------
 
+-- Forever's own spells sit at 1,000,000 and up; Era has none of them.
+CT.FOREVER_FIRST = 1000000
+
+--- The class's spells from Data/ClassSpells.lua as this client has them:
+--- Forever's own left out, and any the client says it lacks; a rank before
+--- that was left out gives way to the one before it. Laid out once a class.
+function CT.Spells(class)
+    local all = ns.CLASS_SPELLS and class and ns.CLASS_SPELLS[class]
+    if type(all) ~= "table" then return nil end
+    CT.spellLists = CT.spellLists or {}
+    local kept = CT.spellLists[class]
+    if kept and kept.from == all then return kept.list end
+    local checks = Has("C_Spell.DoesSpellExist")
+    local gone, list = {}, {}
+    for _, entry in ipairs(all) do
+        local id = entry[1]
+        local drop = type(id) ~= "number" or id >= CT.FOREVER_FIRST
+        if not drop and checks and Call("C_Spell.DoesSpellExist", id) == false then drop = true end
+        if drop then gone[id] = entry[6] or false end
+    end
+    for _, entry in ipairs(all) do
+        if gone[entry[1]] == nil then
+            local before = entry[6]
+            local hops = 0
+            while before and gone[before] ~= nil and hops < 20 do
+                before = gone[before] or nil
+                hops = hops + 1
+            end
+            if before ~= entry[6] then
+                entry = { entry[1], entry[2], entry[3], entry[4], entry[5], before }
+            end
+            list[#list + 1] = entry
+        end
+    end
+    CT.spellLists[class] = { from = all, list = list }
+    return list
+end
+
 --- The account save's table, made when first needed.
 function CT:Data()
     local db = ns.db
@@ -365,7 +403,7 @@ end
 
 function CT:Work(player)
     local plan = { ready = {}, next = {}, skipped = {}, cost = 0, unknown = 0, nextCost = 0, nextUnknown = 0 }
-    local list = ns.CLASS_SPELLS and player.class and ns.CLASS_SPELLS[player.class]
+    local list = CT.Spells(player.class)
     if type(list) ~= "table" then return plan end
     local data = self:Data()
     local prices, notTaught = data.prices, data.notTaught
@@ -652,7 +690,7 @@ end
 function CT:ServiceSpell(index, name, rank, class)
     local data = Call("C_TooltipInfo.GetTrainerService", index)
     local id = type(data) == "table" and Number(data.id) or nil
-    local list = ns.CLASS_SPELLS and ns.CLASS_SPELLS[class]
+    local list = CT.Spells(class)
     if type(list) ~= "table" then return nil end
     if id then
         for _, entry in ipairs(list) do
@@ -755,7 +793,7 @@ function CT:ReadTrainer()
     -- A spell up to the level the list covers that it doesn't teach, and
     -- this character doesn't know, comes from somewhere else (a quest).
     if sawLater then upTo = math.huge end
-    local classList = ns.CLASS_SPELLS[player.class] or {}
+    local classList = CT.Spells(player.class) or {}
     local knownIn = self.KnownIn(classList)
     for _, entry in ipairs(classList) do
         if entry[2] <= upTo and not listed[entry[1]] and RaceOK(entry, player.race)
@@ -915,7 +953,7 @@ function CT:ProbeText()
         parts[#parts + 1] = name .. (Has(name) and " yes" or " no")
     end
     local player = self.Player()
-    local list = ns.CLASS_SPELLS and player.class and ns.CLASS_SPELLS[player.class]
+    local list = CT.Spells(player.class)
     local plan = self:Plan()
     return ("%s; %s spells in the data, %d to train now, %d priced"):format(
         table.concat(parts, ", "), list and #list or 0, #plan.ready, #plan.ready - plan.unknown)

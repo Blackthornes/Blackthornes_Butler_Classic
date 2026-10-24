@@ -14,6 +14,9 @@ local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("foreveritems")
 
 local ns = env.Load()
+-- The Classic Era TOC leaves the file out (tools/test_era.lua), so it is
+-- loaded here by hand: the readers still work whenever it is there.
+assert(loadfile(lfs_cwd .. "/Data/ForeverItems.lua"))("Blackthornes_Butler", ns)
 local fake = env.FakeBags({
     { bag = 0, slot = 1, id = 2589, name = "Linen Cloth", quality = 1, price = 20, count = 5 },
 })

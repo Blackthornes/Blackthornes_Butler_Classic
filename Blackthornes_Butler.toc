@@ -1,4 +1,4 @@
-## Interface: 16001
+## Interface: 11509
 ## Title: Blackthornes Butler
 ## Notes: Tells you what to do with every item in your bags: keep it, sell it, post it, disenchant it or mail it to the alt who needs it.
 ## Author: Blackthornes
@@ -10,7 +10,8 @@
 
 # Filled in once the project exists on each site. The packager reads these
 # to know where to upload; a line that stays commented is simply skipped.
-## X-Curse-Project-ID: 1739020
+# X-Curse-Project-ID: (the Classic Era project's own ID goes here once it exists;
+# never Forever's 1739020)
 # X-Wago-ID: 
 # X-WoWI-ID: 
 
@@ -25,7 +26,6 @@ Core\Init.lua
 Core\SisterNote.lua
 Core\WhatsNewText.lua
 
-Data\ForeverItems.lua
 Data\ClassSpells.lua
 Data\QuestItems.lua
 Data\Travel.lua
