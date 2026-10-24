@@ -77,6 +77,7 @@ Logic\TomTom.lua
 Logic\WayArrow.lua
 Logic\GoldGoals.lua
 Logic\BagView.lua
+Logic\BagSort.lua
 UI\Veil.lua
 UI\BagWindow.lua
 UI\WayArrow.lua
