@@ -46,8 +46,9 @@ addon. So:
   Butler works on its own without Tradeskills: those rows and lines just
   don't show.
 - Never put Forever's CurseForge ID (1739020) in the TOC:
-  `tools/check_release.py` refuses a tag that does. The owner makes the Era
-  project himself; its ID goes on the TOC's `X-Curse-Project-ID` line then.
+  `tools/check_release.py` refuses a tag that does. Butler Classic is
+  **1763328** (the owner made it 2026-10-24), on the TOC's
+  `X-Curse-Project-ID` line, and `tools/test_era.lua` checks it is there.
 - Not yet seen in an Era client. Read client calls in a pcall as everywhere
   else; the code already falls back to the classic calls where Era lacks
   the newer ones.
@@ -1423,8 +1424,8 @@ sisters before inventing a convention:
   in plain words, then a short "How" naming the functions and tests touched,
   that the checks pass, and whether `/reload` is enough. Release PRs are
   `release/X.Y.Z` branches titled "Changelog for X.Y.Z".
-- **CurseForge:** project **1739020** (the owner created it 2026-10-11),
-  on the TOC's `X-Curse-Project-ID` line. The first release is 0.1.0. The
+- **CurseForge:** Forever's project is **1739020** (the owner created it
+  2026-10-11); this Era copy's is 1763328, on the TOC's `X-Curse-Project-ID` line. The first release is 0.1.0. The
   repo needs the `CF_API_KEY`, `DISCORD_WEBHOOK_URL` and
   `DISCORD_GENERAL_WEBHOOK_URL` secrets, which he sets himself. The logo
   follows the house style: a dark 512 px tile, the gold satchel, grey
