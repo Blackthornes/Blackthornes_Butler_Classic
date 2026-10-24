@@ -146,6 +146,25 @@ env.Fire("MERCHANT_CLOSED")
 Arrow:Clear()
 suite.check("its close puts it away", not Arrow.IsOn() and shared.wants.Butler == nil)
 
+-- Drawn smaller, and a spot saved before stays where it was: kept in
+-- UIParent's units, the arrow's own (smaller) units are turned back.
+do
+    local frame = ArrowUI:Build()
+    local scale = ArrowUI.SCALE
+    suite.check("the arrow is drawn smaller", scale < 1)
+    ns.db.wayArrowX, ns.db.wayArrowY = 650, 400
+    ArrowUI:RestorePosition()
+    local p = frame._point
+    suite.check("a saved spot is placed in the arrow's own units",
+        p and math.abs(p[4] - 650 / scale) < 0.01 and math.abs(p[5] - 400 / scale) < 0.01)
+    frame._cx, frame._cy = 650 / scale, 400 / scale
+    ArrowUI:SavePosition()
+    suite.check("and saved back in UIParent's units, unmoved",
+        math.abs(ns.db.wayArrowX - 650) < 0.01 and math.abs(ns.db.wayArrowY - 400) < 0.01)
+    ns.db.wayArrowX, ns.db.wayArrowY = nil, nil
+    ArrowUI:RestorePosition()
+end
+
 -- "Guide Me:" is on until the player unticks it (Logic/Travel.lua).
 if ns.Travel and ns.Travel.IsOn then
     local kept = ns.db.arrowRoute
