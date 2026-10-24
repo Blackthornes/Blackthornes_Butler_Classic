@@ -14,6 +14,46 @@ Nothing private goes in this file (no local paths, emails or account names).
 It never ships: `.pkgmeta` leaves it out of the zip and
 `tools/check_package.py` refuses it.
 
+## This repo is the Classic Era copy
+
+`Blackthornes/Blackthornes_Butler_Classic` is Butler for WoW Classic Era,
+copied from `Blackthornes/Blackthornes_Butler` (Forever) with its history on
+2026-10-24 (the owner said build it, after Farmer's Era copy; Tradeskills
+follows in its own repo). Its releases, tests and CurseForge page are its
+own. Forever comes first, and nothing done here may ever touch the Forever
+addon. So:
+
+- Never push to, or open PRs on, the Forever repo from work here. Changes
+  come over from Forever on purpose (cherry-pick or copy), never the other
+  way.
+- The addon folder and TOC stay `Blackthornes_Butler`, the saved data
+  `BlackthornesButlerDB` and `BlackthornesButlerCharDB`, so nothing is
+  renamed.
+- The TOC names Era's interface, `## Interface: 11509` (what the owner's
+  Era client reports, 2026-10-24).
+- What only Forever has is left out of the TOC: `Data/ForeverItems.lua`
+  (Forever's sell prices and bag kinds; every reader asks for it first, so
+  the live game answers alone). The file stays in the repo so Forever
+  changes merge cleanly. `tools/test_era.lua` checks the TOC and that
+  Butler loads, logs in and judges the bags with no sister loaded.
+- `Data/ClassSpells.lua` is still built from Forever's tables, so
+  `ClassTraining.Spells(class)` drops Forever's own spells (IDs from
+  `FOREVER_FIRST`, 1,000,000) and any the client says it does not have,
+  pointing a rank's "rank before" past the dropped ones. A list made from
+  Era's own tables would be better once they are pulled.
+- Era's auction house is the old one (no `C_AuctionHouse`), so Buy quest
+  items never shows; Search still asks Tradeskills when it is loaded.
+  Butler works on its own without Tradeskills: those rows and lines just
+  don't show.
+- Never put Forever's CurseForge ID (1739020) in the TOC:
+  `tools/check_release.py` refuses a tag that does. The owner makes the Era
+  project himself; its ID goes on the TOC's `X-Curse-Project-ID` line then.
+- Not yet seen in an Era client. Read client calls in a pcall as everywhere
+  else; the code already falls back to the classic calls where Era lacks
+  the newer ones.
+- The rest of this file describes the Forever addon; read it as the
+  starting point, not as what Era has.
+
 ## What this addon is for
 
 The owner picked it (2026-10-10) from ten ideas for a new addon, and named
