@@ -704,8 +704,8 @@ function SettingsUI:BuildPages()
     -- owner said yes, 2026-10-16). A name that isn't one of the player's
     -- characters shows in amber on the Send To row, so a typo stands out.
     local typeRow = pages:Row("bankalt", 1, L["Type a Name:"],
-        L["For a character on your other account. Type the whole name, first and last."])
-    controls.bankAltTyped = Widgets.CreateSearchBox(typeRow, L["First Last"], nil, function(text)
+        L["For a character on your other account. Type its name."])
+    controls.bankAltTyped = Widgets.CreateSearchBox(typeRow, L["Name"], nil, function(text)
         local name, why = ns.BankAlt:TypeName(text)
         controls.bankAltTyped:SetText("")
         if not name and why then ns.Print(why) end

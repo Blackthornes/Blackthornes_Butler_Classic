@@ -95,8 +95,8 @@ suite.check("Fill mail sends it", recipient ~= nil and recipient.count >= 20)
 
 -- 9. Typed names.
 suite.check("one of your characters is known", BankAlt:IsKnown("Banky Vault"))
-local kept, why = BankAlt:TypeName("Stranger")
-suite.check("a first name alone is refused", kept == nil and why ~= nil and ns.db.bankAlt == "Banky Vault",
+local kept = BankAlt:TypeName("Stranger")
+suite.check("a one-word name is kept (Era names are one word)", kept == "Stranger" and ns.db.bankAlt == "Stranger",
     tostring(ns.db.bankAlt))
 kept = BankAlt:TypeName("Otto Farside")
 suite.check("a whole name is kept", kept == "Otto Farside" and ns.db.bankAlt == "Otto Farside", tostring(kept))
@@ -187,7 +187,7 @@ BankAlt:SetWhen("first")
 
 -- 8.
 ns.HandleSlash("bankalt Banky Vault")
-suite.check("/bbutler bankalt Full Name picks it", BankAlt:Name() == "Banky Vault")
+suite.check("/bbutler bankalt Name picks it", BankAlt:Name() == "Banky Vault")
 ns.HandleSlash("bankalt leftovers")
 suite.check("/bbutler bankalt leftovers", ns.db.bankAltWhen == "leftovers")
 ns.HandleSlash("bankalt")

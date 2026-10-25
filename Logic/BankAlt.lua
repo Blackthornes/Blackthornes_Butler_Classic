@@ -120,17 +120,13 @@ function BankAlt:IsKnown(name)
     return false
 end
 
---- Set a name the player typed (a character on another account, say). A
---- name that is not one of their characters must be whole, first and
---- last, so a first name alone never fills a stranger's mail. Returns the
---- name kept, or nil and why.
+--- Set a name the player typed (a character on another account, say).
+--- Era names are one word, so any name is taken as typed. Returns the
+--- name kept, or nil.
 function BankAlt:TypeName(name)
     name = Text(name)
     if not name then return nil end
     if ns.Errands and ns.Errands.FullName then name = ns.Errands:FullName(name) end
-    if not self:IsKnown(name) and not name:find("%S%s+%S") then
-        return nil, L["Type the whole name, first and last."]
-    end
     self:SetName(name)
     return self:Name()
 end
@@ -311,7 +307,7 @@ end
 function BankAlt:Report()
     local name = self:Name()
     if not name then
-        ns.Print(L["no bank alt yet. Pick one on the Bank alt page in Settings, or type /bbutler bankalt Full Name."])
+        ns.Print(L["no bank alt yet. Pick one on the Bank alt page in Settings, or type /bbutler bankalt Name."])
         return
     end
     local kinds = {}
@@ -323,7 +319,7 @@ function BankAlt:Report()
     if self:ListName() then ns.Print(L.Format("And everything on your %s list.", self:ListName())) end
 end
 
-ns.RegisterCommand("bankalt", L["mail whole kinds of items to one of your characters (bankalt Full Name, off, first, vendor or leftovers)"], function(rest)
+ns.RegisterCommand("bankalt", L["mail whole kinds of items to one of your characters (bankalt Name, off, first, vendor or leftovers)"], function(rest)
     rest = Text(rest)
     if not rest then
         BankAlt:Report()
