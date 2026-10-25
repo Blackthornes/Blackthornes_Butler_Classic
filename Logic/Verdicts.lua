@@ -1819,7 +1819,7 @@ ns.RegisterCommand("altupgrades", L["turn offering to mail upgrades to your othe
         or L["Butler no longer offers to mail upgrades to your other characters."])
 end)
 
-ns.RegisterCommand("upgrademail", L["list upgrades you hold back from your characters (upgrademail undo Full Name to mail them again)"], function(rest)
+ns.RegisterCommand("upgrademail", L["list upgrades you hold back from your characters (upgrademail undo Name to mail them again)"], function(rest)
     rest = (rest or ""):match("^%s*(.-)%s*$")
     local name = rest:match("^undo%s+(.+)$")
     if name then
@@ -1841,7 +1841,7 @@ ns.RegisterCommand("upgrademail", L["list upgrades you hold back from your chara
         ns.Print(L["every upgrade goes to your characters. Right-click an upgrade under Mail to hold it back."])
         return
     end
-    ns.Print(L["upgrades you hold back (type /bbutler upgrademail undo Full Name to mail them again)"])
+    ns.Print(L["upgrades you hold back (type /bbutler upgrademail undo Name to mail them again)"])
     for _, who in ipairs(names) do
         if List("noUpgradesFor")[who] then
             ns.PrintRaw(("  |c%s%s|r"):format(ns.COLORS.muted, L.Format("%s: no upgrades", who)))

@@ -79,6 +79,10 @@ Every Forever catch-up checks this note first, before sorting commits into
   paragraph (the owner, 2026-10-24). `UI/About.lua` is shared with Forever;
   a catch-up that brings the paragraph back keeps Classic's.
 
+- One-word names (the owner, 2026-10-25): Era characters have one name.
+  `BankAlt:TypeName` takes any typed name, and the bank alt hint and the
+  `bankalt` and `upgrademail` help say "Name", not "Full Name".
+
 ## Not yet done
 - Not yet seen in an Era client. Client calls are read in a pcall, and the
   code already falls back to the classic calls where Era lacks the newer ones.
