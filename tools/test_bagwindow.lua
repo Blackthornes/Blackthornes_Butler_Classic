@@ -266,6 +266,20 @@ do
     suite.check("from the purse now", BagView.MyGold() == 864050)
     suite.check("and every character's after it", all:find("All characters: ", 1, true) == 1)
     suite.check("adding the purse to the others", BagView.Gold() == 1864050)
+    -- Only this realm and side, and never another account's characters.
+    ns.Errands.Holdings = function()
+        local me = { isCurrent = true, gold = 1, realm = "Home", faction = "Horde" }
+        return {
+            me,
+            { key = "alt", gold = 33, realm = "Home", faction = "Horde" },
+            { key = "far", gold = 43928, realm = "Away", faction = "Alliance", linked = "Shared-Away" },
+            { key = "shared", gold = 500, realm = "Home", faction = "Horde", linked = "Shared-Home" },
+            { key = "other side", gold = 700, realm = "Home", faction = "Alliance" },
+            { key = "other realm", gold = 900, realm = "Away", faction = "Horde" },
+            { key = "old", gold = 999, realm = "Home", faction = "Horde", playing = true },
+        }, me
+    end
+    suite.check("only this realm and side's own characters count", BagView.Gold() == 864050 + 33)
     ns.Errands.Holdings = function() return nil end
     BagWindow:UpdateFoot()
     suite.check("without Tradeskills this character's gold still shows",
