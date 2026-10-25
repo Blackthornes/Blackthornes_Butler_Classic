@@ -74,6 +74,11 @@ Every Forever catch-up checks this note first, before sorting commits into
   touches these tools keeps Classic's word. Tested in
   `tools/test_announce_discord.py` and `tools/test_post_general.py`.
 
+### No Forever words for players
+- The About thank-you (`About.THANKS`) has no "WoW Forever is almost here"
+  paragraph (the owner, 2026-10-24). `UI/About.lua` is shared with Forever;
+  a catch-up that brings the paragraph back keeps Classic's.
+
 ## Not yet done
 - Not yet seen in an Era client. Client calls are read in a pcall, and the
   code already falls back to the classic calls where Era lacks the newer ones.
