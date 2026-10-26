@@ -533,21 +533,44 @@ function BagView.MyGold()
 end
 
 --- The gold of every character on this realm and side Tradeskills knows,
---- the one playing as it is now. nil without Tradeskills.
+--- the one playing as it is now. nil without Tradeskills. Characters
+--- another account shared (`linked`) are left out, and so are those on
+--- another realm or side: they are not this purse's to count (a shared
+--- character from another realm was added in, 2026-10-25).
 function BagView.Gold()
     local errands = ns.Errands
-    local list = errands and errands:Holdings()
+    local list, me
+    if errands then list, me = errands:Holdings() end
     if type(list) ~= "table" then return nil end
-    local total, any = 0, false
+    if type(me) ~= "table" then
+        for _, entry in ipairs(list) do
+            if type(entry) == "table" and entry.isCurrent == true then me = entry break end
+        end
+    end
+    local function Text(value)
+        return type(value) == "string" and value ~= "" and value or nil
+    end
+    local realm = me and Text(me.realm)
+    local faction = me and Text(me.faction)
+    local function Counts(entry)
+        if entry.linked ~= nil and entry.linked ~= false then return false end
+        if realm and Text(entry.realm) and Text(entry.realm) ~= realm then return false end
+        if faction and Text(entry.faction) and Text(entry.faction) ~= faction then return false end
+        return true
+    end
+    local total, any, seen = 0, false, {}
     for _, entry in ipairs(list) do
         if type(entry) == "table" then
+            local key = Text(entry.key)
             if entry.isCurrent == true then
                 local money = Items.Call({ "GetMoney" })
                 money = tonumber(money) or tonumber(entry.gold)
                 if money then total, any = total + money, true end
-            elseif entry.playing ~= true and tonumber(entry.gold) then
+            elseif entry.playing ~= true and tonumber(entry.gold) and Counts(entry)
+                and not (key and seen[key]) then
                 -- An old record of the character playing (`playing` without
                 -- `isCurrent`) is the same purse: counted once.
+                if key then seen[key] = true end
                 total, any = total + tonumber(entry.gold), true
             end
         end
