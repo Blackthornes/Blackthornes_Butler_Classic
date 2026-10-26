@@ -34,11 +34,12 @@ local function Find(name)
     end
 end
 
-local asked, queued, goal = 0, {}, false
+local asked, queued, goal, lastSkip = 0, {}, false, nil
 _G.BlackthornesTS = { Butler = {
     Advise = function() return { auction = 40 } end,
-    CraftFor = function(_, id, carried)
+    CraftFor = function(_, id, carried, skip)
         asked = asked + 1
+        lastSkip = skip
         if id == 2592 then
             -- Bolt of Woolen Cloth: 3 wool a bolt, 4 bolts.
             return { recipeID = 2964, name = "Bolt of Woolen Cloth", itemID = 2997, per = 3,
@@ -120,5 +121,32 @@ suite.check("craft is not in the help line", (function()
     for _, name in ipairs(ns.commandOrder) do if name == "craft" then return false end end
     return true
 end)())
+
+-- 7. Saying no to one craft (the owner, 2026-10-26).
+ns.HandleSlash("craft on")
+wool = Find("Wool Cloth")
+ns.UI:ShowMenu(wool)
+local menu = ns.UI.menu
+suite.check("a Craft row's menu offers to stop suggesting it", menu.skipCraft:IsShown())
+suite.check("reading Don't Suggest This Craft", menu.skipCraft.label:GetText() == "Don't Suggest This Craft",
+    menu.skipCraft.label:GetText())
+ns.UI:ShowMenu(Find("Linen Cloth"))
+suite.check("other rows don't offer it", not menu.skipCraft:IsShown())
+ns.UI:ShowMenu(wool)
+env.chat = {}
+menu.skipCraft:GetScript("OnClick")(menu.skipCraft)
+suite.check("the recipe is kept by its ID", ns.db.craftSkip and ns.db.craftSkip[2964] == "Bolt of Woolen Cloth")
+suite.check("chat says so", env.ChatText():find("Butler won't suggest Bolt of Woolen Cloth again.", 1, true) ~= nil,
+    env.ChatText())
+suite.check("wool is no longer under Craft", Find("Wool Cloth").verdict == "auction", Find("Wool Cloth").verdict)
+suite.check("Tradeskills is told which to pass over", type(lastSkip) == "table" and lastSkip[2964] ~= nil)
+suite.check("other crafts still show", Find("Strange Dust").verdict == "craft", Find("Strange Dust").verdict)
+ns.SettingsUI:Refresh()
+local again = ns.SettingsUI.controls.craftSkip
+suite.check("Settings offers Show Again", again.label:GetText() == "Show Again", again.label:GetText())
+again:GetScript("OnClick")(again)
+suite.check("Show Again brings them back", ns.db.craftSkip == nil and Find("Wool Cloth").verdict == "craft",
+    Find("Wool Cloth").verdict)
+suite.check("and the button reads None", again.label:GetText() == "None", again.label:GetText())
 
 suite.done()

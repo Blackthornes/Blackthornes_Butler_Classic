@@ -315,7 +315,7 @@ the help line). In `Verdicts:Best`, after the best price is worked out,
 `Verdicts:CraftPays` asks Tradeskills, inside a pcall, read only:
 
 ```lua
-_G.BlackthornesTS.Butler:CraftFor(itemID, carried)
+_G.BlackthornesTS.Butler:CraftFor(itemID, carried, skip)
   -- { recipeID, name, itemID, per, crafts, perItem, needs = { { itemID, count } } }, or nil
 _G.BlackthornesTS.Butler:QueueCraft(recipeID, crafts)   -- true, or false and why
 ```
@@ -331,6 +331,14 @@ makes, and says "Added N crafts to your Tradeskills queue." Nothing is
 made, sold or moved by it. Tested in `tools/test_craftpays.lua`. If
 Tradeskills changes either call, change `Sisters:CraftFor` and
 `Sisters:QueueCraft` too. Not yet seen in game.
+Saying no to a craft (the owner, 2026-10-26: it kept saying to make
+Handstitched Leather Vests from Coarse Thread): a Craft row's right-click
+has "Don't Suggest This Craft" (`Verdicts:SkipCraft`), kept account wide
+in `craftSkip[recipeID] = name` (never rename it); "Crafts You Turned
+Off:" with Show Again on the Selling page clears them. `CraftFor` gets the
+list as a third argument so Tradeskills passes over those recipes and
+offers the next best; Butler still drops a skipped answer from an older
+Tradeskills. Tested in `tools/test_craftpays.lua`.
 
 ## Disenchant greens here
 

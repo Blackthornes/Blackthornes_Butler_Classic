@@ -1236,6 +1236,18 @@ function UI:BuildMenu()
         if data and data.mailTo then ns.Verdicts:HoldAllUpgrades(data.mailTo, true) end
     end, { width = MENU_WIDTH - 16, height = 20 })
 
+    -- A Craft row: stop suggesting that recipe (the owner, 2026-10-26).
+    -- Brought back on the Selling page of Settings.
+    menu.skipCraft = Widgets.CreateButton(menu, L["Don't Suggest This Craft"], function()
+        local data = UI.menu.data
+        UI:HideMenu()
+        if data and type(data.craft) == "table" then
+            ns.Verdicts:SkipCraft(data.craft.recipeID, data.craft.name)
+            if ns.SettingsUI and ns.SettingsUI.SyncCraftSkip then ns.SettingsUI:SyncCraftSkip() end
+        end
+    end, { width = MENU_WIDTH - 16, height = 20 })
+    menu.skipCraft:Hide()
+
     -- The characters page: one button a character, made as needed, and Back.
     -- A character's jobs line: put away until that character logs in.
     menu.ignoreJobs = Widgets.CreateButton(menu, L["Ignore Until Next Login"], function()
@@ -1336,6 +1348,13 @@ function UI:ShowMenu(data, stay)
         menu.holdAll:SetPoint("TOPLEFT", menu.hold, "BOTTOMLEFT", 0, -4)
         last = menu.holdAll
     end
+    local craft = data.verdict == "craft" and type(data.craft) == "table" and data.craft.recipeID and data.craft or nil
+    menu.skipCraft:SetShown(craft ~= nil)
+    if craft then
+        menu.skipCraft:ClearAllPoints()
+        menu.skipCraft:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -4)
+        last = menu.skipCraft
+    end
     -- Keep on this character: the number kept, when there is one.
     local keepCount = ns.KeepHere and ns.KeepHere:Count(data.itemID)
     menu.keepHere:SetShown(ns.KeepHere ~= nil)
@@ -1354,10 +1373,10 @@ function UI:ShowMenu(data, stay)
     menu.decide:SetText(learned and L["Forget what Butler learned"] or L["Let Butler decide"])
 
     local rows = 3 + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
-        + (ns.KeepHere and 1 or 0) + (decides and 1 or 0)
+        + (craft and 1 or 0) + (ns.KeepHere and 1 or 0) + (decides and 1 or 0)
     menu:SetHeight(30 + rows * MENU_ROW)
     UI.FitMenu(menu, { menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
-        menu.hold, menu.holdAll, menu.keepHere, menu.decide })
+        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.decide })
 
     if stay and menu:IsShown() then return end
     local x, y = 0, 0
@@ -1378,7 +1397,8 @@ function UI:ShowJobMenu(data)
     menu.away = 0
     menu.title:SetText(data.job.name)
     for _, button in ipairs({ menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
-        menu.hold, menu.holdAll, menu.keepHere, menu.decide, menu.back, menu.keepSave, menu.keepAll }) do
+        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.decide, menu.back, menu.keepSave,
+        menu.keepAll }) do
         button:Hide()
     end
     for _, button in ipairs(menu.characters) do button:Hide() end
@@ -1435,6 +1455,7 @@ function UI:ShowMailMenu()
     menu.bought:Hide()
     menu.hold:Hide()
     menu.holdAll:Hide()
+    menu.skipCraft:Hide()
     menu.decide:Hide()
     menu.keepHere:Hide()
     menu.disenchant:Hide()
