@@ -80,6 +80,44 @@ local function Stamp(value)
     return type(value) == "number" and value or nil
 end
 
+--- Tradeskills' entry for the character playing in a Holdings() list, or nil.
+function Everyone.PlayingEntry(list)
+    if type(list) ~= "table" then return nil end
+    for _, entry in ipairs(list) do
+        if type(entry) == "table" and entry.isCurrent == true then return entry end
+    end
+    return nil
+end
+
+--- Is a friend's name? Tradeskills' Friends box, read in a pcall. A
+--- friend's characters are never the player's own.
+function Everyone.IsFriend(name)
+    if not Text(name) then return false end
+    local global = rawget(_G, "BlackthornesTS")
+    local crafters = type(global) == "table" and rawget(global, "GuildCrafters")
+    if type(crafters) ~= "table" or type(crafters.IsFriend) ~= "function" then return false end
+    local ok, friend = pcall(crafters.IsFriend, crafters, name)
+    return ok and friend == true
+end
+
+--- Is a Holdings() entry one of the player's own characters on this realm
+--- and side? A character on another realm or side, or one a friend's
+--- account shared (its `linked` name is under Tradeskills' Friends), is
+--- left out of every list (a helper's items showed in the Bags window,
+--- 2026-10-26). `me` is the character playing's entry; without one, or
+--- without a realm or side on either, that part is not checked.
+function Everyone.Ours(entry, me)
+    if type(entry) ~= "table" then return false end
+    if entry.isCurrent == true then return true end
+    local realm = type(me) == "table" and Text(me.realm)
+    local faction = type(me) == "table" and Text(me.faction)
+    if realm and Text(entry.realm) and Text(entry.realm) ~= realm then return false end
+    if faction and Text(entry.faction) and Text(entry.faction) ~= faction then return false end
+    local linked = Text(entry.linked)
+    if linked and Everyone.IsFriend(linked) then return false end
+    return true
+end
+
 --- What the character playing carries, from Butler's own read of the bags.
 function Everyone.OwnBags()
     local counts = {}
@@ -113,13 +151,14 @@ function Everyone:Read()
     local ok, list = pcall(butler.Holdings, butler)
     if not ok or type(list) ~= "table" then return nil end
 
+    local me = Everyone.PlayingEntry(list)
     local characters = {}
     for _, entry in ipairs(list) do
         -- An old record of the character playing (beside its GUID one) is
         -- the same character with an older count: only the live one
         -- counts, as on the tooltip (UI/WhoHas.lua).
         local oldSelf = type(entry) == "table" and entry.playing == true and entry.isCurrent ~= true
-        if type(entry) == "table" and Text(entry.key) and not oldSelf then
+        if type(entry) == "table" and Text(entry.key) and not oldSelf and Everyone.Ours(entry, me) then
             characters[#characters + 1] = {
                 key = entry.key,
                 name = Text(entry.name) or entry.key,
