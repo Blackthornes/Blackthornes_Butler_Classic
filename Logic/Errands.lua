@@ -249,7 +249,8 @@ local function AllNames()
     for _, entry in ipairs(list or {}) do
         local name = type(entry) == "table" and (Text(entry.short) or Text(entry.name))
         if name and (not realm or not Text(entry.realm) or Text(entry.realm) == realm)
-            and (not faction or not Text(entry.faction) or Text(entry.faction) == faction) then
+            and (not faction or not Text(entry.faction) or Text(entry.faction) == faction)
+            and ns.Everyone.Ours(entry, me) then
             names[#names + 1] = name
         end
     end
@@ -275,7 +276,8 @@ function Errands:NameOf(key)
             local entryKey = type(entry) == "table" and Text(entry.key)
             if name and entryKey and not Mine(entry)
                 and (not realm or not Text(entry.realm) or Text(entry.realm) == realm)
-                and (not faction or not Text(entry.faction) or Text(entry.faction) == faction) then
+                and (not faction or not Text(entry.faction) or Text(entry.faction) == faction)
+                and ns.Everyone.Ours(entry, me) then
                 byKeyCache[entryKey] = name
             end
         end
@@ -351,7 +353,8 @@ function Errands:Characters()
         local short = type(entry) == "table" and (Text(entry.short) or Text(entry.name))
         if short and not Mine(entry) and not self:IsMe(short) and not seen[short]
             and (not realm or not Text(entry.realm) or Text(entry.realm) == realm)
-            and (not faction or not Text(entry.faction) or Text(entry.faction) == faction) then
+            and (not faction or not Text(entry.faction) or Text(entry.faction) == faction)
+            and ns.Everyone.Ours(entry, me) then
             seen[short] = true
             names[#names + 1] = short
         end

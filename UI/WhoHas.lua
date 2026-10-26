@@ -81,11 +81,13 @@ function WhoHas.Build()
     local ok, list = pcall(butler.Holdings, butler)
     if not ok or type(list) ~= "table" then return nil end
 
+    local me = ns.Everyone.PlayingEntry(list)
     local lookup = {}
     for _, entry in ipairs(list) do
         -- An old record of the character playing (beside its GUID one) is
         -- the same character with an older count: only the live one counts.
         local skip = type(entry) ~= "table" or (entry.playing == true and entry.isCurrent ~= true)
+            or not ns.Everyone.Ours(entry, me)
         local name = not skip and (Text(entry.name) or Text(entry.short))
         if name then
             local character = { name = name, isCurrent = entry.isCurrent == true }

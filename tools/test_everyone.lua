@@ -170,6 +170,45 @@ Everyone.BUDGET, Everyone.NAME_BUDGET = 300, 40
 _G.BlackthornesTS = nil
 Everyone:Changed()
 
+-- Only this realm and side's own characters: never another realm, another
+-- side or a friend's shared characters (a helper's items showed, 2026-10-26).
+local friends = { Pal = true }
+_G.BlackthornesTS = {
+    GuildCrafters = { IsFriend = function(_, name) return friends[name] == true end },
+    Butler = { Holdings = function()
+        return {
+            { key = "Mia-R", name = "Mia", short = "Mia", isCurrent = true,
+              realm = "Home", faction = "Horde", bags = {} },
+            { key = "Ana-R", name = "Ana", short = "Ana", realm = "Home", faction = "Horde",
+              bags = { [601] = 1 } },
+            { key = "Far-R", name = "Far", short = "Far", realm = "Away", faction = "Alliance",
+              linked = "Helper", bags = { [602] = 1 } },
+            { key = "Side-R", name = "Side", short = "Side", realm = "Home", faction = "Alliance",
+              bags = { [603] = 1 } },
+            { key = "Pal-R", name = "Pal", short = "Pal", realm = "Home", faction = "Horde",
+              linked = "Pal", bags = { [604] = 1 } },
+            { key = "Two-R", name = "Two", short = "Two", realm = "Home", faction = "Horde",
+              linked = "Mine", bags = { [605] = 1 } },
+        }
+    end },
+}
+local read = Everyone:Read()
+local keys = {}
+for _, character in ipairs(read) do keys[character.key] = true end
+suite.check("this realm and side's characters are read", keys["Mia-R"] and keys["Ana-R"])
+suite.check("another realm's shared characters are left out", not keys["Far-R"])
+suite.check("the other side's characters are left out", not keys["Side-R"])
+suite.check("a friend's shared characters are left out", not keys["Pal-R"])
+suite.check("your own other account's characters here still show", keys["Two-R"])
+_G.BlackthornesTS.GuildCrafters = nil
+suite.check("without the Friends box, a shared character here shows",
+    Everyone.Ours({ realm = "Home", faction = "Horde", linked = "Pal" }, { realm = "Home", faction = "Horde" }))
+_G.BlackthornesTS.GuildCrafters = { IsFriend = function() error("broken") end }
+suite.check("a Friends box that raises counts as no friend",
+    Everyone.Ours({ realm = "Home", faction = "Horde", linked = "Pal" }, { realm = "Home", faction = "Horde" }))
+_G.BlackthornesTS = nil
+Everyone:Changed()
+
 -- Back to the bags.
 UI:SetView("bags")
 suite.check("Your bags again, with its own search", UI.view == "bags" and UI.bagSearch:IsShown() and not UI.search:IsShown())

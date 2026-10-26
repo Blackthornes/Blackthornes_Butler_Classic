@@ -117,6 +117,20 @@ ns.HandleSlash("whohas")
 suite.check("and back on", ns.db.whoHas == true and #Hover(GameTooltip, 501) > 0)
 suite.check("the probe says how it is hooked", WhoHas:ProbeText():find("post call", 1, true) ~= nil)
 
+-- Another realm or side's characters, shared or not, add no lines.
+_G.BlackthornesTS.Butler.Holdings = function()
+    return {
+        { key = "me", name = "Mia", isCurrent = true, realm = "Home", faction = "Horde", bags = {} },
+        { key = "alt", name = "Ana", realm = "Home", faction = "Horde", bags = { [701] = 2 } },
+        { key = "far", name = "Far", realm = "Away", faction = "Alliance", linked = "Helper",
+          bags = { [701] = 50 } },
+    }
+end
+local lookup = WhoHas.Build()
+suite.check("only this realm and side's characters are counted",
+    lookup[701] and lookup[701].total == 2 and #lookup[701].holders == 1)
+_G.BlackthornesTS.Butler.Holdings = function() return holdings end
+
 -- No post call: the script hook on the two tooltips.
 _G.TooltipDataProcessor = nil
 local scripts = {}
