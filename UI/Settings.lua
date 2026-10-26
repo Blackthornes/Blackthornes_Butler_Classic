@@ -345,6 +345,15 @@ function SettingsUI:SyncHeld()
     controls.heldItems:SetLabelColor(count == 0 and "dim" or nil)
 end
 
+--- Show Again, dim with "None" while no craft is turned off.
+function SettingsUI:SyncCraftSkip()
+    local controls = self.controls
+    if not (controls and controls.craftSkip) then return end
+    local count = ns.Verdicts:SkippedCraftCount()
+    controls.craftSkip:SetText(count > 0 and L["Show Again"] or L["None"])
+    controls.craftSkip:SetLabelColor(count == 0 and "dim" or nil)
+end
+
 -- The characters and items the keep pickers step through.
 SettingsUI.keepState = { guids = {}, items = {} }
 
@@ -584,6 +593,16 @@ function SettingsUI:BuildPages()
         ns.Verdicts:SetCraftPays(checked)
     end)
     controls.craftPays:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    -- Crafts turned off from a Craft row's right-click (the owner,
+    -- 2026-10-26); this brings them all back.
+    local skipRow = pages:Row("selling", 2, L["Crafts You Turned Off:"],
+        L["Brings back every craft you told Butler to stop suggesting."])
+    controls.craftSkip = Widgets.CreateButton(skipRow, L["Show Again"], function()
+        ns.Verdicts:ShowSkippedCrafts()
+        SettingsUI:SyncCraftSkip()
+    end, { width = 100, height = 20 })
+    controls.craftSkip:SetPoint("TOPLEFT", CONTROL_X, 0)
 
     pages:Section("selling", 2, L["YOUR LISTS"])
 
@@ -1026,6 +1045,7 @@ function SettingsUI:Refresh()
     controls.altUpgrades:SetChecked(ns.Verdicts:AltUpgradesOn())
     controls.disenchantGreens:SetChecked(ns.Verdicts:DisenchantGreensOn())
     controls.craftPays:SetChecked(ns.Verdicts:CraftPaysOn())
+    self:SyncCraftSkip()
     controls.alwaysDisenchant:SetChecked(ns.Verdicts:AlwaysDisenchantOn())
     controls.jobsAtLogin:SetChecked(ns.db.jobsAtLogin ~= false)
     controls.questItems:SetChecked(ns.Quests:IsOn())

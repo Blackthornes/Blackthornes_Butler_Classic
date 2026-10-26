@@ -1501,8 +1501,8 @@ end
 function Verdicts:CraftPays(entry, value)
     if not self:CraftPaysOn() or not entry.itemID then return nil end
     local carried = ns.Bags.Carried and ns.Bags:Carried(entry.itemID) or entry.count
-    local craft = Sisters:CraftFor(entry.itemID, carried)
-    if not craft then return nil end
+    local craft = Sisters:CraftFor(entry.itemID, carried, self:SkippedCrafts())
+    if not craft or self:CraftSkipped(craft.recipeID) then return nil end
     value = value or 0
     if craft.perItem <= value * Verdicts.CRAFT_MARGIN or craft.perItem <= value then return nil end
     local used = math.min(carried or 0, craft.crafts * craft.per)
@@ -1519,8 +1519,49 @@ function Verdicts:CraftPays(entry, value)
     else
         reason = L.Format("Make %s, about %s more than selling it", craft.name, Items.FormatMoney(gain))
     end
-    return { recipeID = craft.recipeID, crafts = craft.crafts, perItem = craft.perItem, gain = gain,
-        reason = reason }
+    return { recipeID = craft.recipeID, name = craft.name, crafts = craft.crafts, perItem = craft.perItem,
+        gain = gain, reason = reason }
+end
+
+-- Crafts the player said no to (the owner, 2026-10-26: Butler kept saying
+-- to make Handstitched Leather Vests). Right-click a Craft row for "Don't
+-- Suggest This Craft"; Settings' "Crafts You Turned Off:" brings them all
+-- back. Kept account wide by recipe ID, craftSkip[recipeID] = its name;
+-- never rename it. Tradeskills is told which to pass over, so the next
+-- best craft for the item still shows.
+
+--- The recipes turned off, { [recipeID] = name }; never nil.
+function Verdicts:SkippedCrafts()
+    local skip = ns.db and ns.db.craftSkip
+    return type(skip) == "table" and skip or {}
+end
+
+function Verdicts:CraftSkipped(recipeID)
+    return recipeID ~= nil and self:SkippedCrafts()[recipeID] ~= nil
+end
+
+function Verdicts:SkippedCraftCount()
+    local count = 0
+    for _ in pairs(self:SkippedCrafts()) do count = count + 1 end
+    return count
+end
+
+--- Stop suggesting one recipe.
+function Verdicts:SkipCraft(recipeID, name)
+    recipeID = tonumber(recipeID)
+    if not (ns.db and recipeID) then return end
+    if type(ns.db.craftSkip) ~= "table" then ns.db.craftSkip = {} end
+    name = type(name) == "string" and name or tostring(recipeID)
+    ns.db.craftSkip[recipeID] = name
+    ns.Print(L.Format("Butler won't suggest %s again.", name))
+    self:Changed(true)
+end
+
+--- Bring back every craft turned off.
+function Verdicts:ShowSkippedCrafts()
+    if not ns.db then return end
+    ns.db.craftSkip = nil
+    self:Changed(true)
 end
 
 --- "2.5" or "8": hours as the row shows them.

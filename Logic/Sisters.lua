@@ -99,10 +99,12 @@ end
 --- The known craft that makes one of an item worth the most, from
 --- Tradeskills, or nil. `carried` is how many the bags hold. The answer is
 --- checked field by field: { recipeID, name, crafts, per, perItem, needs }.
-function Sisters:CraftFor(itemID, carried)
+--- `skip` ({ [recipeID] = true-ish }) names recipes to pass over; an older
+--- Tradeskills ignores it, and Verdicts still checks the answer.
+function Sisters:CraftFor(itemID, carried, skip)
     local butler = Sisters.Butler("ts")
     if not (butler and type(butler.CraftFor) == "function") then return nil end
-    local ok, answer = pcall(butler.CraftFor, butler, itemID, carried)
+    local ok, answer = pcall(butler.CraftFor, butler, itemID, carried, skip)
     if not ok or type(answer) ~= "table" then return nil end
     local recipeID, crafts, perItem = Sisters.Number(answer, "recipeID"), Sisters.Number(answer, "crafts"),
         Sisters.Number(answer, "perItem")
