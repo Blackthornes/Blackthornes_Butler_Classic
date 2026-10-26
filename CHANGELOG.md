@@ -6,9 +6,7 @@ the top; a release is refused if its version has no section here.
 
 ## 0.1.1
 
-- **Fixes:** the bank alt takes a one-word name.
-- **Fixes:** the Bags window's gold total counts only your characters on this realm and side.
-- **Fixes:** the Everyone tab, All Characters and Who Has It show only your characters on this realm and side.
+- **Fixes:** various bug fixes.
 
 ## 0.1.0
 
