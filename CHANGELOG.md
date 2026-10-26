@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.1.1
+
+- **Fixes:** the bank alt takes a one-word name.
+- **Fixes:** the Bags window's gold total counts only your characters on this realm and side.
+- **Fixes:** the Everyone tab, All Characters and Who Has It show only your characters on this realm and side.
+
 ## 0.1.0
 
 First release for WoW Classic Era.

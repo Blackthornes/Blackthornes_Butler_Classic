@@ -23,6 +23,12 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.1.1
+
+Fixes and changes:
+- The bank alt takes a one-word name.
+- Gold totals and item lists show only your characters on this realm and side.
+
 ## 0.1.0
 
 - Butler is here for Classic Era. It tells you what to do with every item in your bags: keep, sell, bank or look at it.
