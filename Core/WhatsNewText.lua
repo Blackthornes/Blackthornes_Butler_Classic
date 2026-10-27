@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.2.0", lines = {
+        "You can turn off a craft Butler suggests.",
+        "The Bags window has Group By beside the search.",
+    } },
     { version = "0.1.0", lines = {
         "Butler is here for Classic Era. It tells you what to do with every item in your bags: keep, sell, bank or look at it.",
         "One Sell button at the vendor sells 12 items a click, so you can always buy them back.",
