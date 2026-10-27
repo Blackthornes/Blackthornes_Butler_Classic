@@ -152,6 +152,26 @@ GG:Changed()
 suite.check("riding known, the next", GG:Goals().goals[3].riding.spell == 33391 and GG:Goals().goals[3].level == 60)
 known[33389] = nil
 
+-- Era: riding is one skill a race, read from the skill list. 75 waits for
+-- the next one; 150 is the last, so no riding goal is left.
+local savedName, savedLines, savedLine = GG.SpellName, rawget(_G, "GetNumSkillLines"), rawget(_G, "GetSkillLineInfo")
+local riding = 75
+GG.SpellName = function(id) if id == 824 then return "Horse Riding" end return savedName(id) end
+_G.GetNumSkillLines = function() return 2 end
+_G.GetSkillLineInfo = function(i)
+    if i == 1 then return "Secondary Skills", true end
+    return "Horse Riding", false, nil, riding
+end
+level = 60
+GG:Changed()
+suite.check("Era riding at 75, the next", GG.RidingSkill() == 75 and GG:NextRiding(60).spell == 33391)
+riding = 150
+GG:Changed()
+suite.check("Era riding at 150, nothing left", GG:NextRiding(60) == nil)
+GG.SpellName, _G.GetNumSkillLines, _G.GetSkillLineInfo = savedName, savedLines, savedLine
+level = 22
+GG:Changed()
+
 -- 3. A riding trainer's own price.
 local services = { { "Apprentice Riding", "", "unavailable", 80 * G, 30 } }
 _G.IsTradeskillTrainer = function() return false end

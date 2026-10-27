@@ -62,8 +62,8 @@ local function Number(value)
 end
 
 local function IsReagentBag(bag)
-    local reagent = _G.Enum and _G.Enum.BagIndex and _G.Enum.BagIndex.ReagentBag
-    return type(reagent) == "number" and bag == reagent
+    local reagent = ns.Bags and ns.Bags.ReagentBag and ns.Bags.ReagentBag()
+    return reagent ~= nil and bag == reagent
 end
 
 --- A bag's name in its rarity colour, read only for the tooltip: the bag
