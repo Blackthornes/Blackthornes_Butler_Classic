@@ -434,10 +434,36 @@ local function KnowsAny(spells)
     return false
 end
 
+--- The riding skill as the skill list shows it, or nil when it shows none.
+--- On Era riding is one skill a race, 75 at level 40 and 150 at 60, and
+--- the later riding spells above don't exist, so the skill says what is
+--- learned.
+function GG.RidingSkill()
+    local names = {}
+    for _, id in ipairs(GG.RACE_RIDING) do
+        local name = GG.SpellName(id)
+        if name then names[name] = true end
+    end
+    local best
+    local count = Number(Call("GetNumSkillLines")) or 0
+    for index = 1, count do
+        local name, header, _, skill = Call("GetSkillLineInfo", index)
+        name = Text(name)
+        if name and names[name] and not header then
+            local rank = Number(skill)
+            if rank and (not best or rank > best) then best = rank end
+        end
+    end
+    return best
+end
+
 function GG:NextRiding(cap)
     local index = 1
     if KnowsAny(self.RIDING[1].spells) or KnowsAny(self.RACE_RIDING) then index = 2 end
     if index == 2 and KnowsAny(self.RIDING[2].spells) then return nil end
+    local skill = GG.RidingSkill()
+    if skill and skill >= 150 then return nil end
+    if skill and skill >= 75 then index = 2 end
     local riding = self.RIDING[index]
     local spell = riding.spells[1]
     local level = self:LevelOf(spell, riding.level)

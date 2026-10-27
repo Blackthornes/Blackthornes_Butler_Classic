@@ -234,4 +234,23 @@ ns.HandleSlash("reset confirm")
 suite.check("reset confirm forgets what was learned", Learning:Get(201) == nil
     and next(ns.db.learnTally) == nil)
 
+-- Era's older global is watched too, only when it is a call of its own.
+local realHook, oldGlobal = _G.hooksecurefunc, rawget(_G, "UseContainerItem")
+local hooks
+_G.hooksecurefunc = function(a, b) hooks[#hooks + 1] = type(a) == "table" and b or a end
+local function UseHooks()
+    local count = 0
+    for _, name in ipairs(hooks) do if name == "UseContainerItem" then count = count + 1 end end
+    return count
+end
+hooks = {}
+_G.UseContainerItem = _G.C_Container.UseContainerItem
+Learning:OnEnable()
+suite.check("one sale call, one watch", UseHooks() == 1)
+hooks = {}
+_G.UseContainerItem = function() end
+Learning:OnEnable()
+suite.check("a separate older call is watched too", UseHooks() == 2)
+_G.hooksecurefunc, _G.UseContainerItem = realHook, oldGlobal
+
 suite.done()

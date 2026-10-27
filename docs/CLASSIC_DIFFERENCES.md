@@ -83,6 +83,17 @@ Every Forever catch-up checks this note first, before sorting commits into
   `BankAlt:TypeName` takes any typed name, and the bank alt hint and the
   `bankalt` and `upgrademail` help say "Name", not "Full Name".
 
+### Era bug pass (2026-10-27)
+- Riding: `GG.RidingSkill` reads the race's riding skill (75, then 150) from
+  the skill list, since Era has none of Forever's later riding spells;
+  `GG:NextRiding` is done at 150.
+- Enchanting opens Era's craft window: `Jobs` also redraws on `CRAFT_SHOW`
+  and `CRAFT_CLOSE`.
+- `Bags.ReagentBag` drops a reagent bag number that is also
+  `Enum.BagIndex.BankBag_1`, so bank bag 1 is never read as carried.
+- `Learning` also hooks the older global `UseContainerItem` when it is a
+  different function from `C_Container.UseContainerItem`.
+
 ## Not yet done
 - Not yet seen in an Era client. Client calls are read in a pcall, and the
   code already falls back to the classic calls where Era lacks the newer ones.

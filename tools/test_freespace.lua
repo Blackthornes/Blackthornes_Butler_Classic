@@ -149,6 +149,13 @@ suite.check("no backpack button is not an error", ns2.FreeSpace.frame == nil)
 _G.C_Container.GetContainerNumFreeSlots = function() error("secret") end
 suite.check("an unreadable count is nil", ns2.FreeSpace.Read() == nil)
 suite.check("the probe still answers", type(ns2.FreeSpace:ProbeText()) == "string")
+-- Era: no reagent bag, and a ReagentBag that is also the first bank bag
+-- is the bank, never carried.
+_G.Enum = { BagIndex = { ReagentBag = 5, BankBag_1 = 5 } }
+suite.check("a reagent number shared with the bank is not carried", ns2.Bags.ReagentBag() == nil
+    and #ns2.Bags.BagIDs() == 5)
+_G.Enum = { BagIndex = { ReagentBag = 5, BankBag_1 = 6 } }
+suite.check("a real reagent bag is carried", ns2.Bags.ReagentBag() == 5 and #ns2.Bags.BagIDs() == 6)
 _G.Enum = nil
 
 suite.done()

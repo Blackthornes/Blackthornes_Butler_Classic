@@ -337,8 +337,17 @@ function Learning:OnEnable()
         pcall(hooksecurefunc, "BuybackItem", function(index) Learning:OnBuyback(index) end)
     end
     local container = rawget(_G, "C_Container")
-    if type(container) == "table" and type(container.UseContainerItem) == "function" then
+    local modern = type(container) == "table" and container.UseContainerItem or nil
+    if type(modern) == "function" then
         pcall(hooksecurefunc, container, "UseContainerItem", function(bag, slot)
+            Learning:OnUse(bag, slot)
+        end)
+    end
+    -- Era also has the older global. Watch it too, only when it is a call
+    -- of its own, so one sale is never seen twice.
+    local older = rawget(_G, "UseContainerItem")
+    if type(older) == "function" and older ~= modern then
+        pcall(hooksecurefunc, "UseContainerItem", function(bag, slot)
             Learning:OnUse(bag, slot)
         end)
     end

@@ -32,9 +32,21 @@ function Bags.BagIDs()
     local ids = {}
     local last = tonumber(_G.NUM_BAG_SLOTS) or 4
     for bag = 0, last do ids[#ids + 1] = bag end
-    local reagent = _G.Enum and _G.Enum.BagIndex and _G.Enum.BagIndex.ReagentBag
-    if type(reagent) == "number" and reagent > last then ids[#ids + 1] = reagent end
+    local reagent = Bags.ReagentBag()
+    if reagent and reagent > last then ids[#ids + 1] = reagent end
     return ids
+end
+
+--- The reagent bag's ID, or nil on a client without one. A number that is
+--- also the first bank bag's (Era has no reagent bag, and its bank bags
+--- start there) is the bank, never a carried bag.
+function Bags.ReagentBag()
+    local index = _G.Enum and _G.Enum.BagIndex
+    if type(index) ~= "table" then return nil end
+    local reagent = index.ReagentBag
+    if type(reagent) ~= "number" then return nil end
+    if index.BankBag_1 == reagent then return nil end
+    return reagent
 end
 
 local function NumSlots(bag)

@@ -1426,6 +1426,9 @@ function Jobs:OnEnable()
     end)
     ns.RegisterEvent(self, "TRADE_SKILL_SHOW", function() Jobs:WindowChanged() end)
     ns.RegisterEvent(self, "TRADE_SKILL_CLOSE", function() Jobs:WindowChanged() end)
+    -- Era opens Enchanting in the craft window, which has its own events.
+    ns.RegisterEvent(self, "CRAFT_SHOW", function() Jobs:WindowChanged() end)
+    ns.RegisterEvent(self, "CRAFT_CLOSE", function() Jobs:WindowChanged() end)
     -- Into or out of a form: the craft lines say Leave form or Craft. Only
     -- on the change itself, and only while the window shows.
     ns.RegisterEvent(self, "UPDATE_SHAPESHIFT_FORM", function()
