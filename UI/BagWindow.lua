@@ -415,6 +415,18 @@ function BagWindow:BuildHeader()
 
     self.chips = {}
     local chipX = PADDING
+    -- Each chip's room round its word, less in a language whose words run
+    -- long, so the row always fits inside the window.
+    local words, room = 0, 0
+    for _, key in ipairs(ns.BagView.CHIPS) do
+        words = words + Theme.TextWidth("small", ns.BagView.CHIP_WORDS[key])
+        room = room + 1
+    end
+    local roomEach = 20
+    if room > 0 then
+        local spare = WIDTH - 2 * PADDING - words - 4 * (room - 1)
+        roomEach = math.max(8, math.min(20, math.floor(spare / room)))
+    end
     for _, key in ipairs(ns.BagView.CHIPS) do
         local word = ns.BagView.CHIP_WORDS[key]
         local chip = Widgets.CreateButton(frame, word, function()
@@ -422,7 +434,7 @@ function BagWindow:BuildHeader()
             BagWindow:PaintChips()
             BagWindow:Changed(true)
         end, { height = 20 })
-        chip:SetWidth(Theme.TextWidth("small", word) + 20)
+        chip:SetWidth(Theme.TextWidth("small", word) + roomEach)
         chip:SetPoint("TOPLEFT", frame, "TOPLEFT", chipX, -86)
         chipX = chipX + chip:GetWidth() + 4
         self.chips[key] = chip
@@ -437,7 +449,10 @@ function BagWindow:BuildHeader()
         onChange = function(v) ns.BagView:SetGroupBy(ns.BagView.GROUPS[v]) end,
     })
     if ns.SettingsPages and ns.SettingsPages.FitStepper then ns.SettingsPages.FitStepper(group, words) end
-    group:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PADDING, -86)
+    -- Group By sits on the search row, so the chips have their row to
+    -- themselves and never run under its label in any language.
+    local lift = math.floor(((tonumber(search:GetHeight()) or 24) - (tonumber(group:GetHeight()) or 24)) / 2)
+    group:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PADDING, -52 - lift)
     self.groupStepper = group
 
     local groupLabel = Theme.CreateLabel(frame, "small", "muted", "RIGHT")
@@ -467,6 +482,22 @@ function BagWindow:PaintTabs()
     for _, chip in pairs(self.chips or {}) do chip:SetShown(bags) end
     if self.groupStepper then self.groupStepper:SetShown(bags) end
     if self.groupLabel then self.groupLabel:SetShown(bags) end
+    self:PlaceSearch(bags)
+end
+
+--- The search runs the width of the window, or stops short of Group By
+--- while that shows beside it.
+function BagWindow:PlaceSearch(beside)
+    local search = self.search
+    if not search then return end
+    local right = PADDING
+    if beside and self.groupStepper then
+        local labelWidth = Theme.TextWidth("small", L["Group By:"])
+        right = PADDING + (tonumber(self.groupStepper:GetWidth()) or 0) + 6 + math.ceil(labelWidth) + 12
+    end
+    search:ClearAllPoints()
+    search:SetPoint("TOPLEFT", PADDING, -52)
+    search:SetPoint("TOPRIGHT", -right, -52)
 end
 
 function BagWindow:PaintChips()
