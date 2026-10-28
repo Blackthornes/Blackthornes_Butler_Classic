@@ -1281,6 +1281,24 @@ and tool) and stands down while `_G.BlackthornesButler.Trash` exists, so
 only one shows; keep `ns.Trash` on the global, or change Farmer's
 `Trash.ButlerHasIt` too.
 
+## Swap when full
+
+A player asked, the owner said build it from a mockup (2026-10-28): with
+the bags full, a popup beside the loot window offers to swap the item the
+trash can would pick (`Trash:Pick`) for loot worth more that has nowhere
+to go (`SwapWhenFull:BestLoot`, `Fits`: no stack with room, no profession
+bag that takes it), each at Butler's own worth. `UI/SwapWhenFull.lua`:
+Swap destroys the cheap item in that one click (the owner, 2026-10-28:
+ticking the box means the player wants Butler to do it; the only place
+Butler deletes, `Swap:Take` picks the slot up, checks the cursor holds
+that item, then `DeleteCursorItem`), and once its slot is empty and the
+loot window is still open, Butler loots that item (`FollowSwap`,
+`LootSlot`). Not Now and the close gem put it away until the next loot
+window; hidden in a fight. "Swap When Full:" on the General page
+(`swapWhenFull`, account wide, off unless ticked, never rename it).
+`/bbutler probe` has a "swap when full" line. Tested in
+`tools/test_swapwhenfull.lua`. Not yet seen in game.
+
 ## The Bags window
 
 Players kept asking for a bag window in our style, and the owner said

@@ -942,6 +942,12 @@ function SettingsUI:BuildPages()
     end, true)
     controls.trashCan:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    local swapRow = pages:Row("general", 1, L["Swap When Full:"], nil)
+    controls.swapWhenFull = Widgets.CreateCheckbox(swapRow, L["On"], function(checked)
+        if ns.SwapWhenFull then ns.SwapWhenFull:SetEnabled(checked) end
+    end, false)
+    controls.swapWhenFull:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     local whoRow = pages:Row("general", 1, L["Who Has It:"],
         L["Tooltips list which characters have the item. Needs Blackthornes Tradeskills."])
     controls.whoHas = SettingsUI.TooltipShiftControl(whoRow, "whoHas",
@@ -1053,6 +1059,7 @@ function SettingsUI:Refresh()
     controls.openAtBank:SetChecked(ns.db.openAtBank ~= false)
     controls.freeSpace:SetChecked(ns.db.freeSpace ~= false)
     controls.trashCan:SetChecked(ns.db.trashCan ~= false)
+    controls.swapWhenFull:SetChecked(ns.db.swapWhenFull == true)
     controls.buyMany:SetChecked(ns.BuyMany:IsOn())
     controls.whoHas:Sync()
     controls.verdictTip:Sync()

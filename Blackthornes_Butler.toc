@@ -60,6 +60,7 @@ UI\FreeSpace.lua
 UI\WhoHas.lua
 UI\VerdictTip.lua
 UI\Trash.lua
+UI\SwapWhenFull.lua
 
 Logic\Selling.lua
 Logic\Disenchanting.lua

@@ -208,6 +208,7 @@ function Probe:Run()
     if ns.VerdictTip then Line("verdict on tooltips", ns.VerdictTip:ProbeText()) end
     if ns.VendorPrices then Line("vendor prices", ns.VendorPrices:ProbeText()) end
     if ns.Trash then Line("trash can", ns.Trash:ProbeText()) end
+    if ns.SwapWhenFull then Line("swap when full", ns.SwapWhenFull:ProbeText()) end
     if ns.Ammo then Line("ammo", ns.Ammo:ProbeText()) end
     if ns.BuyManyUI then Line("buy more", ns.BuyManyUI:ProbeText()) end
     if ns.ClassTraining then Line("class training", ns.ClassTraining:ProbeText()) end
