@@ -1505,7 +1505,7 @@ function UI:ShowKeepMenu()
     menu.away = 0
     menu.title:SetText(L.Format("Keep %s on this character", UI.ItemTitle(data)))
     for _, button in ipairs({ menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
-        menu.hold, menu.holdAll, menu.keepHere, menu.decide, menu.ignoreJobs }) do
+        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.decide, menu.ignoreJobs }) do
         button:Hide()
     end
     for _, button in ipairs(menu.characters) do button:Hide() end
