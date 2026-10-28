@@ -23,6 +23,14 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.3.0
+
+- Swap When Full offers to swap your cheapest item for better loot when your bags are full.
+- One minimap button now opens all your Blackthornes add-ons.
+
+Fixes and changes:
+- Various bug fixes.
+
 ## 0.2.1
 
 Fixes and changes:

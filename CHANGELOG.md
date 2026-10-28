@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.3.0
+
+- Swap When Full offers to swap your cheapest item for better loot when your bags are full.
+- One minimap button now opens all your Blackthornes add-ons.
+- Various bug fixes.
+
 ## 0.2.1
 
 - Various bug fixes.

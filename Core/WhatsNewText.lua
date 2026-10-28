@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.3.0", lines = {
+        "Swap When Full offers to swap your cheapest item for better loot when your bags are full.",
+        "One minimap button now opens all your Blackthornes add-ons.",
+    } },
     { version = "0.2.0", lines = {
         "You can turn off a craft Butler suggests.",
         "The Bags window has Group By beside the search.",
