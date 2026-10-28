@@ -17,6 +17,9 @@ Copied over since, one at a time:
   its PR #20 stays).
 - `dea75f5` Let the way there card's rows grow when a step wraps
   (2026-10-28, as it is).
+- `4d590bb` One minimap button for every Blackthornes addon (2026-10-28,
+  Forever PR #194, cherry-picked as it is; `UI/SharedMinimap.lua` and its test
+  are the same in all five Classic repos).
 
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
