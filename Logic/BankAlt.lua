@@ -108,7 +108,7 @@ end
 
 --- Is the name one of the player's characters on this account (this
 --- realm and side, or the one playing)? A name typed for a character on
---- another account is not, so Settings and chat say to check its spelling.
+--- another account is not; it is still kept and mailed as typed.
 function BankAlt:IsKnown(name)
     name = Text(name)
     if not name then return false end
@@ -336,8 +336,6 @@ ns.RegisterCommand("bankalt", L["mail whole kinds of items to one of your charac
         local name, why = BankAlt:TypeName(rest)
         if not name then
             ns.Print(why)
-        elseif not BankAlt:IsKnown(name) then
-            ns.Print(L.Format("%s is your bank alt. They aren't one of your characters here, so check the spelling.", name))
         elseif ns.Verdicts:IsMe(name) then
             ns.Print(L.Format("%s is your bank alt. You're playing it, so nothing gets mailed to it from here.", BankAlt:Name()))
         else
