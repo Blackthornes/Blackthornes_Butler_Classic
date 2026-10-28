@@ -1394,6 +1394,9 @@ end
 --   onEnter    function(row, data)      -- the mouse came onto a row
 --   onLeave    function(row)
 --   onRefresh  function(list, shown, visible)
+--   fitRow     function(row, data)      -- how tall a filled row must be to
+--                                       -- hold its wrapped text; rows are
+--                                       -- never shorter than rowHeight
 function Widgets.CreateRowList(parent, opts)
     opts = opts or {}
 
@@ -1419,10 +1422,19 @@ function Widgets.CreateRowList(parent, opts)
         list.fadeTop, list.fadeBottom = fadeTop, fadeBottom
     end
 
-    local function VisibleRowCount()
+    -- How tall each item's row was last drawn, by the item, so the list
+    -- knows how far it scrolls. An item not drawn yet counts as rowHeight,
+    -- the least a row can be.
+    local heights = setmetatable({}, { __mode = "k" })
+
+    local function Room()
         local height = list:GetHeight()
         if not height or height <= 0 then return 0 end
-        return math.floor(height / rowHeight)
+        return height
+    end
+
+    local function HeightOf(data)
+        return (type(data) == "table" and heights[data]) or rowHeight
     end
 
     -- True while Refresh sets the scrollbar itself (see there).
@@ -1459,6 +1471,7 @@ function Widgets.CreateRowList(parent, opts)
         row:SetHeight(rowHeight)
         row:SetPoint("TOPLEFT", 0, -(index - 1) * rowHeight)
         row:SetPoint("RIGHT", scrollbar, "LEFT", -6, 0)
+        row.top, row.height = (index - 1) * rowHeight, rowHeight
         row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
         -- Dark glass: every other row a shade apart, with a fine line under
@@ -1498,12 +1511,81 @@ function Widgets.CreateRowList(parent, opts)
         return row
     end
 
+    --- The first item that can be on top with the last item still in
+    --- sight, counted from the end by the rows' heights.
     function list:MaxOffset()
-        return math.max(0, #self.data - VisibleRowCount())
+        local room = Room()
+        local used = 0
+        for index = #self.data, 1, -1 do
+            used = used + HeightOf(self.data[index])
+            if used > room then return index end
+        end
+        return 0
+    end
+
+    --- Fill rows from the offset down until the next one would not fit.
+    --- A row grows to hold its wrapped text (opts.fitRow), so the rows
+    --- below it move down rather than being written over. Gives how many
+    --- rows show, and whether the last item is among them.
+    local function Lay(self, stillOver)
+        local room = Room()
+        local top, count = 0, 0
+        while true do
+            local data = self.data[self.offset + count + 1]
+            if not data then break end
+
+            local index = count + 1
+            local row = AcquireRow(index)
+            row.data = data
+            row.dataIndex = index + self.offset
+
+            -- A row handed new data starts unlit, except the one under the
+            -- mouse, which is lit again for its new data below.
+            if not (stillOver and row == hovered) then Unlight(row) end
+
+            -- Banding follows the row's place on screen rather than its
+            -- index in the data, so the stripes do not crawl as you scroll.
+            row.stripe:SetColorTexture(Theme.Unpack(index % 2 == 0 and "glassAlt" or "glass"))
+
+            if opts.updateRow then
+                opts.updateRow(row, data, index + self.offset)
+            end
+
+            local height = rowHeight
+            if opts.fitRow then
+                height = math.max(rowHeight, math.ceil(tonumber(opts.fitRow(row, data)) or 0))
+            end
+            if type(data) == "table" then heights[data] = height end
+
+            -- The top row shows even when it is taller than the list.
+            if top + height > room and (index > 1 or room < rowHeight) then
+                row.data = nil
+                row:Hide()
+                break
+            end
+
+            if row.top ~= top or row.height ~= height then
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", 0, -top)
+                row:SetPoint("RIGHT", scrollbar, "LEFT", -6, 0)
+                row:SetHeight(height)
+                row.top, row.height = top, height
+            end
+            row:Show()
+
+            top = top + height
+            count = index
+        end
+
+        for index = count + 1, #self.rows do
+            local row = self.rows[index]
+            row.data = nil
+            row:Hide()
+        end
+        return count, self.offset + count >= #self.data
     end
 
     function list:Refresh()
-        local visible = VisibleRowCount()
         local maxOffset = self:MaxOffset()
 
         if self.offset > maxOffset then self.offset = maxOffset end
@@ -1513,35 +1595,22 @@ function Widgets.CreateRowList(parent, opts)
         -- hidden row is under no mouse.
         local stillOver = hovered and UnderMouse(hovered)
 
-        for index = 1, visible do
-            local row = AcquireRow(index)
-            local data = self.data[index + self.offset]
+        local wasAtEnd = self.offset >= maxOffset
+        local visible, reachedEnd = Lay(self, stillOver)
 
-            row.data = data
-            row.dataIndex = index + self.offset
-
-            -- A row handed new data starts unlit, except the one under the
-            -- mouse, which is lit again for its new data below.
-            if not (stillOver and row == hovered) then Unlight(row) end
-
-            if data then
-                -- Banding follows the row's place on screen rather than its
-                -- index in the data, so the stripes do not crawl as you scroll.
-                row.stripe:SetColorTexture(Theme.Unpack(index % 2 == 0 and "glassAlt" or "glass"))
-
-                if opts.updateRow then
-                    opts.updateRow(row, data, index + self.offset)
-                end
-
-                row:Show()
-            else
-                row:Hide()
-            end
+        -- Rows not drawn before count as short. At the foot of the list a
+        -- tall one can leave the last item out of sight: now its height is
+        -- known, go down as far as the end really is.
+        local tries = 0
+        while wasAtEnd and not reachedEnd and tries < 4 do
+            local further = self:MaxOffset()
+            if further <= self.offset then break end
+            maxOffset = further
+            self.offset = further
+            visible, reachedEnd = Lay(self, stillOver)
+            tries = tries + 1
         end
-
-        for index = visible + 1, #self.rows do
-            self.rows[index]:Hide()
-        end
+        maxOffset = math.max(maxOffset, self.offset)
 
         -- A scroll or a redraw hands the row under a still mouse new data,
         -- and no OnEnter comes for that: it went dark, and its tooltip
