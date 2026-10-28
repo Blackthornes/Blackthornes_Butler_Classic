@@ -1170,3 +1170,12 @@ L["Click to show the way to your trainer."] = "Haz clic para ver el camino hasta
 -- The fold gem beside a window's close gem (2026-10-24)
 L["Collapse this window"] = "Plegar esta ventana"
 L["Expand this window"] = "Desplegar esta ventana"
+-- Swap When Full: the popup beside the loot window (2026-10-28)
+L["Swap When Full:"] = "Cambiar si está lleno:"
+L["Bags Full"] = "Bolsas llenas"
+L["Your bags are full. This is worth more than what you have."] = "Tus bolsas están llenas. Esto vale más que lo que tienes."
+L["NEW LOOT"] = "BOTÍN NUEVO"
+L["DROP TO MAKE ROOM"] = "TIRAR PARA HACER SITIO"
+L["Swap drops %1$s and picks up %2$s. You'll be asked first."] = "Cambiar tira %1$s y recoge %2$s. Se te preguntará antes."
+L["Swap"] = "Cambiar"
+L["Not Now"] = "Ahora no"

@@ -358,6 +358,10 @@ local DEFAULTS = {
     -- A small can on the item worth the least while the bags are full
     -- (UI/Trash.lua, the owner asked 2026-10-13). Never rename it.
     trashCan = true,
+    -- A popup beside the loot window that swaps the cheapest item for loot
+    -- worth more while the bags are full (UI/SwapWhenFull.lua, the owner
+    -- said build it 2026-10-28). Off unless ticked. Never rename it.
+    swapWhenFull = false,
     -- Shift-click at a vendor opens the Buy more box, for any amount of an
     -- item at once (UI/BuyMany.lua, the owner asked 2026-10-14). Never
     -- rename it.
