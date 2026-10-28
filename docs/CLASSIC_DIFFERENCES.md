@@ -93,8 +93,8 @@ Every Forever catch-up checks this note first, before sorting commits into
   `Enum.BagIndex.BankBag_1`, so bank bag 1 is never read as carried.
 - `Learning` also hooks the older global `UseContainerItem` when it is a
   different function from `C_Container.UseContainerItem`.
+- Swap When Full (2026-10-28, Classic only): `UI/SwapWhenFull.lua`, a popup by the loot window that swaps the cheapest item for loot worth more while the bags are full. Off unless ticked (`swapWhenFull`).
 
 ## Not yet done
 - Not yet seen in an Era client. Client calls are read in a pcall, and the
   code already falls back to the classic calls where Era lacks the newer ones.
-- Swap When Full (2026-10-28, Classic only): `UI/SwapWhenFull.lua`, a popup by the loot window that swaps the cheapest item for loot worth more while the bags are full. Off unless ticked (`swapWhenFull`).
