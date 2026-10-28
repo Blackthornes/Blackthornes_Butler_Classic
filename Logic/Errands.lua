@@ -363,6 +363,21 @@ function Errands:Characters()
     return names
 end
 
+--- The characters the Always mail menu offers: Characters(), and the bank
+--- alt the player typed (one on another account, say) when it isn't one of
+--- them already. Never the character playing.
+function Errands:MailNames()
+    local names = self:Characters()
+    local alt = ns.BankAlt and ns.BankAlt:Name()
+    if not alt or self:IsMe(alt) then return names end
+    for _, name in ipairs(names) do
+        if Errands.SameName(name, alt) then return names end
+    end
+    names[#names + 1] = alt
+    table.sort(names)
+    return names
+end
+
 --- Tell Tradeskills whether Butler's window covers the mailbox now, so its
 --- mail panel steps aside or comes back. Only said when it changes.
 --- `shown` is the window's state when the caller knows it (its OnHide).

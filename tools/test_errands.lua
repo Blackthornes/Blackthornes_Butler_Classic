@@ -362,6 +362,30 @@ UI:ShowMenu({ itemID = 404, name = "Copper Ore" })
 UI.menu.decide:GetScript("OnClick")(UI.menu.decide)
 suite.check("Let Butler decide takes it off the mail list", ns.db.alwaysMail[404] == nil)
 
+-- A bank alt typed by hand (another account) is offered too, once, never
+-- this character, and Characters() itself is unchanged.
+ns.db.bankAlt = "Zed"
+suite.check("the typed bank alt joins the mail menu",
+    table.concat(Errands:MailNames(), ",") == "Ana,Bob,Zed", table.concat(Errands:MailNames(), ","))
+suite.check("but not the characters Butler knows",
+    table.concat(Errands:Characters(), ",") == "Ana,Bob")
+ns.db.bankAlt = "bob"
+suite.check("a bank alt that is one of them shows once",
+    table.concat(Errands:MailNames(), ",") == "Ana,Bob", table.concat(Errands:MailNames(), ","))
+ns.db.bankAlt = "Me"
+suite.check("never the character playing",
+    table.concat(Errands:MailNames(), ",") == "Ana,Bob", table.concat(Errands:MailNames(), ","))
+ns.db.bankAlt = "Zed"
+UI:ShowMenu({ itemID = 404, name = "Copper Ore" })
+UI.menu.mail:GetScript("OnClick")(UI.menu.mail)
+suite.check("the menu lists the bank alt", UI.menu.characters[3]:IsShown()
+    and UI.menu.characters[3].label:GetText() == "Zed")
+UI.menu.characters[3]:GetScript("OnClick")(UI.menu.characters[3])
+suite.check("and a pick mails it there", ns.db.alwaysMail[404] == "Zed")
+UI:ShowMenu({ itemID = 404, name = "Copper Ore" })
+UI.menu.decide:GetScript("OnClick")(UI.menu.decide)
+ns.db.bankAlt = nil
+
 -- Never a mail to the character playing (a player found one, 2026-10-11):
 -- the Always mail list is account wide, so it can name this character, and
 -- an older Tradeskills could too.
