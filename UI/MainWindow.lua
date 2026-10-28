@@ -1360,7 +1360,7 @@ function UI:ShowMenu(data, stay)
 
     -- Mail needs Tradeskills to know the player's characters, and gear
     -- bound to this one can't be mailed at all.
-    local canMail = choice == "mail" or (not data.bound and #ns.Errands:Characters() > 0)
+    local canMail = choice == "mail" or (not data.bound and #ns.Errands:MailNames() > 0)
     menu.mail:SetShown(canMail)
 
     -- Marked or unmarked through Tradeskills, so only with it loaded.
@@ -1482,7 +1482,7 @@ function UI:ShowMailMenu()
     menu.away = 0
 
     local choice, mailTo = ns.Verdicts:Choice(data.itemID)
-    local names = ns.Errands:Characters()
+    local names = ns.Errands:MailNames()
     menu.title:SetText(L.Format("Always mail %s to", UI.ItemTitle(data)))
 
     menu.keep:Hide()

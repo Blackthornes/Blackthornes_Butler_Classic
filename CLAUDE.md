@@ -405,7 +405,10 @@ it, 2026-10-22): with "Auction Items:" ticked under WHAT GOES THERE
 Auction goes to the bank alt too, whatever its kind and in any When;
 Wait, Sell and the rest stay, and a stack worth less than a mail's
 postage (`Funds.POSTAGE`) stays (`BankAlt:Verdict`'s `worth`,
-`MayTake`). All account
+`MayTake`). A typed bank alt is also offered in the right-click
+Always mail menu (`Errands:MailNames`: `Characters()` plus the bank alt
+when it isn't one of them or the one playing; `Characters()` itself is
+unchanged, so `IsKnown` still tells a typed name apart). All account
 wide, never rename them. A BANK ALT page in Settings and `/bbutler
 bankalt [Full Name|off|first|vendor|leftovers]`. Tested in
 `tools/test_bankalt.lua`.
