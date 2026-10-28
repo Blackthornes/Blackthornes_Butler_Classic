@@ -11,6 +11,12 @@ Copied over since, one at a time:
 - `dd85a97` Start release posts with the game name (2026-10-24, copied
   by hand with "Classic Era" in place of "Forever"; see
   `docs/CLASSIC_DIFFERENCES.md`).
+- `d3fefc3` Let Butler's rows grow to fit long notes (2026-10-28, only
+  its safer row measure: `UI.RowHeight` counts each label by its width
+  too and leaves room for a shown button; Classic's own row growing from
+  its PR #20 stays).
+- `dea75f5` Let the way there card's rows grow when a step wraps
+  (2026-10-28, as it is).
 
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.

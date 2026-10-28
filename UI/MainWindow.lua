@@ -438,15 +438,35 @@ function UI.FitWorth(row)
     row.worth:SetWidth(math.min(width, UI.WORTH_MOST))
 end
 
+-- How tall a label's text stands: the game's own measure, never less than
+-- its width says (a label laid out this frame can answer short), and the
+-- width's count alone where the game says nothing.
+local function TextHeight(label, size, width)
+    local text = label:GetText()
+    if type(text) ~= "string" or text == "" then return 0 end
+    local lines = math.max(1, math.ceil(Theme.TextWidth(size, text) / math.max(1, width)))
+    local guess = lines * ((Theme.sizes[size] or 11) + 2)
+    local ok, height = pcall(label.GetStringHeight, label)
+    if ok and type(height) == "number" and height > guess then return height end
+    return guess
+end
+
 --- How tall a filled row must be to hold its name, reason and worth as
---- they wrap: never under ROW_HEIGHT.
+--- they wrap, and its button: never under ROW_HEIGHT.
 function UI.RowHeight(row)
-    local tallest = 0
-    for _, label in ipairs({ row.name, row.reason, row.worth }) do
-        local ok, height = pcall(label.GetStringHeight, label)
-        height = ok and tonumber(height) or 0
-        if height > tallest then tallest = height end
-    end
+    local ok, rowWidth = pcall(row.GetWidth, row)
+    rowWidth = ok and tonumber(rowWidth) or 0
+    local ok2, worthWidth = pcall(row.worth.GetWidth, row.worth)
+    worthWidth = ok2 and tonumber(worthWidth) or UI.WORTH_WIDTH
+    local nameWidth = 184
+    local reasonWidth = rowWidth - 34 - nameWidth - 8 - 8 - worthWidth - 6
+    if reasonWidth < 40 then reasonWidth = 40 end
+    local tallest = math.max(
+        TextHeight(row.name, "small", nameWidth),
+        TextHeight(row.reason, "small", reasonWidth),
+        TextHeight(row.worth, "small", worthWidth))
+    local shown = row.action and row.action.IsShown and row.action:IsShown()
+    if shown == true then tallest = math.max(tallest, 22) end
     return math.max(ROW_HEIGHT, math.ceil(tallest) + ROW_TEXT_PAD)
 end
 
