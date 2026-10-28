@@ -51,6 +51,7 @@ UI\About.lua
 UI\WhatsNew.lua
 UI\SettingsPages.lua
 UI\RuleOrder.lua
+UI\SharedMinimap.lua
 UI\Minimap.lua
 UI\TooltipShift.lua
 UI\Settings.lua

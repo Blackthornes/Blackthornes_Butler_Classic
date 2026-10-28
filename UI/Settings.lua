@@ -992,6 +992,14 @@ function SettingsUI:BuildPages()
     local styleRow = pages:Row("general", 1, L["Window Style:"], nil)
     controls.windowStyle = SettingsUI.WindowStyleControl(styleRow, CONTROL_X)
 
+    -- One minimap button for every Blackthornes addon (UI/SharedMinimap.lua,
+    -- the owner, 2026-10-28): ticked unless unticked, the same in all five.
+    local combineRow = pages:Row("general", 1, L["Combine Addon Buttons:"], nil)
+    controls.combineButtons = Widgets.CreateCheckbox(combineRow, L["On"], function(checked)
+        if ns.SharedMinimap then ns.SharedMinimap.SetCombined(checked) end
+    end, true)
+    controls.combineButtons:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- Butler's own bag window (UI/BagWindow.lua), off unless ticked.
     if ns.BagWindow then ns.BagWindow:AddSettings(pages, controls, CONTROL_X) end
 
@@ -1097,6 +1105,7 @@ function SettingsUI:Refresh()
     self:SyncLists()
     controls.textSize:Sync()
     controls.windowStyle:Sync()
+    controls.combineButtons:SetChecked(not ns.SharedMinimap or ns.SharedMinimap.Combined())
     if ns.RuleOrderUI then ns.RuleOrderUI:Refresh() end
     self.pages:Refresh()
 end

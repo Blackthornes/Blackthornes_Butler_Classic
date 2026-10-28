@@ -153,7 +153,25 @@ function MinimapButton:Build()
     self.lastMinimapWidth = Minimap:GetWidth()
 
     self:ApplyVisibility()
+    self:JoinShared()
     return button
+end
+
+--- Sign up for the shared Blackthornes button (UI/SharedMinimap.lua).
+function MinimapButton:JoinShared()
+    if not ns.SharedMinimap or not self.button then return end
+    ns.SharedMinimap:Join({
+        key = "butler",
+        order = 5,
+        name = "Blackthornes Butler",
+        icon = ICON,
+        blurb = L["What to do with your bags"],
+        button = self.button,
+        angle = function() return (ns.db and ns.db.minimapAngle) or DEFAULT_ANGLE end,
+        open = function() MinimapButton:Open() end,
+        settings = function() if ns.SettingsUI then ns.SettingsUI:Toggle() end end,
+        db = function() return ns.db end,
+    })
 end
 
 --- Re-seat the button at its stored angle, using the current radius.
@@ -165,12 +183,17 @@ function MinimapButton:Reposition()
     self.lastMinimapWidth = Minimap and Minimap:GetWidth()
 end
 
---- The button always shows (the owner, 2026-10-15). A saved minimapHidden
---- from before is kept in the save but no longer read.
+--- The button always shows (the owner, 2026-10-15), unless it is folded
+--- into the shared Blackthornes button (UI/SharedMinimap.lua). A saved
+--- minimapHidden from before is kept in the save but no longer read.
 function MinimapButton:ApplyVisibility()
     local button = self.button
     if not button then return end
-    button:Show()
+    if ns.SharedMinimap and ns.SharedMinimap.Hides("butler") then
+        button:Hide()
+    else
+        button:Show()
+    end
 end
 
 function MinimapButton:OnEnable()
