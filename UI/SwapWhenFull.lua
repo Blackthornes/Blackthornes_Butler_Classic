@@ -11,11 +11,13 @@
 -- when the loot is worth more, at Butler's own worth (Verdicts:Judge's
 -- `unit` times the count) on both sides.
 --
--- Nothing is ever deleted by Butler. Swap picks the cheap item up, as the
--- trash can does, and says so in chat; the player drops it outside the
--- bags and the game's own box asks before anything is destroyed. Once its
--- slot is empty and the loot window is still open, Butler loots the item
--- the popup named (LootSlot). Put back instead, nothing changes.
+-- The one place Butler destroys an item (the owner, 2026-10-28: a player
+-- who turned this on wants Butler to do it, with no step past saying yes).
+-- The popup is the question and Swap is the yes: the click picks the cheap
+-- item up and destroys it (DeleteCursorItem), only when the cursor then
+-- holds that very item. Once its slot is empty and the loot window is still
+-- open, Butler loots the item the popup named (LootSlot). Nothing else in
+-- Butler ever deletes; the trash can still only picks up.
 --
 -- Off unless ticked: "Swap When Full:" on the General page (`swapWhenFull`,
 -- account wide, never rename it). Butler's own frame on UIParent, only
@@ -198,8 +200,8 @@ end
 -- The swap
 --------------------------------------------------------------------------------
 
---- The Swap click: pick the cheap item up, after making sure both it and
---- the loot are still there. Butler never deletes it.
+--- The Swap click: destroy the cheap item, after making sure both it and
+--- the loot are still there, then wait for its slot to empty.
 function Swap:Take()
     local loot, pick = self.loot, self.pick
     if not (loot and pick) or InCombat() then return false end
@@ -213,17 +215,24 @@ function Swap:Take()
         self:Changed()
         return false
     end
-    ns.Items.Call({ "C_Container.PickupContainerItem", "PickupContainerItem" }, entry.bag, entry.slot)
-    self.pending = { bag = entry.bag, slot = entry.slot, key = entry.key,
+    local names = { "C_Container.PickupContainerItem", "PickupContainerItem" }
+    ns.Items.Call(names, entry.bag, entry.slot)
+    -- Destroy only what is really on the cursor: the item the popup named.
+    local kind, itemID = Global("GetCursorInfo")
+    if kind ~= "item" or tonumber(itemID) ~= entry.itemID then
+        if kind then ns.Items.Call(names, entry.bag, entry.slot) end
+        self:Changed()
+        return false
+    end
+    Global("DeleteCursorItem")
+    self.pending = { bag = entry.bag, slot = entry.slot,
         lootSlot = loot.slot, lootLink = loot.link, at = Now() }
     self:Hide()
-    ns.Print(L.Format("%s is on your cursor. Drop it outside your bags and the game will ask before it is destroyed, or click its bag slot to put it back.",
-        pick.row.link or pick.row.name or "?"))
     return true
 end
 
 --- After Swap: loot the item once the cheap one's slot is empty, or let go
---- when it was put back, the loot window closed or the wait ran out.
+--- when the loot window closed or the wait ran out.
 function Swap:FollowSwap()
     local pending = self.pending
     if not pending then return end
@@ -231,15 +240,7 @@ function Swap:FollowSwap()
         self.pending = nil
         return
     end
-    local there = ns.Bags.ReadSlot(pending.bag, pending.slot)
-    if there then
-        if not CursorHolds() and not there.locked then
-            -- Put back: nothing changes.
-            self.pending = nil
-        end
-        return
-    end
-    if CursorHolds() then return end
+    if ns.Bags.ReadSlot(pending.bag, pending.slot) or CursorHolds() then return end
     self.pending = nil
     if Global("GetLootSlotLink", pending.lootSlot) == pending.lootLink then
         Global("LootSlot", pending.lootSlot)
@@ -371,7 +372,7 @@ function Swap:Show(loot, pick)
     local entry = pick.entry
     local pickIcon = ns.Items.Call({ "C_Item.GetItemIconByID", "GetItemIcon" }, entry.itemID)
     Fill(self.dropRow, pickIcon, pick.row.name, entry.itemID, entry.quality, entry.count, pick.worth)
-    self.note:SetText(L.Format("Swap drops %1$s and picks up %2$s. You'll be asked first.",
+    self.note:SetText(L.Format("Swap drops %1$s and picks up %2$s.",
         pick.row.name or "?", loot.name or "?"))
     self:Place()
     self.frame:Show()

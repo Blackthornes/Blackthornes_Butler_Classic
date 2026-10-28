@@ -1288,10 +1288,12 @@ the bags full, a popup beside the loot window offers to swap the item the
 trash can would pick (`Trash:Pick`) for loot worth more that has nowhere
 to go (`SwapWhenFull:BestLoot`, `Fits`: no stack with room, no profession
 bag that takes it), each at Butler's own worth. `UI/SwapWhenFull.lua`:
-Swap picks the cheap item up, as the trash can does; the player drops it
-and the game's own box asks; once its slot is empty and the loot window
-is still open, Butler loots that item (`FollowSwap`, `LootSlot`). Butler
-never deletes. Not Now and the close gem put it away until the next loot
+Swap destroys the cheap item in that one click (the owner, 2026-10-28:
+ticking the box means the player wants Butler to do it; the only place
+Butler deletes, `Swap:Take` picks the slot up, checks the cursor holds
+that item, then `DeleteCursorItem`), and once its slot is empty and the
+loot window is still open, Butler loots that item (`FollowSwap`,
+`LootSlot`). Not Now and the close gem put it away until the next loot
 window; hidden in a fight. "Swap When Full:" on the General page
 (`swapWhenFull`, account wide, off unless ticked, never rename it).
 `/bbutler probe` has a "swap when full" line. Tested in

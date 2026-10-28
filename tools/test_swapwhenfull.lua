@@ -7,9 +7,10 @@
 --   2. Nothing while the bags have room, or with no loot window.
 --   3. Full bags and loot worth more: the popup names both, worth and all.
 --   4. Loot worth less, or loot that stacks onto a stack with room: nothing.
---   5. Swap only picks the cheap item up; Butler never deletes anything.
+--   5. Swap destroys the cheap item in one click (the owner, 2026-10-28:
+--      ticking the box is the yes), and only the item it named.
 --   6. Once its slot is empty, Butler loots the item it named.
---   7. Put back instead, nothing is looted.
+--   7. A slot that changed under it is left alone, nothing deleted.
 --   8. Not Now hides it until the next loot window; a fight hides it.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
@@ -26,10 +27,20 @@ fake.info[802] = { id = 802, name = "Tiny Pebble", quality = 0, price = 1, stack
 local freeSlots = 0
 _G.C_Container.GetContainerNumFreeSlots = function(bag) return bag == 0 and freeSlots or 0, 0 end
 local picked, deleted = {}, 0
-_G.C_Container.PickupContainerItem = function(bag, slot) picked[#picked + 1] = bag .. ":" .. slot end
-_G.DeleteCursorItem = function() deleted = deleted + 1 end
-local holding = nil
-_G.GetCursorInfo = function() return holding end
+local holding, heldID, heldFrom = nil, nil, nil
+local swapItem = nil
+_G.C_Container.PickupContainerItem = function(bag, slot)
+    picked[#picked + 1] = bag .. ":" .. slot
+    if holding then holding, heldID, heldFrom = nil, nil, nil; return end
+    local item = swapItem or (fake.bags[bag] and fake.bags[bag][slot])
+    if item then holding, heldID, heldFrom = "item", item.id, { bag, slot } end
+end
+_G.DeleteCursorItem = function()
+    deleted = deleted + 1
+    if heldFrom then fake.bags[heldFrom[1]][heldFrom[2]] = nil end
+    holding, heldID, heldFrom = nil, nil, nil
+end
+_G.GetCursorInfo = function() return holding, heldID end
 
 local loot = {}
 local looted = {}
@@ -99,21 +110,15 @@ fake.bags[0][3] = nil
 
 -- 5.
 Open({ { id = 801, name = "Ringed Helm", quality = 2 } })
-env.chat = {}
 Swap.swapButton:GetScript("OnClick")(Swap.swapButton)
 suite.check("Swap picks the cheap item up", picked[1] == "0:2", tostring(picked[1]))
-suite.check("and nothing is deleted", deleted == 0)
-suite.check("chat says how", (env.chat[1] or ""):find("game will ask before it is destroyed", 1, true) ~= nil, env.chat[1])
-suite.check("nothing looted yet", #looted == 0)
+suite.check("and destroys it in the same click", deleted == 1 and fake.bags[0][2] == nil)
+suite.check("the popup goes", not Showing())
 
 -- 6.
-holding = "item"
-env.Fire("CURSOR_CHANGED")
-suite.check("waits while it is on the cursor", #looted == 0)
-fake.bags[0][2] = nil
-holding = nil
 env.Fire("BAG_UPDATE_DELAYED")
 suite.check("its slot is empty: the helm is looted", looted[1] == 1, tostring(looted[1]))
+suite.check("only once", #looted == 1 and Swap.pending == nil)
 env.Fire("LOOT_CLOSED")
 fake.Put({ bag = 0, slot = 2, id = 702, name = "Ruined Pelt", quality = 0, price = 5 })
 env.Fire("BAG_UPDATE_DELAYED")
@@ -121,10 +126,12 @@ env.Fire("BAG_UPDATE_DELAYED")
 -- 7.
 looted, picked = {}, {}
 Open({ { id = 801, name = "Ringed Helm", quality = 2 } })
+swapItem = { id = 705 }
 Swap:Take()
-holding = nil
-env.Fire("CURSOR_CHANGED")
-suite.check("put back: nothing looted", #looted == 0 and Swap.pending == nil)
+swapItem = nil
+suite.check("a changed slot: nothing deleted", deleted == 1, tostring(deleted))
+suite.check("what was picked up is put back", holding == nil and #picked == 2, table.concat(picked, ","))
+suite.check("and nothing looted", #looted == 0 and Swap.pending == nil)
 env.Fire("LOOT_CLOSED")
 
 -- 8.
@@ -138,6 +145,6 @@ Open({ { id = 801, name = "Ringed Helm", quality = 2 } })
 suite.check("back at the next one", Showing())
 env.Fire("PLAYER_REGEN_DISABLED")
 suite.check("hidden in a fight", not Showing())
-suite.check("never deletes anything", deleted == 0)
+suite.check("nothing else was deleted", deleted == 1)
 
 suite.done()
