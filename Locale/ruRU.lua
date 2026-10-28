@@ -1134,3 +1134,9 @@ L["DROP TO MAKE ROOM"] = "ВЫБРОСИТЬ, ЧТОБЫ ОСВОБОДИТЬ М
 L["Swap drops %1$s and picks up %2$s."] = "Обмен выбросит %1$s и подберёт %2$s."
 L["Swap"] = "Обменять"
 L["Not Now"] = "Не сейчас"
+
+-- The shared Blackthornes minimap button (2026-10-28)
+L["Click a name to open it. Right-click for its settings."] = "Нажми на название, чтобы открыть. Правый клик открывает его настройки."
+L["Click to pick an addon"] = "Нажми, чтобы выбрать аддон"
+L["Combine Addon Buttons:"] = "Объединить кнопки аддонов:"
+L["What to do with your bags"] = "Что делать с вещами в сумках"

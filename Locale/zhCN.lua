@@ -1178,3 +1178,9 @@ L["DROP TO MAKE ROOM"] = "丢掉以腾出空间"
 L["Swap drops %1$s and picks up %2$s."] = "交换会丢掉%1$s并拾取%2$s。"
 L["Swap"] = "交换"
 L["Not Now"] = "以后再说"
+
+-- The shared Blackthornes minimap button (2026-10-28)
+L["Click a name to open it. Right-click for its settings."] = "点击名称即可打开。右键点击打开它的设置。"
+L["Click to pick an addon"] = "点击选择插件"
+L["Combine Addon Buttons:"] = "合并插件按钮："
+L["What to do with your bags"] = "背包里的东西怎么处理"
