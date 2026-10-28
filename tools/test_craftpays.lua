@@ -130,6 +130,8 @@ local menu = ns.UI.menu
 suite.check("a Craft row's menu offers to stop suggesting it", menu.skipCraft:IsShown())
 suite.check("reading Don't Suggest This Craft", menu.skipCraft.label:GetText() == "Don't Suggest This Craft",
     menu.skipCraft.label:GetText())
+ns.UI:ShowKeepMenu()
+suite.check("the keep page puts it away", not menu.skipCraft:IsShown())
 ns.UI:ShowMenu(Find("Linen Cloth"))
 suite.check("other rows don't offer it", not menu.skipCraft:IsShown())
 ns.UI:ShowMenu(wool)
