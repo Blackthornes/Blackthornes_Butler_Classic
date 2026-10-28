@@ -848,16 +848,14 @@ L["Items Held Back:"] = "Zurückgehalten:"
 L["Lets these items go to this character again."] =
     "Diese Gegenstände dürfen wieder an diesen Charakter gehen."
 L["Send To:"] = "Senden an:"
-L["The character that gets the kinds of items you tick. Fill Mail sends them. A name in amber isn't one of your characters here."] =
-    "Der Charakter, der die angehakten Arten von Gegenständen bekommt. Post füllen schickt sie. Ein Name in Bernstein ist keiner deiner Charaktere hier."
+L["The character that gets the kinds of items you tick. Fill Mail sends them."] =
+    "Der Charakter, der die angehakten Arten von Gegenständen bekommt. Post füllen schickt sie."
 L["When:"] = "Wann:"
 L["Before Everything sends what you tick, even things that sell well. Before a Vendor lets the auction house and disenchanting go first. Only Leftovers sends what's left."] =
     "Vor allem anderen schickt alles Angehakte, auch was sich gut verkauft. Vor dem Händler lässt Auktionshaus und Entzaubern zuerst. Nur der Rest schickt, was übrig bleibt."
 L["Type a Name:"] = "Name eingeben:"
 L["For a character on your other account. Type its name."] = "Für einen Charakter auf deinem anderen Account. Gib seinen Namen ein."
 L["Name"] = "Name"
-L["%s is your bank alt. They aren't one of your characters here, so check the spelling."] =
-    "%s ist dein Bankcharakter. Das ist keiner deiner Charaktere hier, also prüf die Schreibweise."
 L["Always Disenchant:"] = "Immer entzaubern:"
 L["Greens go to your disenchanter even when selling them pays more."] =
     "Grüne Gegenstände gehen an deinen Entzauberer, auch wenn Verkaufen mehr bringt."

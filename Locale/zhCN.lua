@@ -847,16 +847,14 @@ L["Items Held Back:"] = "扣下的物品："
 L["Lets these items go to this character again."] =
     "让这些物品又可以寄给这个角色。"
 L["Send To:"] = "寄给："
-L["The character that gets the kinds of items you tick. Fill Mail sends them. A name in amber isn't one of your characters here."] =
-    "收到你勾选的那些种类物品的角色。填写邮件会把它们寄出去。名字是琥珀色的，说明这里没有这个角色。"
+L["The character that gets the kinds of items you tick. Fill Mail sends them."] =
+    "收到你勾选的那些种类物品的角色。填写邮件会把它们寄出去。"
 L["When:"] = "什么时候："
 L["Before Everything sends what you tick, even things that sell well. Before a Vendor lets the auction house and disenchanting go first. Only Leftovers sends what's left."] =
     "最优先会寄出你勾选的东西，连卖得好的也寄。在商人之前会先让拍卖行和分解来。只寄剩下的只寄剩下来的东西。"
 L["Type a Name:"] = "输入名字："
 L["For a character on your other account. Type its name."] = "给你另一个账号上的角色用。输入它的名字。"
 L["Name"] = "名字"
-L["%s is your bank alt. They aren't one of your characters here, so check the spelling."] =
-    "%s 是你的银行小号。这里没有这个角色，检查一下拼写。"
 L["Always Disenchant:"] = "总是分解："
 L["Greens go to your disenchanter even when selling them pays more."] =
     "就算卖掉更赚钱，绿色物品也会寄给你的分解者。"

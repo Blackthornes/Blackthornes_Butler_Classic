@@ -417,7 +417,7 @@ function SettingsUI:SyncBankAlt()
     for _, name in ipairs(sorted) do names[#names + 1] = name end
     controls.bankAltPick:SetNames(names)
     controls.bankAltPick:Select(picked)
-    controls.bankAltPick.text:SetTextColor(Theme.Unpack((picked and not BankAlt:IsKnown(picked)) and "warn" or "text"))
+    controls.bankAltPick.text:SetTextColor(Theme.Unpack("text"))
 
     local lists = { L["None"] }
     for _, name in ipairs(BankAlt:ListNames()) do lists[#lists + 1] = name end
@@ -713,21 +713,31 @@ function SettingsUI:BuildPages()
     pages:Section("bankalt", 1, L["BANK ALT"])
 
     local altRow = pages:Row("bankalt", 1, L["Send To:"],
-        L["The character that gets the kinds of items you tick. Fill Mail sends them. A name in amber isn't one of your characters here."])
+        L["The character that gets the kinds of items you tick. Fill Mail sends them."])
     controls.bankAltPick = SettingsUI.CharacterPicker(altRow, CONTROL_X, function()
         local picker = controls.bankAltPick
         ns.BankAlt:SetName(picker.index > 1 and picker:GetName() or nil)
+        local name = ns.BankAlt:Name()
+        if name then
+            ns.Print(L.Format("%s is your bank alt.", name))
+        else
+            ns.Print(L["no bank alt, so nothing is mailed by kind."])
+        end
     end)
 
     -- A character on another account, typed by hand (a player asked, the
     -- owner said yes, 2026-10-16). A name that isn't one of the player's
-    -- characters shows in amber on the Send To row, so a typo stands out.
+    -- characters is kept as typed; chat says it was set.
     local typeRow = pages:Row("bankalt", 1, L["Type a Name:"],
         L["For a character on your other account. Type its name."])
     controls.bankAltTyped = Widgets.CreateSearchBox(typeRow, L["Name"], nil, function(text)
         local name, why = ns.BankAlt:TypeName(text)
         controls.bankAltTyped:SetText("")
-        if not name and why then ns.Print(why) end
+        if name then
+            ns.Print(L.Format("%s is your bank alt.", name))
+        elseif why then
+            ns.Print(why)
+        end
     end, { plain = true })
     controls.bankAltTyped:SetPoint("TOPLEFT", CONTROL_X, 0)
     controls.bankAltTyped:SetWidth(180)
