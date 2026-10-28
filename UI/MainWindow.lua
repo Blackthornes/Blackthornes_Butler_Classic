@@ -43,7 +43,11 @@ local WIDTH = 620
 local HEIGHT = 500
 -- Tall enough for a reason or a name on two lines: words wrap, never cut
 -- short with "..." (a player found a sell reason cut off, 2026-10-11).
+-- A row with more lines grows to hold them (UI.RowHeight): a long reason
+-- in German ran over the rows below it (a player's report, 2026-10-21).
 local ROW_HEIGHT = 30
+-- The room left above and below a row's tallest text.
+local ROW_TEXT_PAD = 4
 -- From the well's foot to the window's.
 local FOOT = 40
 
@@ -168,6 +172,7 @@ function UI:Build()
         fadeKey = "panel",
         createRow = function(row) UI.CreateRow(row) end,
         updateRow = function(row, data) UI.UpdateRow(row, data) end,
+        fitRow = function(row) return UI.RowHeight(row) end,
         onClick = function(data, button) UI:Clicked(data, button) end,
         onEnter = function(row, data) UI:Enter(row, data) end,
         onLeave = function() GameTooltip:Hide() end,
@@ -431,6 +436,18 @@ function UI.FitWorth(row)
         width = math.max(width, math.ceil(Theme.TextWidth("small", text)) + 4)
     end
     row.worth:SetWidth(math.min(width, UI.WORTH_MOST))
+end
+
+--- How tall a filled row must be to hold its name, reason and worth as
+--- they wrap: never under ROW_HEIGHT.
+function UI.RowHeight(row)
+    local tallest = 0
+    for _, label in ipairs({ row.name, row.reason, row.worth }) do
+        local ok, height = pcall(label.GetStringHeight, label)
+        height = ok and tonumber(height) or 0
+        if height > tallest then tallest = height end
+    end
+    return math.max(ROW_HEIGHT, math.ceil(tallest) + ROW_TEXT_PAD)
 end
 
 function UI.UpdateRow(row, data)
