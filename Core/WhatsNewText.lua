@@ -5,6 +5,10 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.4.0", lines = {
+        "The minimap button has a new Blackthornes badge.",
+        "Show the way now puts a gold marker on your map.",
+    } },
     { version = "0.3.0", lines = {
         "Swap When Full offers to swap your cheapest item for better loot when your bags are full.",
         "One minimap button now opens all your Blackthornes add-ons.",
@@ -12,12 +16,5 @@ ns.WHATS_NEW = {
     { version = "0.2.0", lines = {
         "You can turn off a craft Butler suggests.",
         "The Bags window has Group By beside the search.",
-    } },
-    { version = "0.1.0", lines = {
-        "Butler is here for Classic Era. It tells you what to do with every item in your bags: keep, sell, bank or look at it.",
-        "One Sell button at the vendor sells 12 items a click, so you can always buy them back.",
-        "Hover an item to see what Butler says about it.",
-        "Hunters can fill their quiver or ammo pouch with one click.",
-        "Gold Goals shows how close you are to your next spells, training and riding.",
     } },
 }
