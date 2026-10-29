@@ -28,10 +28,22 @@ ns.Motion = Motion
 
 Motion.tweens = {}
 
---- "full", "subtle" or "off". Farmer has a setting for this; Butler has
---- nothing busy enough to need one yet, so it is always full.
+--- The Effects setting: Full, Subtle or Off, from most movement to none
+--- (the owner, 2026-10-29: Butler's own Effects row, as its sisters have).
+--- Full until the player picks another, so nobody's windows change.
+Motion.LEVELS = { "full", "subtle", "off" }
+
+--- "full", "subtle" or "off", as the player picked it.
 function Motion.Level()
+    local level = ns.db and ns.db.effectsLevel
+    if level == "subtle" or level == "off" then return level end
     return "full"
+end
+
+function Motion.SetLevel(level)
+    if not ns.db then return end
+    ns.db.effectsLevel = (level == "subtle" or level == "off") and level or nil
+    if ns.SharedChoices then ns.SharedChoices:Changed("effects", ns.db.effectsLevel or "full") end
 end
 
 function Motion.EaseOut(p)

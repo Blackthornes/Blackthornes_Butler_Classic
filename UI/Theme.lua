@@ -47,8 +47,8 @@ Theme.colors = {
     loss      = { 0.898, 0.376, 0.310 },   -- #E5604F, a downgrade, or a close button under the mouse
 
     text      = { 0.902, 0.910, 0.925 },   -- #E6E8EC
-    muted     = { 0.478, 0.502, 0.541 },   -- #7A8089
-    dim       = { 0.330, 0.350, 0.390 },
+    muted     = { 0.545, 0.569, 0.608 },   -- #8B919B
+    dim       = { 0.420, 0.440, 0.482 },   -- #6B707B
 }
 
 local FONT do

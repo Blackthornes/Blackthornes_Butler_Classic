@@ -31,6 +31,17 @@ Copied over since, one at a time:
 - `dcb596e` Show the way lays our own map marker on the class trainer
   (2026-10-29, as it is; `UI/SpotMarker.lua` is the same in Farmer, Butler,
   Tradeskills and Pets Classic).
+- `ccabe0b` Settings moves to the last tab, bottom right (2026-10-29,
+  Forever PR #189, as it is).
+- `9d29494` Right-click menu in the house look (2026-10-29, Forever PR
+  #190; Classic's "Don't Suggest This Craft" line became a menu row too).
+- `7564279` One look across the five addons (2026-10-29, Forever PR #200):
+  `UI/HouseKit.lua`, `UI/RowMenu.lua`, `UI/Notice.lua` and
+  `UI/SharedChoices.lua` as they are (the same in all five Classic repos),
+  the Bags window's hanging tabs and house chips, footers, hovers, Title
+  Case buttons and the General page. Left out: Arrow Size (Butler Classic
+  has none). The chips give up some room round their words when a
+  language runs long, so they never run under Group By.
 
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.

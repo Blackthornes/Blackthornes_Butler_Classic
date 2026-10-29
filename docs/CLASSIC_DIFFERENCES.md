@@ -98,3 +98,13 @@ Every Forever catch-up checks this note first, before sorting commits into
 ## Not yet done
 - Not yet seen in an Era client. Client calls are read in a pcall, and the
   code already falls back to the classic calls where Era lacks the newer ones.
+
+## The house look (2026-10-29)
+
+- Brought over from Forever's "One look across the five addons". The game
+  calls it uses (`CreateFrame`, `C_Timer.After`, `GetTime`, the usual frame
+  methods) are all in Era, so nothing needed a fallback.
+- No Arrow Size here: the shared choice is heard and left alone.
+- The Bags window's chips shrink the room round their words when the row
+  would run under Group By (Classic's own fit, kept from before).
+

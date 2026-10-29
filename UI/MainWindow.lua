@@ -201,10 +201,10 @@ function UI:Build()
         goals:Hide()
     end
 
-    local empty = Theme.CreateLabel(well, "normal", "muted", "CENTER")
+    -- The house empty block (UI/HouseKit.lua): the emblem faint, one line,
+    -- and a button when there's a next step.
+    local empty = Widgets.CreateEmpty(well, { width = WIDTH - 4 * PADDING })
     empty:SetPoint("CENTER", 0, 0)
-    empty:SetWidth(WIDTH - 4 * PADDING)
-    empty:SetWordWrap(true)
     self.emptyLabel = empty
 
     -- The installed version, small and faint in the bottom right corner,
@@ -228,7 +228,7 @@ function UI:Build()
             if message then ns.Print(message) end
         end
     end
-    self.mailButton = Widgets.CreateButton(frame, L["Fill mail"], function()
+    self.mailButton = Widgets.CreateButton(frame, L["Fill Mail"], function()
             local _, message = ns.Errands:FillMail(UI.footMail)
             if message then ns.Print(message) end
         end,
@@ -298,7 +298,7 @@ function UI:BuildHeader()
         UI:Refresh()
     end)
     search:SetPoint("LEFT", header, "LEFT", 48, -2)
-    search:SetWidth(230)
+    search:SetWidth(260)
     search:Hide()
     self.search = search
 
@@ -308,10 +308,17 @@ function UI:BuildHeader()
         UI:Refresh()
     end)
     bagSearch:SetPoint("LEFT", header, "LEFT", 48, -2)
-    bagSearch:SetWidth(230)
+    bagSearch:SetWidth(260)
     bagSearch:SetShown(self.view ~= "all")
     subtitle:Hide()
     self.bagSearch = bagSearch
+end
+
+--- Empty a search box and draw the list again (the empty block's Clear
+--- Search).
+function UI:ClearSearch(box)
+    if box and box.SetText then box:SetText("") end
+    self:Refresh()
 end
 
 --- Show one list or the other: "bags" or "all".
@@ -478,7 +485,7 @@ function UI.UpdateRow(row, data)
         -- squeezed into lines that run over the row (seen in game
         -- 2026-10-12). The worth is still on the row's tooltip.
         row.worth:SetText("")
-        row.action:SetText(L["Fill mail"])
+        row.action:SetText(L["Fill Mail"])
         row.action.tooltipText = L.Format("Fills in a mail to %s. Check it, then press Send.", to)
         if (data.worth or 0) > 0 then
             row.action.tooltipText = row.action.tooltipText .. "\n"
@@ -663,10 +670,10 @@ function UI.UpdateTrainRow(row, data)
         end
         row.worth:SetText("")
         if training.trainerOpen and training.atClassTrainer then
-            row.action:SetText(training.buying and L["Training..."] or L["Train all"])
+            row.action:SetText(training.buying and L["Training..."] or L["Train All"])
             row.action:Show()
         elseif spot then
-            row.action:SetText(L["Show the way"])
+            row.action:SetText(L["Show the Way"])
             row.action:Show()
         else
             row.worth:SetText(training.CostText(plan.cost, plan.unknown, count))
@@ -1691,7 +1698,8 @@ function UI:Refresh(force)
     elseif total == 0 then
         self.emptyLabel:SetText(L["Your bags are empty."])
     elseif search ~= "" and (self.matched or 0) == 0 then
-        self.emptyLabel:SetText(L.Format('Nothing matches "%s".', self.bagSearch:GetText()))
+        self.emptyLabel:Set(L.Format('Nothing matches "%s".', self.bagSearch:GetText()), L["Clear Search"],
+            function() UI:ClearSearch(UI.bagSearch) end)
     else
         self.emptyLabel:SetText("")
     end
@@ -1769,7 +1777,11 @@ function UI:RefreshAll(force)
     elseif (self.shownItems or 0) == 0 then
         text = L.Format('Nothing matches "%s".', search)
     end
-    self.emptyLabel:SetText(text)
+    if text ~= "" and (self.shownItems or 0) == 0 and #everyone.sorted > 0 then
+        self.emptyLabel:Set(text, L["Clear Search"], function() UI:ClearSearch(UI.search) end)
+    else
+        self.emptyLabel:SetText(text)
+    end
     self.emptyLabel:SetShown(text ~= "")
 
     self:PlaceGoals()
@@ -1783,7 +1795,7 @@ function UI:UpdateFooter()
         if not everyone:FromTradeskills() then
             text = L["Only your bags. Load Blackthornes Tradeskills to add your other characters."]
         else
-            text = L.Format("%s on %s. Bank and mail are from the last time each one looked.",
+            text = L.Format("%s on %s.",
                 Plural(#everyone.sorted, L["item"], L["items"]),
                 Plural(everyone:Holders(), L["character"], L["characters"]))
         end
@@ -1799,7 +1811,7 @@ function UI:UpdateFooter()
     elseif self.sellShown then
         text = L["Sold items stay in the vendor's Buyback tab."]
     elseif sell and sell.count > 0 then
-        text = L.Format("To sell: %s, %s. Open a vendor to sell them.",
+        text = L.Format("To sell: %s, %s.",
             Plural(sell.count, L["item"], L["items"]), Items.FormatMoney(sell.worth))
     else
         text = L["Nothing to sell."]
