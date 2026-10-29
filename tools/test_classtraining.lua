@@ -324,6 +324,13 @@ suite.check("at the trainer", place and place.name and place.name:find("Jennea C
     and place.x and place.x > 0 and place.x < 1, place and place.name)
 suite.check("the arrow shows", ns.WayArrow:IsOn())
 suite.check("no map pin behind it", not pinned)
+-- Our own marker goes on the map too, since Forever turns the game's pin
+-- down (a German player found nothing at the Crossroads, 2026-10-29).
+local light = ns.SpotMarker and ns.SpotMarker.current
+suite.check("our marker on the trainer's spot", light and light.name == "Jennea Cannon"
+    and light.map == place.map and math.abs(light.x - place.x * 100) < 0.001, light and light.name)
+suite.check("it goes when you stand there", light and light.arrow == ns.WayArrow and not light.gamePin)
+ns.SpotMarker:Clear()
 ns.WayArrow:Clear()
 suite.check("its close puts it away", not ns.WayArrow:IsOn() and ns.charDB.wayArrowPlace == nil)
 
