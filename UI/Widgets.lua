@@ -1695,3 +1695,326 @@ function Widgets.CreateRowList(parent, opts)
 
     return list
 end
+
+--------------------------------------------------------------------------------
+-- Hanging tabs (Pets' tab strip, itself Farmer's, brought over 2026-10-27
+-- for the Butler window's Your Bags, All Characters and Settings tabs)
+--------------------------------------------------------------------------------
+
+-- Room either side of a tab's name, and the narrowest a tab gets, when the
+-- tabs are sized to their names.
+local TAB_PAD = 20
+local TAB_MIN = 56
+
+--- Widths for tabs sized to their names: each name measured with room either
+--- side, and what is left of `room` shared out, a little each, so a strip of
+--- a few tabs does not stretch them wide. Nil when a name cannot be measured,
+--- or when they do not all fit `room`.
+local function NameWidths(buttons, room)
+    local widths, total = {}, 0
+    for index, button in ipairs(buttons) do
+        local width = Theme.TextWidth(button.labelSize, button.label:GetText())
+        if not width or width <= 0 then return nil end
+        widths[index] = math.max(TAB_MIN, math.ceil(width) + TAB_PAD)
+        total = total + widths[index]
+    end
+
+    if room and total > room then return nil end
+
+    local extra = room and math.min(24, math.floor((room - total) / #buttons)) or 0
+    for index in ipairs(widths) do widths[index] = widths[index] + extra end
+    return widths
+end
+
+-- Hanging tabs (opts.hanging): how tall a tab is, and how far the one
+-- showing reaches up over the window's rim to join it.
+local HANG_HEIGHT = 26
+local HANG_JOIN = 5
+
+--- The metal edge round a hanging tab: down both sides and along the foot.
+local function HangingEdges(button)
+    local Gradient = ns.Titanforged and ns.Titanforged.Gradient
+    local metalLo, metal = { 0.357, 0.267, 0.086 }, { 0.690, 0.545, 0.235 }
+    local hi = { 0.941, 0.831, 0.541 }
+
+    local function Edge(a, b, width, height)
+        local edge = button:CreateTexture(nil, "BORDER", nil, 2)
+        edge:SetPoint(a)
+        edge:SetPoint(b)
+        if width then edge:SetWidth(width) else edge:SetHeight(height) end
+        return edge
+    end
+
+    local left = Edge("TOPLEFT", "BOTTOMLEFT", 2)
+    local right = Edge("TOPRIGHT", "BOTTOMRIGHT", 2)
+    local foot = Edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, 2)
+    button.edges = { left, right, foot }
+
+    if Gradient then
+        Gradient(left, "VERTICAL", hi, metalLo)
+        Gradient(right, "VERTICAL", metal, metalLo)
+        Gradient(foot, "HORIZONTAL", metal, hi)
+    else
+        for _, edge in ipairs({ left, right, foot }) do edge:SetColorTexture(Theme.Unpack("metal")) end
+    end
+end
+
+--- A row of tabs, Tradeskills' tab strip. Each tab is { key, text, width };
+--- a tab given no width is as wide as its name needs, and opts.width is the
+--- room all of them have. opts.hanging hangs them below the strip's top
+--- edge, as the game's own windows wear their tabs (Titanforged): anchor the
+--- strip's top to the window's bottom.
+function Widgets.CreateTabStrip(parent, tabs, onSelect, opts)
+    opts = opts or {}
+    local hanging = opts.hanging and true or false
+
+    local strip = CreateFrame("Frame", nil, parent)
+    strip:SetHeight(28)
+
+    strip.tabs = {}
+    -- False rather than nil until set: Farmer's test frames answer a field
+    -- they were never given.
+    strip.selected = false
+    strip.lineX, strip.lineWidth = false, false
+
+    -- In the Blizzard window style a resting tab's name is the game's gold,
+    -- and hanging tabs wear the character window's tab art.
+    local Look = ns.BlizzardLook
+    local blizzard = Look and Look.On()
+    local restKey = blizzard and "gilt" or "muted"
+
+    --- How lit a tab is under the mouse, 0 to 1: its wash, its underline
+    --- and its label.
+    local function Hover(button, p)
+        button.hover:SetAlpha(p)
+        button.underline:SetAlpha(p)
+        if strip.selected ~= button.key then
+            button.label:SetTextColor(Motion.Mix(restKey, "text", p))
+        end
+    end
+
+    for index, tab in ipairs(tabs) do
+        local button = CreateFrame("Button", nil, strip)
+        button:SetHeight(hanging and HANG_HEIGHT or 28)
+
+        button.background = Theme.Fill(button, "panel")
+        button.hover = Theme.Fill(button, "rowHover", 0.45, "BORDER")
+        button.hover:SetAlpha(0)
+
+        if hanging then
+            HangingEdges(button)
+            -- Each tab glows faintly gold when it is the one showing.
+            if Theme.Halo then Theme.Halo(button, 6, 0) end
+        end
+
+        -- The tab showing sits in a soft gold light rising from its line.
+        button.lit = button:CreateTexture(nil, "BORDER", nil, 1)
+        button.lit:SetAllPoints(button)
+        Theme.SetGradientAlpha(button.lit, "VERTICAL", "accent", hanging and 0.28 or 0.14, 0)
+        button.lit:Hide()
+
+        -- Under the mouse, a faint line along the tab's foot echoes the gold
+        -- one under the tab showing. It is inset from the tab's edges and
+        -- drawn on the tab, below the layer the gold line rides on, so the
+        -- gold line passes over it as it slides, and the tab showing never
+        -- lights its own.
+        button.underline = button:CreateTexture(nil, "ARTWORK")
+        button.underline:SetPoint("BOTTOMLEFT", 10, 0)
+        button.underline:SetPoint("BOTTOMRIGHT", -10, 0)
+        button.underline:SetHeight(1)
+        button.underline:SetColorTexture(Theme.Unpack("muted"))
+        button.underline:SetAlpha(0)
+
+        -- A step smaller on a narrow tab given its width, so its name stays
+        -- inside it. Tabs sized to their names are sized below.
+        button.labelSize = tab.width and tab.width < 90 and "small" or "normal"
+        button.label = Theme.CreateLabel(button, button.labelSize, restKey, "CENTER")
+        button.label:SetPoint("CENTER", 0, 0)
+        button.label:SetText(tab.text)
+
+        if blizzard and hanging then Look.Tab(button) end
+
+        button.key = tab.key
+        button.fixedWidth = tab.width or false
+        -- A tab marked right sits flush with the strip's right end (Settings
+        -- is always last there, the owner 2026-10-27).
+        button.right = tab.right and true or false
+
+        button:SetScript("OnClick", function(self)
+            strip:Select(self.key)
+            if onSelect then onSelect(self.key) end
+        end)
+
+        button:SetScript("OnEnter", function(self)
+            if strip.selected == self.key then return end
+            Motion:Blend(self, "hover", 1, 0.12, function(p) Hover(self, p) end)
+        end)
+
+        button:SetScript("OnLeave", function(self)
+            Motion:Blend(self, "hover", 0, 0.18, function(p) Hover(self, p) end)
+        end)
+
+        strip.tabs[index] = button
+    end
+
+    -- Tabs given no width are as wide as their names, at the full size when
+    -- all of them fit opts.width and a step smaller when not. When a name
+    -- cannot be measured they share the room equally.
+    local sized, room = {}, opts.width
+    for _, button in ipairs(strip.tabs) do
+        if button.fixedWidth then
+            if room then room = room - button.fixedWidth end
+        else
+            sized[#sized + 1] = button
+        end
+    end
+
+    local widths = {}
+    if #sized > 0 then
+        local named = NameWidths(sized, room)
+        if not named then
+            for _, button in ipairs(sized) do
+                button.labelSize = "small"
+                button.label:SetFont(Theme.FONT, Theme.sizes.small, "")
+            end
+            named = NameWidths(sized, room)
+        end
+
+        for index, button in ipairs(sized) do
+            widths[button] = named and named[index]
+                or (room and math.min(96, math.floor(room / #sized)) or 96)
+        end
+    end
+
+    -- Hanging tabs stand a little apart, so each reads as its own tab.
+    local gap = hanging and 3 or 0
+    local x = 0
+    for _, button in ipairs(strip.tabs) do
+        local width = button.fixedWidth or widths[button]
+        if hanging then
+            button:SetPoint("TOPLEFT", x, 0)
+            width = math.max(1, width - gap)
+        else
+            button:SetPoint("BOTTOMLEFT", x, 0)
+        end
+        button:SetWidth(width)
+        button.left, button.span = x, width
+        x = x + width + gap
+    end
+
+    -- Tabs marked right move to the far end of the strip, keeping their
+    -- order, when the strip has room for them. Again when the window it
+    -- hangs from changes width (strip:SetRoom).
+    local packed = math.max(x, 1)
+    local function PlaceRight(width)
+        local full = packed
+        if hanging and type(width) == "number" and width > packed then
+            local right = width
+            for index = #strip.tabs, 1, -1 do
+                local button = strip.tabs[index]
+                if button.right then
+                    right = right - button.span
+                    button.left = right
+                    right = right - gap
+                    full = width
+                end
+            end
+        end
+        strip:SetWidth(full)
+    end
+    PlaceRight(opts.width)
+    for _, button in ipairs(strip.tabs) do
+        if button.right and hanging then
+            button:ClearAllPoints()
+            button:SetPoint("TOPLEFT", button.left, 0)
+        end
+    end
+
+    -- One gold line for the whole strip, gliding to the tab picked, with a
+    -- soft glow over it. Both ride on a layer of their own above the tabs:
+    -- drawn on the strip itself they sat under every tab's fill (a frame's
+    -- children draw over it) and never showed.
+    local layer = CreateFrame("Frame", nil, strip)
+    layer:SetAllPoints(strip)
+    local ok, level = pcall(strip.GetFrameLevel, strip)
+    if ok and type(level) == "number" then layer:SetFrameLevel(level + 3) end
+    pcall(layer.EnableMouse, layer, false)
+    strip.lineLayer = layer
+
+    local line = layer:CreateTexture(nil, "OVERLAY")
+    line:SetHeight(2)
+    line:SetColorTexture(Theme.Unpack("accent"))
+    line:Hide()
+    strip.line = line
+
+    local glow = layer:CreateTexture(nil, "ARTWORK")
+    glow:SetHeight(7)
+    glow:SetPoint("BOTTOMLEFT", line, "BOTTOMLEFT", -2, 0)
+    glow:SetPoint("BOTTOMRIGHT", line, "BOTTOMRIGHT", 2, 0)
+    Theme.SetGradientAlpha(glow, "VERTICAL", "accent", 0.32, 0)
+    pcall(glow.SetBlendMode, glow, "ADD")
+    glow:Hide()
+    strip.lineGlow = glow
+    if blizzard and hanging then Look.TabStrip(strip) end
+
+    --- Put the line under `button`, sliding there from wherever it is now,
+    --- so a tab picked mid-slide turns the line round rather than making it
+    --- jump back first.
+    local function MarkTab(button)
+        local fromX, fromWidth = strip.lineX or button.left, strip.lineWidth or button.span
+        local still = fromX == button.left and fromWidth == button.span
+
+        line:Show()
+        glow:Show()
+
+        -- Hung from the tab it is heading for, so it lands exactly under it;
+        -- only the distance still to go is worked out.
+        Motion:Run(line, "slide", still and 0 or 0.22, function(p)
+            local x = fromX + (button.left - fromX) * p
+            local width = fromWidth + (button.span - fromWidth) * p
+            strip.lineX, strip.lineWidth = x, width
+
+            line:ClearAllPoints()
+            line:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", x - button.left, 0)
+            line:SetWidth(math.max(1, width))
+        end)
+    end
+
+    --- The strip's room changed (its window grew): the tabs marked right
+    --- move to its new right end.
+    function strip:SetRoom(width)
+        PlaceRight(width)
+        local picked = self.selected
+        self.selected = false
+        self.lineX, self.lineWidth = false, false
+        if picked then self:Select(picked) end
+    end
+
+    function strip:Select(key)
+        self.selected = key
+
+        for _, button in ipairs(self.tabs) do
+            local active = button.key == key
+            button.selected = active
+            Motion:Stop(button, "hover")
+            Motion:SetValue(button, "hover", 0)
+            button.hover:SetAlpha(0)
+            button.underline:SetAlpha(0)
+            button.lit:SetShown(active)
+            button.label:SetTextColor(Theme.Unpack(active and (hanging and "accentHi" or "accent") or restKey))
+            button.background:SetColorTexture(Theme.Unpack(active and "header" or (hanging and "window" or "panel")))
+            if hanging then
+                -- The tab showing is taller, reaching up over the window's
+                -- rim so it joins the window, and glows.
+                button:ClearAllPoints()
+                button:SetPoint("TOPLEFT", strip, "TOPLEFT", button.left, active and HANG_JOIN or 0)
+                button:SetHeight(HANG_HEIGHT + (active and HANG_JOIN or 0))
+                if rawget(button, "haloTextures") then Theme.SetHalo(button, active and 0.22 or 0) end
+            end
+            if active then MarkTab(button) end
+            if blizzard then Look.SelectTab(button, active) end
+        end
+    end
+
+    return strip
+end

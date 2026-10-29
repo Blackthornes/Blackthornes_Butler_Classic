@@ -48,6 +48,7 @@ UI\Widgets.lua
 UI\SpotMarker.lua
 UI\Titanforged.lua
 UI\FoldWindow.lua
+UI\ButlerTabs.lua
 UI\About.lua
 UI\WhatsNew.lua
 UI\SettingsPages.lua

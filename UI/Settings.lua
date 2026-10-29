@@ -101,6 +101,13 @@ function SettingsUI:Build()
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         SettingsUI:SavePosition()
+        if ns.ButlerTabs then ns.ButlerTabs:Save(self) end
+    end)
+    -- Closed for good, not stepping aside for another tab: Tradeskills'
+    -- mail panel may come back.
+    frame:SetScript("OnHide", function()
+        if ns.ButlerTabs and ns.ButlerTabs.switching then return end
+        if ns.Errands then ns.Errands:TellTradeskills() end
     end)
 
     -- Escape closes it, like the game's own windows.
@@ -145,6 +152,14 @@ function SettingsUI:Build()
         local info = pages:Place("about", 2, ns.About:Info(pages.pages.about.content, COLUMN_WIDTH))
         pages:Searchable("about", info, info.words)
     end
+    -- Every tab is one size (UI/ButlerTabs.lua): Settings says what its
+    -- fullest page needs, and the Butler window grows to match.
+    local pages = self.pages
+    local fit = pages.Fit
+    pages.Fit = function(page)
+        fit(page)
+        if ns.ButlerTabs then ns.ButlerTabs:Need("settings", frame:GetWidth(), frame:GetHeight()) end
+    end
     self.pages:Fit()
 
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
@@ -152,6 +167,9 @@ function SettingsUI:Build()
     footer:SetPoint("BOTTOMRIGHT", -PADDING, 14)
     footer:SetText(L["Changes save as you make them."])
     self.footer = footer
+
+    -- Your Bags, All Characters and Settings, last on the right.
+    if ns.ButlerTabs then ns.ButlerTabs:Attach(self) end
 
     frame:Hide()
     return frame
@@ -1153,9 +1171,14 @@ function SettingsUI:Show()
     self:Build()
 
     if not self.frame:IsShown() then
-        self:RestorePosition()
+        -- In the Butler window's place when it is up, else where the tabs
+        -- last stood (UI/ButlerTabs.lua).
+        local how = ns.ButlerTabs and ns.ButlerTabs:Take(self)
+        if not how then self:RestorePosition() end
         self.frame:Show()
-        ns.Motion:Open(self.frame)
+        if not how and ns.ButlerTabs then ns.ButlerTabs:Settle(self.frame) end
+        if how ~= "switch" then ns.Motion:Open(self.frame) end
+        if ns.Errands then ns.Errands:TellTradeskills() end
     end
 
     self:Refresh()

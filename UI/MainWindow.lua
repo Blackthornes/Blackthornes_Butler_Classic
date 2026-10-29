@@ -125,9 +125,18 @@ function UI:Build()
         self:StopMovingOrSizing()
         UI.dragging = false
         UI:SavePosition()
+        if ns.ButlerTabs then ns.ButlerTabs:Save(self) end
         if ns.Selling then ns.Selling:Update() end
     end)
     frame:SetScript("OnHide", function()
+        -- Only stepping aside for the Settings tab (UI/ButlerTabs.lua): the
+        -- window is still up, so nothing is said and nothing let go.
+        if ns.ButlerTabs and ns.ButlerTabs.switching then
+            UI.dragging = false
+            UI:HideMenu()
+            if ns.Selling then ns.Selling:Update() end
+            return
+        end
         -- Closed by the player (close gem, Escape, /bbutler, the minimap
         -- button), not by leaving the vendor, mailbox or bank it came up for.
         if UI.closingByItself then
@@ -247,6 +256,10 @@ function UI:Build()
 
     self:BuildSizeGrip()
 
+    -- Your Bags, All Characters and Settings hang below it
+    -- (UI/ButlerTabs.lua).
+    if ns.ButlerTabs then ns.ButlerTabs:Attach(self) end
+
     -- A new frame starts shown, so this Hide runs OnHide: it is no close by
     -- the player, and must not say Moroes's closing line (both lines played
     -- on the first open, 2026-10-11).
@@ -258,8 +271,8 @@ end
 
 --- The header row. The window's name is on the plate across the top edge
 --- and the close gem sits on the top right corner (UI/Titanforged.lua), so
---- the row holds a line on what is shown and the Settings button, clear of the
---- portrait on the left.
+--- the row holds the search, clear of the portrait on the left. The views
+--- and Settings are tabs below the window (UI/ButlerTabs.lua).
 function UI:BuildHeader()
     local frame = self.frame
 
@@ -299,20 +312,6 @@ function UI:BuildHeader()
     bagSearch:SetShown(self.view ~= "all")
     subtitle:Hide()
     self.bagSearch = bagSearch
-
-    -- Below the close gem on the corner.
-    local settings = Widgets.CreateButton(header, L["Settings"], function()
-        if ns.SettingsUI then ns.SettingsUI:Toggle() end
-    end, { width = 70, height = 20 })
-    settings:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", -10, 4)
-
-    -- Between the two lists.
-    local view = Widgets.CreateButton(header, L["All characters"], function()
-        UI:SetView(UI.view == "all" and "bags" or "all")
-    end, { width = 110, height = 20 })
-    view:SetPoint("RIGHT", settings, "LEFT", -6, 0)
-    view.tooltipText = L["Every character's items, and where each one is"]
-    self.viewButton = view
 end
 
 --- Show one list or the other: "bags" or "all".
@@ -328,9 +327,7 @@ function UI:SetView(view)
     self.search:SetShown(all)
     self.bagSearch:SetShown(not all)
     if all then self.bagSearch:ClearFocus() else self.search:ClearFocus() end
-    self.viewButton:SetText(all and L["Your bags"] or L["All characters"])
-    self.viewButton.tooltipText = all and L["What to do with each item in your bags"]
-        or L["Every character's items, and where each one is"]
+    if ns.ButlerTabs then ns.ButlerTabs:Light(self) end
 
     if changed then
         self.drawnKey = nil
@@ -1661,7 +1658,12 @@ function UI:PlaceGoals()
     self.well:SetPoint("BOTTOMRIGHT", -PADDING, FOOT + extra)
     local frame = self.frame
     local left, top = frame:GetLeft(), frame:GetTop()
-    frame:SetHeight(HEIGHT + extra)
+    if ns.ButlerTabs then
+        -- Every tab is one size, so the Settings tab grows with it.
+        ns.ButlerTabs:Need("bags", nil, HEIGHT + extra)
+    else
+        frame:SetHeight(HEIGHT + extra)
+    end
     if left and top and frame:IsShown() then
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
@@ -2110,7 +2112,9 @@ function UI.FitScale()
         or width <= 0 or height <= 0 then
         return SCALE_MAX
     end
-    local fit = math.min(width / (WIDTH + 40), height / (HEIGHT + 60))
+    local w, h = WIDTH, HEIGHT
+    if ns.ButlerTabs then w, h = ns.ButlerTabs:Size() end
+    local fit = math.min(width / (w + 40), height / (h + 60))
     return math.max(SCALE_MIN, math.min(SCALE_MAX, math.floor(fit * 100) / 100))
 end
 
@@ -2140,6 +2144,7 @@ function UI:ApplyScale(scale)
         frame:ClearAllPoints()
         frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left * old / scale, top * old / scale)
         self:SavePosition()
+        if ns.ButlerTabs then ns.ButlerTabs:Save(frame) end
     end
     if ns.Selling then ns.Selling:Update() end
 end
@@ -2201,7 +2206,7 @@ function UI:BuildSizeGrip()
         -- diagonal still feels right.
         local width = cx - self.grabX - self.anchorLeft
         local height = self.anchorTop - (cy + self.grabY)
-        local scale = UI.ClampScale((width / WIDTH + height / HEIGHT) / 2)
+        local scale = UI.ClampScale((width / self.baseWidth + height / self.baseHeight) / 2)
         scale = math.min(scale, self.fit)
         if math.abs(scale - (frame:GetScale() or 1)) < 0.005 then return end
 
@@ -2222,6 +2227,7 @@ function UI:BuildSizeGrip()
         UI.dragging = false
         if ns.db then ns.db.windowScale = UI.ClampScale(frame:GetScale()) end
         UI:SavePosition()
+        if ns.ButlerTabs then ns.ButlerTabs:Save(frame) end
         if ns.Selling then ns.Selling:Update() end
     end
 
@@ -2244,8 +2250,13 @@ function UI:BuildSizeGrip()
 
         -- All in the screen's units, which do not change with the window's.
         self.anchorLeft, self.anchorTop = left * scale, top * scale
-        self.grabX = cx / uiScale - (self.anchorLeft + WIDTH * scale)
-        self.grabY = (self.anchorTop - HEIGHT * scale) - cy / uiScale
+        -- The window's own size, which the tabs may have made bigger.
+        local okW, baseWidth = pcall(frame.GetWidth, frame)
+        local okH, baseHeight = pcall(frame.GetHeight, frame)
+        self.baseWidth = okW and type(baseWidth) == "number" and baseWidth > 0 and baseWidth or WIDTH
+        self.baseHeight = okH and type(baseHeight) == "number" and baseHeight > 0 and baseHeight or HEIGHT
+        self.grabX = cx / uiScale - (self.anchorLeft + self.baseWidth * scale)
+        self.grabY = (self.anchorTop - self.baseHeight * scale) - cy / uiScale
         self.fit = UI.FitScale()
 
         frame:ClearAllPoints()
@@ -2312,12 +2323,16 @@ function UI:Show(view)
         ns.Everyone:Changed()
         if ns.Jobs then ns.Jobs:Changed() end
         if ns.GoldGoals then ns.GoldGoals:Changed() end
-        self:RestorePosition()
+        -- Coming from the Settings tab it takes that tab's place; else the
+        -- place every tab keeps (UI/ButlerTabs.lua).
+        local how = ns.ButlerTabs and ns.ButlerTabs:Take(self)
+        if not how then self:RestorePosition() end
         self.frame:Show()
-        ns.Motion:Open(self.frame)
+        if not how and ns.ButlerTabs then ns.ButlerTabs:Settle(self.frame) end
+        if how ~= "switch" then ns.Motion:Open(self.frame) end
         if ns.Errands then ns.Errands:TellTradeskills() end
         -- A light runs round the portrait as it opens.
-        if ns.Titanforged then ns.Titanforged:Opened(self.frame) end
+        if ns.Titanforged and how ~= "switch" then ns.Titanforged:Opened(self.frame) end
         -- The window rises a few pixels as it opens: place the Sell button
         -- again once it has landed.
         C_Timer.After(0.25, function()
@@ -2338,7 +2353,10 @@ function UI:Hide()
 end
 
 function UI:Toggle()
-    if self:IsShown() then
+    -- Any tab up, Settings too, closes the whole window.
+    if ns.ButlerTabs and ns.ButlerTabs:AnyShown() then
+        ns.ButlerTabs:Close()
+    elseif self:IsShown() then
         self:Hide()
     else
         self:Show()
