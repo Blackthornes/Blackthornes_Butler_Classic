@@ -623,6 +623,10 @@ function CT:ShowTheWay()
     end
     local title = L.Format("%s trainer: %s", player.className or "", spot.name or "")
     local shown = false
+    -- Our own gold marker always goes on the map (UI/SpotMarker.lua):
+    -- Forever turns the game's pin down (a German player found nothing at
+    -- the Crossroads, 2026-10-29). It goes when you stand there.
+    CT.Mark(spot)
     local guide = self:GuideFn()
     if guide then
         local ok, done = pcall(guide, spot, title)
@@ -667,6 +671,17 @@ function CT:ShowTheWay()
         ns.Print(title .. ".")
     end
     return true
+end
+
+--- Lay our own marker on a trainer's spot (x and y 0 to 1). True when laid.
+function CT.Mark(spot)
+    local marker = ns.SpotMarker
+    local mapID = spot and Number(spot.mapID)
+    local x, y = spot and Number(spot.x), spot and Number(spot.y)
+    if not (marker and marker.Show and mapID and x and y) then return false end
+    local ok, laid = pcall(marker.Show, marker, { map = mapID, x = x * 100, y = y * 100 },
+        { name = spot.name, arrow = ns.WayArrow })
+    return ok and laid == true
 end
 
 --- The way there to a trainer far away, by Logic/Travel.lua (the same

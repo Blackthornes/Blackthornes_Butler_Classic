@@ -942,6 +942,17 @@ fix to one belongs in all; Farmer's `CLAUDE.md` has the details); Butler's
 side is `ns.TravelHost` at the end of `Logic/WayArrow.lua`. Tested in
 `tools/test_classtraining.lua`. Not yet seen in game.
 
+Our own map marker (a German player found nothing at the Crossroads; the
+owner said do all six fixes, 2026-10-29, in every addon): Forever turns
+the game's map pin down, so Show the way to a class trainer always lays
+our own gold marker on the trainer's spot (`CT.Mark`, `UI/SpotMarker.lua`,
+the same file in Pets, Tradeskills, Butler and Farmer; Equipment's
+`MapPins:Spotlight` is the same look, a fix to one belongs in all): a gold
+ring with the name under it, two waves for `WAVE_FOR` seconds then a
+breathing glow (Effects Subtle a still glow, Off still). It goes when you
+stand within `WayArrow.ARRIVED` of it, or at the next Show the way.
+Tested in `tools/test_classtraining.lua`. Not yet seen in game.
+
 ## The arrow
 
 The owner asked (2026-10-22): Butler and Tradeskills give the same
