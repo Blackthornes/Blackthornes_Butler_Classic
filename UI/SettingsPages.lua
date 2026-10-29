@@ -7,7 +7,7 @@
 --     Recipes to learn switch: gold and underlined when picked, grey until
 --     hovered. The page you were on is remembered (settingsPage).
 --   * What a setting does is the row's tooltip: the row lights gold under
---     the mouse and says it in white. "Show descriptions" (off by default,
+--     the mouse and says it in white. "Show Descriptions" (off by default,
 --     settingsDescriptions) puts the words back under every row.
 --   * "Find a setting": rows from every page glow where the words match,
 --     pages with none dim, and the first page with a match is shown.
@@ -205,7 +205,7 @@ local function FitRow(row, show)
 end
 
 --- One setting: its name and control on a line. What it does is the row's
---- tooltip, or the lines under it with Show descriptions ticked. Returns
+--- tooltip, or the lines under it with Show Descriptions ticked. Returns
 --- the row; anchor the control at controlX inside it.
 --
 -- `description` may be a function, for words that change (the spec a gear
@@ -287,7 +287,7 @@ function Page:Row(pageKey, column, labelText, description)
 end
 
 --------------------------------------------------------------------------------
--- The switch, the search and Show descriptions
+-- The switch, the search and Show Descriptions
 --------------------------------------------------------------------------------
 
 function Page:BuildBar()
@@ -353,7 +353,7 @@ function Page:BuildBar()
     end
 
     -- The house order for an option bar: search, then tick boxes.
-    self.describe = Widgets.CreateCheckbox(bar, L["Show descriptions"], function(checked)
+    self.describe = Widgets.CreateCheckbox(bar, L["Show Descriptions"], function(checked)
         self:DB().settingsDescriptions = checked
         self:ShowDescriptions(checked)
     end, false)
@@ -390,7 +390,7 @@ function Page:BarWidth()
         if index > 1 then width = width + SWITCH_GAP end
     end
     -- The tick box is its square, a gap and its words.
-    local tick = 24 + Theme.TextWidth("small", L["Show descriptions"])
+    local tick = 24 + Theme.TextWidth("small", L["Show Descriptions"])
     return width + BAR_GAP + 170 + BAR_GAP + tick
 end
 

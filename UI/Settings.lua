@@ -265,7 +265,7 @@ function SettingsUI.WindowStyleControl(row, x)
     stepper:SetPoint("TOPLEFT", x, -2)
 
     -- ReloadUI is allowed from a click, and saves everything first.
-    reload = Widgets.CreateButton(row, L["Reload now"], function()
+    reload = Widgets.CreateButton(row, L["Reload"], function()
         if ReloadUI then ReloadUI() end
     end, { width = 60, height = 20 })
     ns.SettingsPages.ReloadUnder(row, stepper, reload)

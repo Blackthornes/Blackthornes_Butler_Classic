@@ -92,7 +92,7 @@ function BuyManyUI:Build()
 
     local ask = Theme.CreateLabel(frame, "normal", "muted")
     ask:SetPoint("TOPLEFT", icon, "BOTTOMLEFT", 0, -14)
-    ask:SetText(L["How many?"])
+    ask:SetText(L["How Many:"])
 
     local box = Widgets.CreateSearchBox(frame, "", function() BuyManyUI:Replan() end,
         function() BuyManyUI:Buy() end, { plain = true })
@@ -201,7 +201,7 @@ end
 --- Grow the box so the whole price shows beside the amount, measured as
 --- the game draws it: the font runs wider than any width picked by eye.
 function BuyManyUI:FitTotal(text)
-    local need = PAD + Theme.TextWidth("normal", L["How many?"]) + 10 + BOX_WIDTH + 10
+    local need = PAD + Theme.TextWidth("normal", L["How Many:"]) + 10 + BOX_WIDTH + 10
         + Theme.TextWidth("normal", text or "") + 4 + PAD
     self.frame:SetWidth(math.max(WIDTH, math.ceil(need)))
 end

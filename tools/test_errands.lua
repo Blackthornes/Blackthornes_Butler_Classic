@@ -329,7 +329,10 @@ UI.menu.bank:GetScript("OnClick")(UI.menu.bank)
 suite.check("the menu puts it on the Always bank list", ns.db.alwaysBank[401] == true
     and ns.Verdicts:Choice(401) == "bank")
 UI:ShowMenu({ itemID = 401, name = "Bolt of Wool" })
-suite.check("and says so", UI.menu.bank.label:GetText() == "Always bank (now)" and UI.menu.decide:IsShown())
+suite.check("and says so", UI.menu.bank.label:GetText() == "Always Bank (now)" and UI.menu.decide:IsShown())
+suite.check("the menu's lines are dark glass rows, the pick marked in gold",
+    UI.menu.bank.active == true and UI.menu.bank.mark:IsShown() and UI.menu.keep.active == false
+    and rawget(UI.menu.keep, "highlight") ~= nil and UI.menu.decide.label:GetText() == "Let Butler Decide")
 UI.menu.decide:GetScript("OnClick")(UI.menu.decide)
 suite.check("Let Butler decide takes it off", ns.db.alwaysBank[401] == nil)
 
@@ -347,7 +350,7 @@ local choice, to = ns.Verdicts:Choice(404)
 suite.check("a pick puts it on the Always mail list", choice == "mail" and to == "Bob"
     and ns.db.alwaysMail[404] == "Bob" and not ns.db.alwaysBank[404])
 UI:ShowMenu({ itemID = 404, name = "Copper Ore" })
-suite.check("and the menu says who", UI.menu.mail.label:GetText() == "Always mail to Bob")
+suite.check("and the menu says who", UI.menu.mail.label:GetText() == "Always Mail To Bob")
 UI:HideMenu()
 local verdict, reason, _, _, extra = ns.Verdicts:Decide({ itemID = 404, count = 10 })
 suite.check("it goes under Mail, to Bob", verdict == "mail" and extra and extra.to == "Bob", reason)

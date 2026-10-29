@@ -1162,14 +1162,58 @@ end
 -- The right-click menu
 --
 -- A small window of Butler's own, never the game's dropdown menus: Always
--- keep, Always sell, Always bank, Always disenchant (green or better),
--- Always mail to (which turns the menu into
--- a list of the player's characters), and Let Butler decide once one is
--- picked.
+-- Keep, Always Sell, Always Bank, Always Disenchant (green or better),
+-- Always Mail To (which turns the menu into a list of the player's
+-- characters), and Let Butler Decide once one is picked. A thin gold rim
+-- round dark glass rows, the pick it holds now marked with a gold edge.
 --------------------------------------------------------------------------------
 
 local MENU_WIDTH = 170
 local MENU_ROW = 24
+
+--- One line of the menu: a dark glass row with its words on the left, lit
+--- gold under the mouse, as the house lists are (UI audit, the owner said
+--- yes 2026-10-27). Answers SetText and grows to fit its words, as a
+--- button does; UI.FitMenu shades the rows by place.
+function UI.MenuRow(parent, text, onClick)
+    local row = CreateFrame("Button", nil, parent)
+    row:SetSize(MENU_WIDTH - 16, MENU_ROW)
+    row.fill = Theme.Fill(row, "glass")
+    local line = row:CreateTexture(nil, "BORDER")
+    line:SetPoint("BOTTOMLEFT")
+    line:SetPoint("BOTTOMRIGHT")
+    line:SetHeight(1)
+    line:SetColorTexture(Theme.Unpack("border", 0.6))
+    Widgets.RowLight(row)
+    -- The pick it holds now: a gold edge that stays.
+    row.mark = row:CreateTexture(nil, "OVERLAY")
+    row.mark:SetPoint("TOPLEFT")
+    row.mark:SetPoint("BOTTOMLEFT")
+    row.mark:SetWidth(2)
+    row.mark:SetColorTexture(Theme.Unpack("accentHi"))
+    row.mark:Hide()
+    row.active = false
+
+    row.label = Theme.CreateLabel(row, "small", "text")
+    row.label:SetPoint("LEFT", 8, 0)
+    row.label:SetPoint("RIGHT", -8, 0)
+
+    function row:SetText(value)
+        self.label:SetText(value)
+        self:SetWidth(math.max(MENU_WIDTH - 16, Theme.TextWidth("small", value) + 20))
+    end
+    function row:GetText() return self.label:GetText() end
+    function row:SetActive(on)
+        self.active = on and true or false
+        self.mark:SetShown(self.active)
+    end
+    row:SetText(text)
+
+    row:SetScript("OnEnter", function(self) Widgets.SetRowLight(self, 1) end)
+    row:SetScript("OnLeave", function(self) Widgets.SetRowLight(self, 0) end)
+    row:SetScript("OnClick", onClick)
+    return row
+end
 
 function UI:BuildMenu()
     if self.menu then return self.menu end
@@ -1181,12 +1225,23 @@ function UI:BuildMenu()
     menu:SetFrameLevel(50)
     menu:SetClampedToScreen(true)
     menu:EnableMouse(true)
-    Theme.Fill(menu, "window")
-    Theme.Border(menu, "metal")
+    -- A thin gold rim round dark glass, the house menu (UI audit #8).
+    Theme.Fill(menu, "well")
+    Theme.Border(menu, "accent")
+    local inner = CreateFrame("Frame", nil, menu)
+    inner:SetPoint("TOPLEFT", 1, -1)
+    inner:SetPoint("BOTTOMRIGHT", -1, 1)
+    Theme.Border(inner, "metal", 0.8)
 
     menu.title = Theme.CreateLabel(menu, "small", "accent")
     menu.title:SetPoint("TOPLEFT", 8, -8)
     menu.title:SetPoint("TOPRIGHT", -8, -8)
+    -- A fine gold line under the item's name.
+    menu.rule = menu:CreateTexture(nil, "BORDER")
+    menu.rule:SetPoint("TOPLEFT", 6, -24)
+    menu.rule:SetPoint("TOPRIGHT", -6, -24)
+    menu.rule:SetHeight(1)
+    menu.rule:SetColorTexture(Theme.Unpack("metal", 0.9))
 
     local function Pick(choice, to)
         local data = UI.menu.data
@@ -1195,21 +1250,17 @@ function UI:BuildMenu()
     end
     menu.Pick = Pick
 
-    menu.keep = Widgets.CreateButton(menu, L["Always keep"], function() Pick("keep") end,
-        { width = MENU_WIDTH - 16, height = 20 })
+    menu.keep = UI.MenuRow(menu, L["Always Keep"], function() Pick("keep") end)
     menu.keep:SetPoint("TOPLEFT", 8, -26)
-    menu.sell = Widgets.CreateButton(menu, L["Always sell"], function() Pick("sell") end,
-        { width = MENU_WIDTH - 16, height = 20 })
-    menu.sell:SetPoint("TOPLEFT", menu.keep, "BOTTOMLEFT", 0, -4)
-    menu.bank = Widgets.CreateButton(menu, L["Always bank"], function() Pick("bank") end,
-        { width = MENU_WIDTH - 16, height = 20 })
-    menu.bank:SetPoint("TOPLEFT", menu.sell, "BOTTOMLEFT", 0, -4)
+    menu.sell = UI.MenuRow(menu, L["Always Sell"], function() Pick("sell") end)
+    menu.sell:SetPoint("TOPLEFT", menu.keep, "BOTTOMLEFT", 0, 0)
+    menu.bank = UI.MenuRow(menu, L["Always Bank"], function() Pick("bank") end)
+    menu.bank:SetPoint("TOPLEFT", menu.sell, "BOTTOMLEFT", 0, 0)
     -- Greens and better that sell for more go to auction; this breaks
     -- them anyway (the owner, 2026-10-17).
-    menu.disenchant = Widgets.CreateButton(menu, L["Always disenchant"], function() Pick("disenchant") end,
-        { width = MENU_WIDTH - 16, height = 20 })
+    menu.disenchant = UI.MenuRow(menu, L["Always Disenchant"], function() Pick("disenchant") end)
     -- Bought to disenchant: Tradeskills keeps the mark, for the whole account.
-    menu.bought = Widgets.CreateButton(menu, L["Bought to disenchant"], function()
+    menu.bought = UI.MenuRow(menu, L["Bought to disenchant"], function()
         local data = UI.menu.data
         UI:HideMenu()
         if not data then return end
@@ -1219,17 +1270,14 @@ function UI:BuildMenu()
             return
         end
         ns.Verdicts:Changed(true)
-    end, { width = MENU_WIDTH - 16, height = 20 })
-    menu.bought:SetPoint("TOPLEFT", menu.bank, "BOTTOMLEFT", 0, -4)
-    menu.mail = Widgets.CreateButton(menu, L["Always mail to..."], function() UI:ShowMailMenu() end,
-        { width = MENU_WIDTH - 16, height = 20 })
-    menu.mail:SetPoint("TOPLEFT", menu.bank, "BOTTOMLEFT", 0, -4)
-    menu.decide = Widgets.CreateButton(menu, L["Let Butler decide"], function() Pick(nil) end,
-        { width = MENU_WIDTH - 16, height = 20 })
+    end)
+    menu.bought:SetPoint("TOPLEFT", menu.bank, "BOTTOMLEFT", 0, 0)
+    menu.mail = UI.MenuRow(menu, L["Always Mail To..."], function() UI:ShowMailMenu() end)
+    menu.mail:SetPoint("TOPLEFT", menu.bank, "BOTTOMLEFT", 0, 0)
+    menu.decide = UI.MenuRow(menu, L["Let Butler Decide"], function() Pick(nil) end)
     -- Keep a number on this character (Logic/KeepHere.lua, a player asked,
     -- the owner said build it 2026-10-17): its own page with a box.
-    menu.keepHere = Widgets.CreateButton(menu, L["Keep on This Character..."], function() UI:ShowKeepMenu() end,
-        { width = MENU_WIDTH - 16, height = 20 })
+    menu.keepHere = UI.MenuRow(menu, L["Keep on This Character..."], function() UI:ShowKeepMenu() end)
     local function SaveKeep()
         local data = UI.menu.data
         local count = tonumber(menu.keepBox.editBox:GetText()) or 0
@@ -1259,42 +1307,42 @@ function UI:BuildMenu()
     end, { width = math.floor((MENU_WIDTH - 20) / 2), height = 20 })
     -- An alt's upgrade under Mail: hold this one back from them, or every
     -- upgrade (the owner asked 2026-10-12). Undone in Settings.
-    menu.hold = Widgets.CreateButton(menu, L["Don't mail this"], function()
+    menu.hold = UI.MenuRow(menu, L["Don't mail this"], function()
         local data = UI.menu.data
         UI:HideMenu()
         if data and data.mailTo then ns.Verdicts:HoldUpgrade(data.itemID, data.mailTo, true) end
-    end, { width = MENU_WIDTH - 16, height = 20 })
-    menu.holdAll = Widgets.CreateButton(menu, L["Never mail upgrades"], function()
+    end)
+    menu.holdAll = UI.MenuRow(menu, L["Never mail upgrades"], function()
         local data = UI.menu.data
         UI:HideMenu()
         if data and data.mailTo then ns.Verdicts:HoldAllUpgrades(data.mailTo, true) end
-    end, { width = MENU_WIDTH - 16, height = 20 })
+    end)
 
     -- A Craft row: stop suggesting that recipe (the owner, 2026-10-26).
     -- Brought back on the Selling page of Settings.
-    menu.skipCraft = Widgets.CreateButton(menu, L["Don't Suggest This Craft"], function()
+    menu.skipCraft = UI.MenuRow(menu, L["Don't Suggest This Craft"], function()
         local data = UI.menu.data
         UI:HideMenu()
         if data and type(data.craft) == "table" then
             ns.Verdicts:SkipCraft(data.craft.recipeID, data.craft.name)
             if ns.SettingsUI and ns.SettingsUI.SyncCraftSkip then ns.SettingsUI:SyncCraftSkip() end
         end
-    end, { width = MENU_WIDTH - 16, height = 20 })
+    end)
     menu.skipCraft:Hide()
 
     -- The characters page: one button a character, made as needed, and Back.
     -- A character's jobs line: put away until that character logs in.
-    menu.ignoreJobs = Widgets.CreateButton(menu, L["Ignore Until Next Login"], function()
+    menu.ignoreJobs = UI.MenuRow(menu, L["Ignore Until Next Login"], function()
         local data = UI.menu.data
         UI:HideMenu()
         if data and data.job and ns.Jobs then ns.Jobs:Ignore(data.job.name) end
-    end, { width = MENU_WIDTH - 16, height = 20 })
+    end)
     menu.ignoreJobs:Hide()
 
     menu.characters = {}
-    menu.back = Widgets.CreateButton(menu, L["Back"], function()
+    menu.back = UI.MenuRow(menu, L["Back"], function()
         if UI.menu.data then UI:ShowMenu(UI.menu.data, true) end
-    end, { width = MENU_WIDTH - 16, height = 20 })
+    end)
 
     -- Gone once the mouse has been off it for a moment, as the game's menus
     -- go. Only runs while the menu is up.
@@ -1339,10 +1387,16 @@ function UI:ShowMenu(data, stay)
     menu.keepAll:Hide()
 
     local choice, mailTo = ns.Verdicts:Choice(data.itemID)
-    menu.keep:SetText(choice == "keep" and L["Always keep (now)"] or L["Always keep"])
-    menu.sell:SetText(choice == "sell" and L["Always sell (now)"] or L["Always sell"])
-    menu.bank:SetText(choice == "bank" and L["Always bank (now)"] or L["Always bank"])
-    menu.mail:SetText(choice == "mail" and L.Format("Always mail to %s", mailTo) or L["Always mail to..."])
+    menu.keep:SetText(choice == "keep" and L["Always Keep (now)"] or L["Always Keep"])
+    menu.sell:SetText(choice == "sell" and L["Always Sell (now)"] or L["Always Sell"])
+    menu.bank:SetText(choice == "bank" and L["Always Bank (now)"] or L["Always Bank"])
+    menu.mail:SetText(choice == "mail" and L.Format("Always Mail To %s", mailTo) or L["Always Mail To..."])
+    menu.keep:SetActive(choice == "keep")
+    menu.sell:SetActive(choice == "sell")
+    menu.bank:SetActive(choice == "bank")
+    menu.mail:SetActive(choice == "mail")
+    menu.disenchant:SetActive(choice == "disenchant")
+    menu.bought:SetActive(data.bought)
     menu.keep:Show()
     menu.sell:Show()
     menu.bank:Show()
@@ -1350,9 +1404,9 @@ function UI:ShowMenu(data, stay)
     -- Only gear worth breaking: green or better.
     local canBreak = choice == "disenchant" or (data.quality or 0) >= 2
     menu.disenchant:SetShown(canBreak)
-    menu.disenchant:SetText(choice == "disenchant" and L["Always disenchant (now)"] or L["Always disenchant"])
+    menu.disenchant:SetText(choice == "disenchant" and L["Always Disenchant (now)"] or L["Always Disenchant"])
     menu.disenchant:ClearAllPoints()
-    menu.disenchant:SetPoint("TOPLEFT", menu.bank, "BOTTOMLEFT", 0, -4)
+    menu.disenchant:SetPoint("TOPLEFT", menu.bank, "BOTTOMLEFT", 0, 0)
     local above = canBreak and menu.disenchant or menu.bank
 
     -- Mail needs Tradeskills to know the player's characters, and gear
@@ -1365,9 +1419,9 @@ function UI:ShowMenu(data, stay)
     menu.bought:SetShown(canMark)
     menu.bought:SetText(data.bought and L["Bought to disenchant (now)"] or L["Bought to disenchant"])
     menu.bought:ClearAllPoints()
-    menu.bought:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -4)
+    menu.bought:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, 0)
     menu.mail:ClearAllPoints()
-    menu.mail:SetPoint("TOPLEFT", canMark and menu.bought or above, "BOTTOMLEFT", 0, -4)
+    menu.mail:SetPoint("TOPLEFT", canMark and menu.bought or above, "BOTTOMLEFT", 0, 0)
 
     local last = canMail and menu.mail or (canMark and menu.bought or above)
     local upgradeTo = data.upgrade and type(data.mailTo) == "string" and data.mailTo or nil
@@ -1377,16 +1431,16 @@ function UI:ShowMenu(data, stay)
         menu.hold:SetText(L.Format("Don't mail this to %s", upgradeTo))
         menu.holdAll:SetText(L.Format("Never mail upgrades to %s", upgradeTo))
         menu.hold:ClearAllPoints()
-        menu.hold:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -4)
+        menu.hold:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 0)
         menu.holdAll:ClearAllPoints()
-        menu.holdAll:SetPoint("TOPLEFT", menu.hold, "BOTTOMLEFT", 0, -4)
+        menu.holdAll:SetPoint("TOPLEFT", menu.hold, "BOTTOMLEFT", 0, 0)
         last = menu.holdAll
     end
     local craft = data.verdict == "craft" and type(data.craft) == "table" and data.craft.recipeID and data.craft or nil
     menu.skipCraft:SetShown(craft ~= nil)
     if craft then
         menu.skipCraft:ClearAllPoints()
-        menu.skipCraft:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -4)
+        menu.skipCraft:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 0)
         last = menu.skipCraft
     end
     -- Keep on this character: the number kept, when there is one.
@@ -1395,16 +1449,16 @@ function UI:ShowMenu(data, stay)
     menu.keepHere:SetText(keepCount and (ns.KeepHere.IsAll(keepCount) and L["Keep on This Character: All"]
         or L.Format("Keep on This Character: %d", keepCount)) or L["Keep on This Character..."])
     menu.keepHere:ClearAllPoints()
-    menu.keepHere:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -4)
+    menu.keepHere:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 0)
     if ns.KeepHere then last = menu.keepHere end
     menu.decide:ClearAllPoints()
-    menu.decide:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, -4)
+    menu.decide:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 0)
     -- Also there for what Butler learned from the player (a buyback, a
     -- habit), which it forgets.
     local learned = choice == nil and ns.Learning and ns.Learning:Get(data.itemID) or nil
     local decides = choice ~= nil or learned ~= nil
     menu.decide:SetShown(decides)
-    menu.decide:SetText(learned and L["Forget what Butler learned"] or L["Let Butler decide"])
+    menu.decide:SetText(learned and L["Forget what Butler learned"] or L["Let Butler Decide"])
 
     local rows = 3 + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
         + (craft and 1 or 0) + (ns.KeepHere and 1 or 0) + (decides and 1 or 0)
@@ -1465,8 +1519,16 @@ function UI.FitMenu(menu, buttons)
     for _, button in ipairs(buttons) do
         if button:IsShown() then width = math.max(width, button:GetWidth() or 0) end
     end
+    local place = 0
     for _, button in ipairs(buttons) do
-        if button:IsShown() then button:SetWidth(width) end
+        if button:IsShown() then
+            button:SetWidth(width)
+            place = place + 1
+            if button.fill then
+                button.fill:SetColorTexture(Theme.Unpack(button.active and "glassActive"
+                    or (place % 2 == 1 and "glass" or "glassAlt")))
+            end
+        end
     end
     menu:SetWidth(width + 16)
 end
@@ -1499,16 +1561,17 @@ function UI:ShowMailMenu()
     for index, name in ipairs(names) do
         local button = menu.characters[index]
         if not button then
-            button = Widgets.CreateButton(menu, name, function(self)
+            button = UI.MenuRow(menu, name, function(self)
                 menu.Pick("mail", self.character)
-            end, { width = MENU_WIDTH - 16, height = 20 })
+            end)
             menu.characters[index] = button
         end
         button.character = name
+        button:SetActive(choice == "mail" and mailTo == name)
         button:SetText(choice == "mail" and mailTo == name and L.Format("%s (now)", name) or name)
         button:ClearAllPoints()
         if above then
-            button:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -4)
+            button:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, 0)
         else
             button:SetPoint("TOPLEFT", 8, -26)
         end
@@ -1519,14 +1582,15 @@ function UI:ShowMailMenu()
 
     menu.back:ClearAllPoints()
     if above then
-        menu.back:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -4)
+        menu.back:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, 0)
     else
         menu.back:SetPoint("TOPLEFT", 8, -26)
     end
     menu.back:Show()
     menu:SetHeight(30 + (#names + 1) * MENU_ROW)
-    local buttons = { menu.back }
+    local buttons = {}
     for index = 1, #names do buttons[#buttons + 1] = menu.characters[index] end
+    buttons[#buttons + 1] = menu.back
     UI.FitMenu(menu, buttons)
 end
 
@@ -1563,7 +1627,7 @@ function UI:ShowKeepMenu()
     menu.keepAll:SetPoint("LEFT", menu.keepSave, "RIGHT", 4, 0)
     menu.keepAll:Show()
     menu.back:ClearAllPoints()
-    menu.back:SetPoint("TOPLEFT", menu.keepSave, "BOTTOMLEFT", 0, -4)
+    menu.back:SetPoint("TOPLEFT", menu.keepSave, "BOTTOMLEFT", 0, -6)
     menu.back:Show()
     UI.FitMenu(menu, { menu.back })
     -- Save and Keep All share the row, whatever width the menu took.
