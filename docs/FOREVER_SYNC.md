@@ -27,6 +27,10 @@ Copied over since, one at a time:
 - `7811b27` Slim the shared minimap menu: names only, sized to fit (2026-10-29,
   taken as it is: `UI/SharedMinimap.lua` at FILE_VERSION 3 and its test, the
   same in all five Classic repos).
+- `c288a7d` Time arrow flights by their real length (2026-10-29, as it is).
+- `dcb596e` Show the way lays our own map marker on the class trainer
+  (2026-10-29, as it is; `UI/SpotMarker.lua` is the same in Farmer, Butler,
+  Tradeskills and Pets Classic).
 
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
