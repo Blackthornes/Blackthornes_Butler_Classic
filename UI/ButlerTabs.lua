@@ -492,8 +492,11 @@ end
 
 --- One of Butler's windows closed by itself (Escape, leaving a vendor):
 --- inside the one window, the one window closes with it.
-function ButlerTabs:Closed()
+function ButlerTabs:Closed(frame)
     if not self.area or self.leaving or self.switching then return end
+    -- A window built for the first time hides itself before it is laid
+    -- in, and that is no close: only one inside the area counts.
+    if frame and frame.GetParent and frame:GetParent() ~= self.area then return end
     local One = ButlerTabs.One()
     if One and One.Close then pcall(One.Close) end
 end
