@@ -1503,6 +1503,20 @@ rename them: `oneWindow`, `oneWindowAt` (the newest wins), `oneWindowPick`,
 & Loot, arrows, plaques, loot feed, XP bar) stay their own. Tested in
 `tools/test_sharedwindow.lua`. Not yet seen in game.
 
+Butler's pages are the first in (2026-10-30): "One Window:" sits under
+WINDOWS on the General page (`SettingsUI:SetOneWindow`, writing every
+save). Butler joins with `host = ButlerTabs.host`; `ButlerTabs:Enter(area)`
+lays the Butler window and Settings into the area (`LayIn`: parented to it,
+filling it, scale 1, their own trim, size grip and rim put out of sight,
+`Bare`; the hanging tabs under the one window's edge) and grows the one
+window to the shared size (`Grow`); `Leave` hides them and gives them back
+their place, size and scale (`LayOut`). `UI:Show` and `SettingsUI:Show`
+ask `ButlerTabs:Route` first, which opens the one window on Butler when it
+is ticked; a Butler window closing by itself closes the one window
+(`ButlerTabs:Closed`). Calls go to the copy that draws
+(`ButlerTabs.One`). The secure buttons still dock in the Butler window and
+go to UIParent in a fight. Tested in `tools/test_onewindow.lua`.
+
 ## The shared minimap button
 
 A player asked, the owner said build it from a mockup (2026-10-28), in all

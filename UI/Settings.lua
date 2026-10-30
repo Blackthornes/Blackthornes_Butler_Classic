@@ -115,6 +115,7 @@ function SettingsUI:Build()
     frame:SetScript("OnHide", function()
         if ns.ButlerTabs and ns.ButlerTabs.switching then return end
         if ns.Errands then ns.Errands:TellTradeskills() end
+        if ns.ButlerTabs then ns.ButlerTabs:Closed() end
     end)
 
     -- Escape closes it, like the game's own windows.
@@ -1006,6 +1007,15 @@ function SettingsUI:BuildPages()
     end, true)
     controls.combineButtons:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    -- One window for every Blackthornes addon (UI/SharedWindow.lua, the
+    -- owner, 2026-10-30): off unless ticked, the same in all five. Ticked or
+    -- not, Settings opens again where it now belongs.
+    local oneRow = pages:Row("general", 1, L["One Window:"], nil)
+    controls.oneWindow = Widgets.CreateCheckbox(oneRow, L["On"], function(checked)
+        SettingsUI:SetOneWindow(checked)
+    end, false)
+    controls.oneWindow:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- The minimap button always shows (the owner, 2026-10-15), so it has
     -- no row here.
 
@@ -1185,6 +1195,8 @@ function SettingsUI:Refresh()
     controls.effects:SetValue(controls.effectsIndex(), true)
     controls.windowScale:Sync()
     controls.combineButtons:SetChecked(not ns.SharedMinimap or ns.SharedMinimap.Combined())
+    local One = ns.ButlerTabs and ns.ButlerTabs.One()
+    controls.oneWindow:SetChecked(One ~= nil and One.On() == true)
     if ns.RuleOrderUI then ns.RuleOrderUI:Refresh() end
     self.pages:Refresh()
 end
@@ -1219,6 +1231,7 @@ end
 --------------------------------------------------------------------------------
 
 function SettingsUI:Show()
+    if ns.ButlerTabs and ns.ButlerTabs:Route("settings") then return end
     self:Build()
 
     if not self.frame:IsShown() then
@@ -1233,6 +1246,23 @@ function SettingsUI:Show()
     end
 
     self:Refresh()
+end
+
+--- Tick or untick "One Window:" in every loaded addon, and open Settings
+--- again in the one window, or in its own.
+function SettingsUI:SetOneWindow(on)
+    local One = ns.ButlerTabs and ns.ButlerTabs.One()
+    if not One then return end
+    local inside = ns.ButlerTabs:Hosted()
+    One.SetOn(on)
+    if on and not inside and self.frame and self.frame:IsShown() then
+        ns.ButlerTabs.switching = true
+        self.frame:Hide()
+        ns.ButlerTabs.switching = false
+        self:Show()
+    elseif not on and inside then
+        self:Show()
+    end
 end
 
 function SettingsUI:Hide()
