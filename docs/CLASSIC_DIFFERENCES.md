@@ -112,3 +112,7 @@ Every Forever catch-up checks this note first, before sorting commits into
 
 - `UI/SharedWindow.lua` is Classic's own (2026-10-30); Forever has no copy
   yet. Nothing shows until "One Window:" is ticked.
+- Butler's pages move in (2026-10-30): `UI/ButlerTabs.lua`'s one window
+  part, the "One Window:" row on the General page and its five locale
+  lines, and the Route and Closed calls in `UI/MainWindow.lua` and
+  `UI/Settings.lua`. Forever's Butler has none of it.

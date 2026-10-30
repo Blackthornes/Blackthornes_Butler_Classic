@@ -135,6 +135,11 @@ end
 function ButlerTabs:Fit(window)
     local frame = FrameOf(window)
     if not frame then return end
+    -- Inside the one window it fills the area, which grows instead.
+    if self.area then
+        self:Grow()
+        return
+    end
     local width, height = self:Size()
     local okW, oldW = pcall(frame.GetWidth, frame)
     local okH, oldH = pcall(frame.GetHeight, frame)
@@ -172,6 +177,8 @@ end
 --- sets.
 function ButlerTabs.ApplyScale(frame)
     if not (frame and ns.UI and ns.UI.GetWindowScale) then return end
+    -- The one window has its own scale.
+    if ButlerTabs.area then return end
     local ok, scale = pcall(ns.UI.GetWindowScale, ns.UI)
     if ok and type(scale) == "number" and scale > 0 then
         local okNow, now = pcall(frame.GetScale, frame)
@@ -195,6 +202,11 @@ end
 
 --- Close the whole window, whichever tab is up.
 function ButlerTabs:Close()
+    if self.area then
+        local One = ButlerTabs.One()
+        if One and One.Close then pcall(One.Close) end
+        return
+    end
     local _, window = self:Current()
     if window and window.Hide then window:Hide() end
 end
@@ -226,7 +238,7 @@ end
 
 --- Keep where a window stands as the place every tab opens.
 function ButlerTabs:Save(frame)
-    if not (ns.db and frame) then return end
+    if not (ns.db and frame) or self.area then return end
     local left, top = ButlerTabs.TopLeft(frame)
     if left then ns.db.windowLeft, ns.db.windowTop = left, top end
 end
@@ -234,7 +246,7 @@ end
 --- A window opened at its own old place: anchor it by its top left corner,
 --- so a change of height keeps its top still, and keep that as the place.
 function ButlerTabs:Settle(frame)
-    if not frame then return end
+    if not frame or self.area then return end
     local left, top = ButlerTabs.TopLeft(frame)
     if not left then return end
     ButlerTabs.PlaceAt(frame, left, top)
@@ -252,6 +264,19 @@ ButlerTabs.switching = false
 function ButlerTabs:Take(window)
     local frame = FrameOf(window)
     if not frame then return nil end
+    -- Inside the one window: laid in, and the other tab steps aside.
+    if self.area then
+        self:LayIn(window)
+        for _, other in ipairs(Windows()) do
+            if other ~= window and Shown(FrameOf(other)) then
+                self.switching = true
+                local ok, err = pcall(other.Hide, other)
+                self.switching = false
+                if not ok then ns.Debug("tab switch:", tostring(err)) end
+            end
+        end
+        return "switch"
+    end
     self:Fit(window)
     ButlerTabs.ApplyScale(frame)
     for _, other in ipairs(Windows()) do
@@ -275,4 +300,200 @@ function ButlerTabs:Take(window)
         return "placed"
     end
     return nil
+end
+
+--------------------------------------------------------------------------------
+-- The one window
+--
+-- With "One Window:" ticked (UI/SharedWindow.lua, the owner said build it,
+-- 2026-10-30), Butler's tabs show inside the one Blackthornes window: the
+-- Butler window and Settings are laid into its area, filling it, without
+-- their own rim, plate, portrait, gems or size grip, since the one window
+-- has its own. Their tabs still hang below, under the one window's edge.
+-- Unticked, or when another addon is picked on the rail, they go back to
+-- their own place, size and scale. The secure buttons are untouched: they
+-- live inside the Butler window out of a fight (UI:Dock) and go back to
+-- UIParent as one starts (UI:Undock), wherever the window is.
+--------------------------------------------------------------------------------
+
+-- The one window's area while Butler's pages are in it, else nil.
+ButlerTabs.area = nil
+-- The tab to show when the one window lays Butler in.
+ButlerTabs.wanted = nil
+-- True while the pages go back, so their OnHide does not close the one
+-- window too.
+ButlerTabs.leaving = false
+
+--- The copy of the one window that draws it, or nil.
+function ButlerTabs.One()
+    local SharedWindow = ns.SharedWindow
+    if not (SharedWindow and SharedWindow.Drawer) then return nil end
+    local ok, drawer = pcall(SharedWindow.Drawer)
+    local api = ok and type(drawer) == "table" and drawer.api or nil
+    return type(api) == "table" and api or nil
+end
+
+--- True while Butler's pages show in the one window.
+function ButlerTabs:Hosted()
+    return self.area ~= nil
+end
+
+-- What a window's own frame wears, put out of sight inside the one window
+-- and back after: the trim (plate, portrait, close and fold gems, corners),
+-- the size grip and the rim drawn on the frame itself.
+local function Bare(window, bare)
+    local frame = FrameOf(window)
+    if not frame then return end
+    local trim = rawget(window, "trim") or rawget(frame, "titan")
+    if trim and trim.SetShown then trim:SetShown(not bare) end
+    local grip = rawget(window, "sizeGrip")
+    if grip and grip.SetShown then grip:SetShown(not bare) end
+    if bare then
+        local kept = {}
+        local ok, regions = pcall(function() return { frame:GetRegions() } end)
+        for _, region in ipairs(ok and regions or {}) do
+            local okLayer, layer = pcall(region.GetDrawLayer, region)
+            if okLayer and layer == "BORDER" and region:IsShown() then
+                region:Hide()
+                kept[#kept + 1] = region
+            end
+        end
+        window.bareRim = kept
+        pcall(frame.RegisterForDrag, frame)
+    else
+        for _, region in ipairs(rawget(window, "bareRim") or {}) do region:Show() end
+        window.bareRim = nil
+        pcall(frame.RegisterForDrag, frame, "LeftButton")
+    end
+end
+
+--- Lay one window into the area, filling it.
+function ButlerTabs:LayIn(window)
+    local frame, area = FrameOf(window), self.area
+    if not (frame and area) then return end
+    if frame:GetParent() ~= area then frame:SetParent(area) end
+    frame:ClearAllPoints()
+    frame:SetAllPoints(area)
+    frame:SetScale(1)
+    Bare(window, true)
+    local strip = rawget(window, "tabStrip")
+    if strip then
+        -- Hung from the one window's own bottom edge, not the area's.
+        local one = area:GetParent()
+        local drop = 8
+        if one then
+            local okA, a = pcall(area.GetBottom, area)
+            local okO, o = pcall(one.GetBottom, one)
+            if okA and okO and type(a) == "number" and type(o) == "number" then drop = a - o end
+        end
+        strip:ClearAllPoints()
+        strip:SetPoint("TOPLEFT", area, "BOTTOMLEFT", ButlerTabs.INSET, -drop)
+        local ok, width = pcall(area.GetWidth, area)
+        if ok and type(width) == "number" and width > 0 and strip.SetRoom then
+            strip:SetRoom(width - 2 * ButlerTabs.INSET)
+        end
+    end
+    local okW, width = pcall(area.GetWidth, area)
+    local okH, height = pcall(area.GetHeight, area)
+    if okW and okH and type(window.OnTabSize) == "function" then window:OnTabSize(width, height) end
+end
+
+--- Give one window back its own place, size and scale.
+function ButlerTabs:LayOut(window)
+    local frame = FrameOf(window)
+    if not frame then return end
+    frame:SetParent(UIParent)
+    Bare(window, false)
+    local strip = rawget(window, "tabStrip")
+    if strip then
+        strip:ClearAllPoints()
+        strip:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", ButlerTabs.INSET, 0)
+    end
+    frame:ClearAllPoints()
+    local db = ns.db
+    if db and type(db.windowLeft) == "number" and type(db.windowTop) == "number" then
+        ButlerTabs.ApplyScale(frame)
+        ButlerTabs.PlaceAt(frame, db.windowLeft, db.windowTop)
+    else
+        frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+        ButlerTabs.ApplyScale(frame)
+    end
+    -- Fit keeps a size it already has, so ask for it afresh.
+    frame:SetWidth(1)
+    self:Fit(window)
+end
+
+--- Grow the one window until its area holds the size every tab shares.
+function ButlerTabs:Grow()
+    local area = self.area
+    local one = area and area:GetParent()
+    if not one then return end
+    local width, height = self:Size()
+    local okW, areaW = pcall(area.GetWidth, area)
+    local okH, areaH = pcall(area.GetHeight, area)
+    if okW and type(areaW) == "number" and areaW > 0 and areaW < width then
+        one:SetWidth(one:GetWidth() + (width - areaW))
+    end
+    if okH and type(areaH) == "number" and areaH > 0 and areaH < height then
+        one:SetHeight(one:GetHeight() + (height - areaH))
+    end
+end
+
+--- Butler's pages go into the one window: called by it (host.enter).
+function ButlerTabs:Enter(area)
+    if not area then return end
+    self.area = area
+    for _, window in ipairs(Windows()) do
+        if FrameOf(window) then self:LayIn(window) end
+    end
+    self:Grow()
+    local key = self.wanted or (ns.UI and rawget(ns.UI, "view") == "all" and "all") or "bags"
+    self.wanted = nil
+    self:Open(key)
+end
+
+--- Butler's pages go back: called by the one window (host.leave).
+function ButlerTabs:Leave()
+    if not self.area then return end
+    self.leaving = true
+    for _, window in ipairs(Windows()) do
+        local frame = FrameOf(window)
+        if Shown(frame) then
+            local ok, err = pcall(window.Hide, window)
+            if not ok then ns.Debug("one window leave:", tostring(err)) end
+        end
+    end
+    self.area = nil
+    for _, window in ipairs(Windows()) do
+        if FrameOf(window) then self:LayOut(window) end
+    end
+    self.leaving = false
+end
+
+--- What Butler gives the one window when it joins.
+ButlerTabs.host = {
+    enter = function(area) ButlerTabs:Enter(area) end,
+    leave = function() ButlerTabs:Leave() end,
+}
+
+--- A Butler tab is asked to open. With "One Window:" ticked and Butler not
+--- in it yet, the one window opens on Butler instead, on that tab. True when
+--- it did, so the caller stops there.
+function ButlerTabs:Route(key)
+    if self.area then return false end
+    local One = ButlerTabs.One()
+    if not (One and One.Hosts and One.Hosts("butler")) then return false end
+    self.wanted = key
+    local ok, opened = pcall(One.Open, "butler")
+    if ok and opened then return true end
+    self.wanted = nil
+    return false
+end
+
+--- One of Butler's windows closed by itself (Escape, leaving a vendor):
+--- inside the one window, the one window closes with it.
+function ButlerTabs:Closed()
+    if not self.area or self.leaving or self.switching then return end
+    local One = ButlerTabs.One()
+    if One and One.Close then pcall(One.Close) end
 end
