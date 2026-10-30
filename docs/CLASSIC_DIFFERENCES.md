@@ -111,7 +111,8 @@ Every Forever catch-up checks this note first, before sorting commits into
 ## The one window
 
 - `UI/SharedWindow.lua` is Classic's own (2026-10-30); Forever has no copy
-  yet. Nothing shows until "One Window:" is ticked.
+  yet. "One Window:" is on unless unticked (2026-10-30). At the auction
+  house only Tradeskills shows in it.
 - Butler's pages move in (2026-10-30): `UI/ButlerTabs.lua`'s one window
   part, the "One Window:" row on the General page and its five locale
   lines, and the Route and Closed calls in `UI/MainWindow.lua` and

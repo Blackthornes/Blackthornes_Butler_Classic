@@ -299,6 +299,9 @@ function env.Load(locale)
     -- ADDON_LOADED installs saved variables; tests that skip the event loop
     -- still need ns.db to exist.
     ns.LoadSavedVariables()
+    -- "One Window:" is on unless unticked; suites test Butler's own windows
+    -- unless they tick it (test_onewindow.lua checks the default).
+    if ns.db then ns.db.oneWindow = false end
 
     env.ns = ns
     return ns

@@ -2,7 +2,8 @@
 -- owner said build it, 2026-10-30).
 --
 -- What must hold:
---   1. Off unless ticked: the Butler window opens in its own place.
+--   1. On unless unticked; unticked, the Butler window opens in its own
+--      place.
 --   2. Ticked, opening Butler opens the one window on Butler, with the
 --      Butler window laid into its area, bare of its own rim and grip.
 --   3. Settings opens in the same area; one tab up at a time.
@@ -24,6 +25,9 @@ suite.check("Butler joins with its pages", hub.entries.butler and hub.entries.bu
 suite.check("the one window is Butler's own copy", Tabs.One() == SW)
 
 -- 1.
+ns.db.oneWindow = nil
+suite.check("on unless unticked", SW.On())
+ns.db.oneWindow = false
 UI:Show("bags")
 suite.check("off: the Butler window opens by itself", UI.frame:IsShown() and not Tabs:Hosted())
 suite.check("in its own place", UI.frame:GetParent() ~= (hub.frame and hub.frame.area))
