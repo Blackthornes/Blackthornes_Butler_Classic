@@ -172,6 +172,16 @@ function MinimapButton:JoinShared()
         settings = function() if ns.SettingsUI then ns.SettingsUI:Toggle() end end,
         db = function() return ns.db end,
     })
+
+    -- And for the one Blackthornes window (UI/SharedWindow.lua).
+    if ns.SharedWindow then
+        ns.SharedWindow:Join({
+            key = "butler", order = 2, name = "Butler", icon = ICON,
+            open = function() MinimapButton:Open() end,
+            settings = function() if ns.SettingsUI then ns.SettingsUI:Toggle() end end,
+            db = function() return ns.db end,
+        })
+    end
 end
 
 --- Re-seat the button at its stored angle, using the current radius.
