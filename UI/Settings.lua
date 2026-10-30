@@ -41,7 +41,6 @@ local PAGES = {
       tip = L["The order Butler asks its rules in, and which ones are on"] },
     { key = "bankalt", text = L["BANK ALT"],
       tip = L["Mail whole kinds of items to one of your characters"] },
-    { key = "lists", text = L["LISTS"] },
     { key = "gold", text = L["GOLD"],
       tip = L["How much gold each of your characters keeps, topped up by mail"] },
     { key = "general", text = L["GENERAL"],
@@ -97,10 +96,25 @@ function SettingsUI:Build()
         Theme.Border(frame, "borderLit")
     end
 
+    -- The fold gem beside the close gem, as on every other tab
+    -- (UI/FoldWindow.lua), so the corner never changes between tabs.
+    if ns.FoldWindow then
+        ns.FoldWindow:Add(frame, { onToggle = function(folded)
+            if not folded then SettingsUI:Refresh() end
+        end })
+    end
+
     frame:SetScript("OnDragStart", function(self) self:StartMoving() end)
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         SettingsUI:SavePosition()
+        if ns.ButlerTabs then ns.ButlerTabs:Save(self) end
+    end)
+    -- Closed for good, not stepping aside for another tab: Tradeskills'
+    -- mail panel may come back.
+    frame:SetScript("OnHide", function()
+        if ns.ButlerTabs and ns.ButlerTabs.switching then return end
+        if ns.Errands then ns.Errands:TellTradeskills() end
     end)
 
     -- Escape closes it, like the game's own windows.
@@ -145,6 +159,14 @@ function SettingsUI:Build()
         local info = pages:Place("about", 2, ns.About:Info(pages.pages.about.content, COLUMN_WIDTH))
         pages:Searchable("about", info, info.words)
     end
+    -- Every tab is one size (UI/ButlerTabs.lua): Settings says what its
+    -- fullest page needs, and the Butler window grows to match.
+    local pages = self.pages
+    local fit = pages.Fit
+    pages.Fit = function(page)
+        fit(page)
+        if ns.ButlerTabs then ns.ButlerTabs:Need("settings", frame:GetWidth(), frame:GetHeight()) end
+    end
     self.pages:Fit()
 
     local footer = Theme.CreateLabel(frame, "tiny", "dim")
@@ -152,6 +174,9 @@ function SettingsUI:Build()
     footer:SetPoint("BOTTOMRIGHT", -PADDING, 14)
     footer:SetText(L["Changes save as you make them."])
     self.footer = footer
+
+    -- Your Bags, All Characters and Settings, last on the right.
+    if ns.ButlerTabs then ns.ButlerTabs:Attach(self) end
 
     frame:Hide()
     return frame
@@ -237,6 +262,7 @@ function SettingsUI.WindowStyleControl(row, x)
         format = function(value) return STYLE_LABELS[STYLES[value]] end,
         onChange = function(value)
             ns.db.windowStyle = STYLES[value]
+            if ns.SharedChoices then ns.SharedChoices:Changed("windowStyle", STYLES[value]) end
             reload:SetShown(STYLES[value] ~= Drawn())
         end,
     })
@@ -247,7 +273,7 @@ function SettingsUI.WindowStyleControl(row, x)
     stepper:SetPoint("TOPLEFT", x, -2)
 
     -- ReloadUI is allowed from a click, and saves everything first.
-    reload = Widgets.CreateButton(row, L["Reload now"], function()
+    reload = Widgets.CreateButton(row, L["Reload"], function()
         if ReloadUI then ReloadUI() end
     end, { width = 60, height = 20 })
     ns.SettingsPages.ReloadUnder(row, stepper, reload)
@@ -762,15 +788,15 @@ function SettingsUI:BuildPages()
     -- Rules for each of the player's Tradeskills lists (Logic/ListRules.lua,
     -- the owner said build it, 2026-10-19): pick a list, then who it mails
     -- to and how many of each stay on every character.
-    pages:Section("lists", 1, L["YOUR TRADESKILLS LISTS"])
-    local listRow = pages:Row("lists", 1, "", nil)
+    pages:Section("bankalt", 1, L["YOUR TRADESKILLS LISTS"])
+    local listRow = pages:Row("bankalt", 1, "", nil)
     controls.listsPick = SettingsUI.CharacterPicker(listRow, 0, function()
         SettingsUI:SyncLists()
     end)
     controls.listsPick.least = COLUMN_WIDTH
     controls.listsPick:SetWidth(COLUMN_WIDTH)
 
-    local mailToRow = pages:Row("lists", 1, L["Mail To:"], nil)
+    local mailToRow = pages:Row("bankalt", 1, L["Mail To:"], nil)
     controls.listsMailTo = SettingsUI.CharacterPicker(mailToRow, CONTROL_X, function()
         local list = SettingsUI:PickedList()
         if not list then return end
@@ -778,7 +804,7 @@ function SettingsUI:BuildPages()
         ns.ListRules:SetMailTo(list.id, picker.index > 1 and picker:GetName() or nil)
     end)
 
-    local keepRow = pages:Row("lists", 1, L["Keep Here:"], nil)
+    local keepRow = pages:Row("bankalt", 1, L["Keep Here:"], nil)
     local function SaveListKeep()
         local list = SettingsUI:PickedList()
         if not list then return end
@@ -857,6 +883,10 @@ function SettingsUI:BuildPages()
     end, true)
     controls.classTraining:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    -- The arrow's own rows, in the order every addon has them (the
+    -- unified look, card 13): Use TomTom, Guide Me, Arrow Size.
+    pages:Section("gold", 1, L["ARROW"])
+
     -- TomTom's arrow instead of Show the way's dial, when TomTom is
     -- installed (Logic/TomTom.lua). On unless unticked.
     local tomtomRow = pages:Row("gold", 1, L["Use TomTom:"],
@@ -921,8 +951,65 @@ function SettingsUI:BuildPages()
     end, { width = 100, height = 20 })
     controls.goldUsual:SetPoint("TOPLEFT", CONTROL_X, 0)
 
-    -- General: windows and text on the left, debug on the right.
+    -- General: the windows every Blackthornes addon shares first, then
+    -- Butler's own; the addons, tooltips and bags on the right (the
+    -- unified look, card 13).
     pages:Section("general", 1, L["WINDOWS"])
+
+    -- Asked 2026-10-10: the game's own look for players who would rather
+    -- the windows matched the rest of their screen. Read at login, so it
+    -- waits for /reload as Text size does. See UI/BlizzardLook.lua.
+    local styleRow = pages:Row("general", 1, L["Window Style:"], nil)
+    controls.windowStyle = SettingsUI.WindowStyleControl(styleRow, CONTROL_X)
+
+    -- Bigger letters in the same windows, as Tradeskills has. Every size
+    -- is read as text is drawn, so it waits for /reload.
+    local textRow = pages:Row("general", 1, L["Text Size:"], nil)
+    controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
+
+    -- The size the window's grip saves, for Your Bags, All Characters and
+    -- Settings alike.
+    local sizeRow = pages:Row("general", 1, L["Window Size:"], nil)
+    controls.windowScale = ns.SettingsPages.WindowSizeControl(sizeRow, CONTROL_X,
+        function() return math.floor(((ns.db and ns.db.windowScale) or 1) * 100 + 0.5) end,
+        function(percent)
+            ns.UI:SetWindowScale(percent / 100)
+            if ns.ButlerTabs and SettingsUI.frame then ns.ButlerTabs.ApplyScale(SettingsUI.frame) end
+        end)
+
+    -- How much the windows move: they rise in, glow and glint at Full,
+    -- only fade at Subtle and stay still at Off. Full until picked, and the
+    -- same choice as every Blackthornes addon (UI/SharedChoices.lua).
+    local effectsRow = pages:Row("general", 1, L["Effects:"], nil)
+    local Motion = ns.Motion
+    local effectNames = { full = L["Full"], subtle = L["Subtle"], off = L["Off"] }
+    local function EffectIndex()
+        local level = Motion.Level()
+        for index, name in ipairs(Motion.LEVELS) do
+            if name == level then return index end
+        end
+        return 1
+    end
+    controls.effects = Widgets.CreateChoice(effectsRow, {
+        min = 1, max = #Motion.LEVELS, step = 1, value = EffectIndex(),
+        format = function(index) return effectNames[Motion.LEVELS[index]] end,
+        onChange = function(index) Motion.SetLevel(Motion.LEVELS[index]) end,
+    })
+    controls.effects:SetPoint("TOPLEFT", CONTROL_X, 0)
+    controls.effectsIndex = EffectIndex
+
+    -- One minimap button for every Blackthornes addon (UI/SharedMinimap.lua,
+    -- the owner, 2026-10-28): ticked unless unticked, the same in all five.
+    local combineRow = pages:Row("general", 1, L["Combine Addon Buttons:"], nil)
+    controls.combineButtons = Widgets.CreateCheckbox(combineRow, L["On"], function(checked)
+        if ns.SharedMinimap then ns.SharedMinimap.SetCombined(checked) end
+    end, true)
+    controls.combineButtons:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    -- The minimap button always shows (the owner, 2026-10-15), so it has
+    -- no row here.
+
+    pages:Section("general", 1, L["BUTLER"])
 
     local windowRow = pages:Row("general", 1, L["Butler:"], nil)
     controls.openWindow = Widgets.CreateButton(windowRow, L["Open"], function()
@@ -935,8 +1022,21 @@ function SettingsUI:BuildPages()
         L["Open"], "all")
     controls.all = allButton
 
-    -- The minimap button always shows (the owner, 2026-10-15), so it has
-    -- no row here.
+    local positionRow = pages:Row("general", 1, L["Window Position:"],
+        L["Reset the Butler window to its default."])
+
+    local reset = Widgets.CreateButton(positionRow, L["Set Default"], function()
+        SettingsUI:ResetPositions()
+        ns.Print(L["window set to default."])
+    end, { width = 110, height = 20 })
+    reset:SetPoint("TOPLEFT", CONTROL_X, 0)
+    controls.resetPositions = reset
+
+    local voiceRow = pages:Row("general", 1, L["Butler's Voice:"], nil)
+    controls.voice = Widgets.CreateCheckbox(voiceRow, L["On"], function(checked)
+        ns.db.voice = checked
+    end, true)
+    controls.voice:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     local spaceRow = pages:Row("general", 1, L["Free Bag Space:"],
         L["Shows free slots on your backpack button."])
@@ -958,62 +1058,7 @@ function SettingsUI:BuildPages()
     end, false)
     controls.swapWhenFull:SetPoint("TOPLEFT", CONTROL_X, -2)
 
-    local whoRow = pages:Row("general", 1, L["Who Has It:"],
-        L["Tooltips list which characters have the item. Needs Blackthornes Tradeskills."])
-    controls.whoHas = SettingsUI.TooltipShiftControl(whoRow, "whoHas",
-        function() return ns.db.whoHas ~= false end,
-        function(on) if ns.WhoHas then ns.WhoHas:SetEnabled(on) end end)
-
-    local tipRow = pages:Row("general", 1, L["Butler on Tooltips:"],
-        L["The last tooltip line says what Butler would do with it."])
-    controls.verdictTip = SettingsUI.TooltipShiftControl(tipRow, "verdictTip",
-        function() return ns.db.verdictTip ~= false end,
-        function(on) if ns.VerdictTip then ns.VerdictTip:SetEnabled(on) end end)
-
-    local vendorRow = pages:Row("general", 1, L["Vendor Price:"], nil)
-    controls.vendorPrice = SettingsUI.TooltipShiftControl(vendorRow, "vendorPrice",
-        function() return ns.db.vendorPrice ~= false end,
-        function(on) if ns.VendorPrices then ns.VendorPrices:SetEnabled(on) end end)
-
-    local voiceRow = pages:Row("general", 1, L["Butler's Voice:"], nil)
-    controls.voice = Widgets.CreateCheckbox(voiceRow, L["On"], function(checked)
-        ns.db.voice = checked
-    end, true)
-    controls.voice:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    local positionRow = pages:Row("general", 1, L["Window Position:"],
-        L["Reset the Butler window to its default."])
-
-    local reset = Widgets.CreateButton(positionRow, L["Set Default"], function()
-        SettingsUI:ResetPositions()
-        ns.Print(L["window set to default."])
-    end, { width = 110, height = 20 })
-    reset:SetPoint("TOPLEFT", CONTROL_X, 0)
-    controls.resetPositions = reset
-
-    -- Bigger letters in the same windows, as Tradeskills has. Every size
-    -- is read as text is drawn, so it waits for /reload.
-    local textRow = pages:Row("general", 1, L["Text Size:"], nil)
-    controls.textSize = ns.SettingsPages.TextSizeControl(textRow, CONTROL_X, function() return ns.db end)
-
-    -- Asked 2026-10-10: the game's own look for players who would rather
-    -- the windows matched the rest of their screen. Read at login, so it
-    -- waits for /reload as Text size does. See UI/BlizzardLook.lua.
-    local styleRow = pages:Row("general", 1, L["Window Style:"], nil)
-    controls.windowStyle = SettingsUI.WindowStyleControl(styleRow, CONTROL_X)
-
-    -- One minimap button for every Blackthornes addon (UI/SharedMinimap.lua,
-    -- the owner, 2026-10-28): ticked unless unticked, the same in all five.
-    local combineRow = pages:Row("general", 1, L["Combine Addon Buttons:"], nil)
-    controls.combineButtons = Widgets.CreateCheckbox(combineRow, L["On"], function(checked)
-        if ns.SharedMinimap then ns.SharedMinimap.SetCombined(checked) end
-    end, true)
-    controls.combineButtons:SetPoint("TOPLEFT", CONTROL_X, -2)
-
-    -- Butler's own bag window (UI/BagWindow.lua), off unless ticked.
-    if ns.BagWindow then ns.BagWindow:AddSettings(pages, controls, CONTROL_X) end
-
-    pages:Section("general", 2, L["ADVANCED"])
+    pages:Section("general", 2, L["ADDONS"])
 
     -- Debug and the client check are typed only (/bbutler debug, probe;
     -- the owner, 2026-10-23): players don't need them.
@@ -1045,6 +1090,28 @@ function SettingsUI:BuildPages()
         ns.WhatsNew:SetMotionOn(checked)
     end, true)
     controls.whatsNewMotion:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    pages:Section("general", 2, L["TOOLTIPS"])
+
+    local whoRow = pages:Row("general", 2, L["Who Has It:"],
+        L["Tooltips list which characters have the item. Needs Blackthornes Tradeskills."])
+    controls.whoHas = SettingsUI.TooltipShiftControl(whoRow, "whoHas",
+        function() return ns.db.whoHas ~= false end,
+        function(on) if ns.WhoHas then ns.WhoHas:SetEnabled(on) end end)
+
+    local tipRow = pages:Row("general", 2, L["Butler on Tooltips:"],
+        L["The last tooltip line says what Butler would do with it."])
+    controls.verdictTip = SettingsUI.TooltipShiftControl(tipRow, "verdictTip",
+        function() return ns.db.verdictTip ~= false end,
+        function(on) if ns.VerdictTip then ns.VerdictTip:SetEnabled(on) end end)
+
+    local vendorRow = pages:Row("general", 2, L["Vendor Price:"], nil)
+    controls.vendorPrice = SettingsUI.TooltipShiftControl(vendorRow, "vendorPrice",
+        function() return ns.db.vendorPrice ~= false end,
+        function(on) if ns.VendorPrices then ns.VendorPrices:SetEnabled(on) end end)
+
+    -- Butler's own bag window (UI/BagWindow.lua), off unless ticked.
+    if ns.BagWindow then ns.BagWindow:AddSettings(pages, controls, CONTROL_X) end
 
     -- The chat-only commands (help, jobs, lists, upgrademail, gold,
     -- training, goals and bankalt on its own) have no button here: they
@@ -1115,6 +1182,8 @@ function SettingsUI:Refresh()
     self:SyncLists()
     controls.textSize:Sync()
     controls.windowStyle:Sync()
+    controls.effects:SetValue(controls.effectsIndex(), true)
+    controls.windowScale:Sync()
     controls.combineButtons:SetChecked(not ns.SharedMinimap or ns.SharedMinimap.Combined())
     if ns.RuleOrderUI then ns.RuleOrderUI:Refresh() end
     self.pages:Refresh()
@@ -1153,9 +1222,14 @@ function SettingsUI:Show()
     self:Build()
 
     if not self.frame:IsShown() then
-        self:RestorePosition()
+        -- In the Butler window's place when it is up, else where the tabs
+        -- last stood (UI/ButlerTabs.lua).
+        local how = ns.ButlerTabs and ns.ButlerTabs:Take(self)
+        if not how then self:RestorePosition() end
         self.frame:Show()
-        ns.Motion:Open(self.frame)
+        if not how and ns.ButlerTabs then ns.ButlerTabs:Settle(self.frame) end
+        if how ~= "switch" then ns.Motion:Open(self.frame) end
+        if ns.Errands then ns.Errands:TellTradeskills() end
     end
 
     self:Refresh()
@@ -1247,3 +1321,27 @@ end)
 -- list, which would otherwise print the same line three times.
 ns.commands.options = ns.commands.settings
 ns.commands.config = ns.commands.settings
+
+--------------------------------------------------------------------------------
+-- Choices every Blackthornes addon shares (UI/SharedChoices.lua): a change
+-- made in a sister is written here the way this addon writes it itself.
+--------------------------------------------------------------------------------
+
+if ns.SharedChoices then
+    ns.SharedChoices:Join("Butler", function(choice, value)
+        if not ns.db then return end
+        if choice == "textSize" then
+            if ns.Theme.TEXT_STEPS and ns.Theme.TEXT_STEPS[value] then ns.db.textSize = value end
+        elseif choice == "windowStyle" then
+            if value == "titanforged" or value == "blizzard" then ns.db.windowStyle = value end
+        elseif choice == "effects" then
+            if value == "full" or value == "subtle" or value == "off" then ns.Motion.SetLevel(value) end
+        elseif choice == "useTomTom" then
+            if ns.TomTom then ns.TomTom:SetOn(value and true or false) end
+        elseif choice == "arrowRoute" then
+            if ns.Travel then ns.Travel:SetOn(value and true or false) end
+        end
+        -- Era's Butler has no Arrow Size: an arrowSize from a sister is left alone.
+        if ns.SettingsUI and ns.SettingsUI.Refresh and ns.SettingsUI.frame and ns.SettingsUI.frame:IsShown() then pcall(ns.SettingsUI.Refresh, ns.SettingsUI) end
+    end)
+end

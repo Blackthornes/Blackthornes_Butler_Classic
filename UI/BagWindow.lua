@@ -33,7 +33,7 @@ local FOOT = 40
 -- The free count's size over large: well above the foot's other words, so
 -- it reads at a glance.
 BagWindow.FREE_SIZE_UP = 6
-local WELL_TOP = 116
+local WELL_TOP = 82
 local GAP = 4
 local HEADING = 24
 local SECTION_GAP = 8
@@ -385,60 +385,36 @@ function BagWindow:Build()
     return frame
 end
 
---- Tabs along the top past the portrait, a gold rule under them, the search
---- across the window, then the chips and Group By.
+--- Bags, Bank and Everyone hang below the window as Butler's own tabs do
+--- (the unified look, card 22). The header row is the search past the
+--- portrait and Group By on the right; the chips sit under a gold rule.
+BagWindow.TAB_INSET = 34
+BagWindow.TAB_REACH = 32
+BagWindow.SEARCH_WIDTH = 260
+
 function BagWindow:BuildHeader()
     local frame = self.frame
-    self.tabs = {}
-    local x = 59
-    for _, key in ipairs(TABS) do
-        local tab = Widgets.CreateButton(frame, TAB_WORDS[key], function() BagWindow:SetTab(key) end,
-            { height = 22 })
-        tab:SetWidth(math.max(70, Theme.TextWidth("small", TAB_WORDS[key]) + 28))
-        tab:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -EDGE_PAD - 6)
-        x = x + tab:GetWidth() + 6
-        self.tabs[key] = tab
+    local tabs = {}
+    for _, key in ipairs(TABS) do tabs[#tabs + 1] = { key = key, text = TAB_WORDS[key] } end
+    local strip = Widgets.CreateTabStrip(frame, tabs, function(picked)
+        if picked ~= BagWindow.tab then BagWindow:SetTab(picked) end
+    end, { width = WIDTH - 2 * BagWindow.TAB_INSET, hanging = true })
+    strip:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", BagWindow.TAB_INSET, 0)
+    self.tabStrip = strip
+    if self.trim and ns.Titanforged and ns.Titanforged.Reach and frame.SetClampRectInsets then
+        local left, right, top, bottom = ns.Titanforged.Reach(self.trim)
+        frame:SetClampRectInsets(-left, right, top, -math.max(bottom or 0, BagWindow.TAB_REACH))
     end
 
-    local rule = frame:CreateTexture(nil, "ARTWORK")
-    rule:SetPoint("TOPLEFT", EDGE_PAD, -44)
-    rule:SetPoint("TOPRIGHT", -EDGE_PAD, -44)
-    rule:SetHeight(1)
-    Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
-
-    local search = Widgets.CreateSearchBox(frame, L["Search all your characters"], function()
+    -- Past the portrait, which reaches 48 pixels into the window; wider
+    -- where the words run long.
+    local placeholder = L["Search all your characters"]
+    local search = Widgets.CreateSearchBox(frame, placeholder, function()
         BagWindow:Changed(true)
     end)
-    search:SetPoint("TOPLEFT", PADDING, -52)
-    search:SetPoint("TOPRIGHT", -PADDING, -52)
+    search:SetPoint("TOPLEFT", 59, -EDGE_PAD - 6)
+    search:SetWidth(math.max(BagWindow.SEARCH_WIDTH, Theme.TextWidth("small", placeholder) + 40))
     self.search = search
-
-    self.chips = {}
-    local chipX = PADDING
-    -- Each chip's room round its word, less in a language whose words run
-    -- long, so the row always fits inside the window.
-    local words, room = 0, 0
-    for _, key in ipairs(ns.BagView.CHIPS) do
-        words = words + Theme.TextWidth("small", ns.BagView.CHIP_WORDS[key])
-        room = room + 1
-    end
-    local roomEach = 20
-    if room > 0 then
-        local spare = WIDTH - 2 * PADDING - words - 4 * (room - 1)
-        roomEach = math.max(8, math.min(20, math.floor(spare / room)))
-    end
-    for _, key in ipairs(ns.BagView.CHIPS) do
-        local word = ns.BagView.CHIP_WORDS[key]
-        local chip = Widgets.CreateButton(frame, word, function()
-            BagWindow.chip = BagWindow.chip ~= key and key or nil
-            BagWindow:PaintChips()
-            BagWindow:Changed(true)
-        end, { height = 20 })
-        chip:SetWidth(Theme.TextWidth("small", word) + roomEach)
-        chip:SetPoint("TOPLEFT", frame, "TOPLEFT", chipX, -86)
-        chipX = chipX + chip:GetWidth() + 4
-        self.chips[key] = chip
-    end
 
     local words = {}
     for _, key in ipairs(ns.BagView.GROUPS) do words[#words + 1] = ns.BagView.GROUP_WORDS[key] end
@@ -449,16 +425,50 @@ function BagWindow:BuildHeader()
         onChange = function(v) ns.BagView:SetGroupBy(ns.BagView.GROUPS[v]) end,
     })
     if ns.SettingsPages and ns.SettingsPages.FitStepper then ns.SettingsPages.FitStepper(group, words) end
-    -- Group By sits on the search row, so the chips have their row to
-    -- themselves and never run under its label in any language.
-    local lift = math.floor(((tonumber(search:GetHeight()) or 24) - (tonumber(group:GetHeight()) or 24)) / 2)
-    group:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PADDING, -52 - lift)
+    group:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -SORT_RIGHT, -52)
     self.groupStepper = group
 
     local groupLabel = Theme.CreateLabel(frame, "small", "muted", "RIGHT")
     groupLabel:SetPoint("RIGHT", group, "LEFT", -6, 0)
     groupLabel:SetText(L["Group By:"])
     self.groupLabel = groupLabel
+
+    local rule = frame:CreateTexture(nil, "ARTWORK")
+    rule:SetPoint("TOPLEFT", EDGE_PAD, -44)
+    rule:SetPoint("TOPRIGHT", -EDGE_PAD, -44)
+    rule:SetHeight(1)
+    Theme.SetGradientAlpha(rule, "HORIZONTAL", "accent", 0.6, 0.05)
+
+    -- The house chips (UI/HouseKit.lua): one picked at a time, a click on
+    -- the lit one lets it go.
+    self.chips = {}
+    local row = {}
+    for _, key in ipairs(ns.BagView.CHIPS) do
+        local chip = Widgets.CreateChip(frame, ns.BagView.CHIP_WORDS[key], function()
+            BagWindow.chip = BagWindow.chip ~= key and key or nil
+            BagWindow:PaintChips()
+            BagWindow:Changed(true)
+        end)
+        self.chips[key] = chip
+        row[#row + 1] = chip
+    end
+    -- The chips share their row with Group By: where the words run long,
+    -- each chip gives up some of the room round its word, so the row always
+    -- fits inside the window and never runs under the label.
+    local used = 0
+    for _, chip in ipairs(row) do used = used + (tonumber(chip:GetWidth()) or 34) end
+    local room = WIDTH - SORT_RIGHT - PADDING - (tonumber(group:GetWidth()) or 0)
+        - (Theme.TextWidth("small", L["Group By:"]) or 0) - 12 - 4 * #row
+    local over = used - room
+    if over > 0 and #row > 0 then
+        local less = math.min(10, math.ceil(over / #row))
+        for _, chip in ipairs(row) do chip:SetWidth((tonumber(chip:GetWidth()) or 34) - less) end
+    end
+    local x = PADDING
+    for _, chip in ipairs(row) do
+        chip:SetPoint("TOPLEFT", frame, "TOPLEFT", x, -52)
+        x = x + chip:GetWidth() + 4
+    end
 
     self:PaintTabs()
     self:PaintChips()
@@ -473,10 +483,9 @@ function BagWindow.GroupIndex()
 end
 
 function BagWindow:PaintTabs()
-    for key, tab in pairs(self.tabs or {}) do
-        local on = key == self.tab
-        if tab.SetLabelColor then tab:SetLabelColor(on and "accentHi" or nil) end
-        Theme.SetBorderColor(tab, on and "accent" or "border")
+    local strip = rawget(self, "tabStrip")
+    if strip and strip.Select and strip.selected ~= (self.tab or "bags") then
+        strip:Select(self.tab or "bags", true)
     end
     local bags = self.tab == "bags"
     for _, chip in pairs(self.chips or {}) do chip:SetShown(bags) end
@@ -503,8 +512,12 @@ end
 function BagWindow:PaintChips()
     for key, chip in pairs(self.chips or {}) do
         local on = key == self.chip
-        if chip.SetLabelColor then chip:SetLabelColor(on and "good" or nil) end
-        Theme.SetBorderColor(chip, on and "good" or "border")
+        if chip.SetSelected then
+            chip:SetSelected(on)
+        else
+            if chip.SetLabelColor then chip:SetLabelColor(on and "good" or nil) end
+            Theme.SetBorderColor(chip, on and "good" or "border")
+        end
     end
 end
 
@@ -990,11 +1003,11 @@ function BagWindow:HeadingButton(kind)
         end
     end
     if kind == "mail" then
-        button = Widgets.CreateButton(self.content, L["Fill mail"], Run(ns.Errands.FillMail), { height = 18, primary = true })
+        button = Widgets.CreateButton(self.content, L["Fill Mail"], Run(ns.Errands.FillMail), { height = 18, primary = true })
     else
         button = Widgets.CreateButton(self.content, L["Move to bank"], Run(ns.Errands.MoveToBank), { height = 18, primary = true })
     end
-    button:SetWidth(Theme.TextWidth("small", kind == "mail" and L["Fill mail"] or L["Move to bank"]) + 24)
+    button:SetWidth(Theme.TextWidth("small", kind == "mail" and L["Fill Mail"] or L["Move to bank"]) + 24)
     button:Hide()
     self.headingButtons[kind] = button
     return button

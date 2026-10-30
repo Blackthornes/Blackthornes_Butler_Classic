@@ -382,7 +382,10 @@ end
 --- mail panel steps aside or comes back. Only said when it changes.
 --- `shown` is the window's state when the caller knows it (its OnHide).
 function Errands:TellTradeskills(shown)
-    if shown == nil then shown = ns.UI ~= nil and ns.UI:IsShown() == true end
+    if shown == nil then
+        shown = (ns.UI ~= nil and ns.UI:IsShown() == true)
+            or (ns.ButlerTabs ~= nil and ns.ButlerTabs:AnyShown() == true)
+    end
     local covered = self.mailOpen == true and shown == true
     if covered == self.covered then return end
     self.covered = covered

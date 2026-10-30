@@ -138,7 +138,7 @@ suite.check("nothing bought yet", #calls == 0)
 
 -- The whole price shows: the box grows to fit it, never "200 for 7s...".
 local function Need(text)
-    return 18 + ns.Theme.TextWidth("normal", "How many?") + 10 + 70 + 10 + ns.Theme.TextWidth("normal", text) + 4 + 18
+    return 18 + ns.Theme.TextWidth("normal", "How Many:") + 10 + 70 + 10 + ns.Theme.TextWidth("normal", text) + 4 + 18
 end
 suite.check("the box is wide enough for the price", Box.frame:GetWidth() >= Need(Box.total:GetText()),
     Box.frame:GetWidth())

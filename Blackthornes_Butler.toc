@@ -48,6 +48,11 @@ UI\Widgets.lua
 UI\SpotMarker.lua
 UI\Titanforged.lua
 UI\FoldWindow.lua
+UI\HouseKit.lua
+UI\RowMenu.lua
+UI\Notice.lua
+UI\SharedChoices.lua
+UI\ButlerTabs.lua
 UI\About.lua
 UI\WhatsNew.lua
 UI\SettingsPages.lua
