@@ -108,3 +108,7 @@ Every Forever catch-up checks this note first, before sorting commits into
 - The Bags window's chips shrink the room round their words when the row
   would run under Group By (Classic's own fit, kept from before).
 
+## The one window
+
+- `UI/SharedWindow.lua` is Classic's own (2026-10-30); Forever has no copy
+  yet. Nothing shows until "One Window:" is ticked.
