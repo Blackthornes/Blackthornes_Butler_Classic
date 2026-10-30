@@ -115,7 +115,7 @@ function SettingsUI:Build()
     frame:SetScript("OnHide", function()
         if ns.ButlerTabs and ns.ButlerTabs.switching then return end
         if ns.Errands then ns.Errands:TellTradeskills() end
-        if ns.ButlerTabs then ns.ButlerTabs:Closed() end
+        if ns.ButlerTabs then ns.ButlerTabs:Closed(frame) end
     end)
 
     -- Escape closes it, like the game's own windows.
