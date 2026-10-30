@@ -116,3 +116,5 @@ Every Forever catch-up checks this note first, before sorting commits into
   part, the "One Window:" row on the General page and its five locale
   lines, and the Route and Closed calls in `UI/MainWindow.lua` and
   `UI/Settings.lua`. Forever's Butler has none of it.
+- Docking beside the mailbox, vendor and trainer (2026-10-30) is in the
+  shared file, so Forever has none of it either.
