@@ -5,15 +5,15 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.6.0", lines = {
+        "All your Blackthornes add-ons now open in one window, with a button for each add-on down the side.",
+        "The window moves beside the auction house, mailbox, vendor and trainer when you open them.",
+    } },
     { version = "0.5.0", lines = {
         "Every window has a new look that matches the other Blackthornes add-ons.",
     } },
     { version = "0.4.0", lines = {
         "The minimap button has a new Blackthornes badge.",
         "Show the way now puts a gold marker on your map.",
-    } },
-    { version = "0.3.0", lines = {
-        "Swap When Full offers to swap your cheapest item for better loot when your bags are full.",
-        "One minimap button now opens all your Blackthornes add-ons.",
     } },
 }
