@@ -381,6 +381,13 @@ function UI.CreateRow(row)
     row.worth:SetWidth(UI.WORTH_WIDTH)
     row.worth:SetWordWrap(true)
 
+    -- Money as the game's coins, each in its own column (UI/Coins.lua),
+    -- in the worth column's place.
+    if ns.Coins then
+        row.coins = ns.Coins.Create(row, function() return Theme.CreateLabel(row, "small", "text", "RIGHT") end)
+        ns.Coins.Place(row.coins, row, "RIGHT", -6, 0)
+    end
+
     row.reason = Theme.CreateLabel(row, "small", "muted")
     row.reason:SetPoint("LEFT", row.name, "RIGHT", 8, 0)
     row.reason:SetPoint("RIGHT", row.worth, "LEFT", -8, 0)
@@ -443,9 +450,30 @@ end
 UI.fillRows = setmetatable({}, { __mode = "k" })
 UI.mailOnRows = {}
 
+--- What a row is worth: the coins in their columns, or the words for a
+--- client without them. Nothing for no amount.
+function UI.SetMoney(row, copper)
+    local coins = rawget(row, "coins")
+    if type(copper) ~= "number" or copper <= 0 then
+        if coins then ns.Coins.Set(coins, nil) end
+        row.worth:SetText("")
+        return
+    end
+    if coins then
+        row.worth:SetText("")
+        ns.Coins.Set(coins, copper)
+    else
+        row.worth:SetText(Items.FormatMoney(copper))
+    end
+end
+
 function UI.FitWorth(row)
     local text = row.worth:GetText()
     local width = UI.WORTH_WIDTH
+    local coins = rawget(row, "coins")
+    if coins and ns.Coins.Shown(coins) then
+        width = math.max(width, ns.Coins.Width(coins))
+    end
     if type(text) == "string" and text ~= "" then
         width = math.max(width, math.ceil(Theme.TextWidth("small", text)) + 4)
     end
@@ -495,6 +523,7 @@ function UI.UpdateRow(row, data)
         -- squeezed into lines that run over the row (seen in game
         -- 2026-10-12). The worth is still on the row's tooltip.
         row.worth:SetText("")
+        if rawget(row, "coins") then ns.Coins.Set(row.coins, nil) end
         row.action:SetText(L["Fill Mail"])
         row.action.tooltipText = L.Format("Fills in a mail to %s. Check it, then press Send.", to)
         if (data.worth or 0) > 0 then
@@ -510,6 +539,7 @@ function UI.DrawRow(row, data)
     if openEdge then openEdge:Hide() end
     row.worth:SetTextColor(Theme.Unpack("text"))
     row.reason:SetTextColor(Theme.Unpack("muted"))
+    if rawget(row, "coins") then ns.Coins.Set(row.coins, nil) end
     UI.PlaceMark(row, nil)
     if row.action then row.action:Hide() end
     -- The quality ring and stack count (UI/ItemLook.lua) only on an item's
@@ -538,7 +568,7 @@ function UI.DrawRow(row, data)
         row.name:SetTextColor(Theme.Unpack("accent"))
         row.name:SetText(group.label:upper())
         row.reason:SetText(Plural(group.count, group.one or L["item"], group.many or L["items"]))
-        row.worth:SetText(group.worth > 0 and Items.FormatMoney(group.worth) or "")
+        UI.SetMoney(row, group.worth)
         return
     end
 
@@ -565,7 +595,7 @@ function UI.DrawRow(row, data)
     local kind = UI.MarkFor(data)
     UI.PlaceMark(row, kind)
     if kind and not data.bought and ns.Marks then ns.Marks.Paint(row.reason, kind) end
-    row.worth:SetText((data.worth or 0) > 0 and Items.FormatMoney(data.worth) or "")
+    UI.SetMoney(row, data.worth)
 end
 
 -- Each verdict's mark (UI/Marks.lua): a coin for Sell, a letter for Mail and
@@ -603,7 +633,7 @@ function UI.UpdateGoldRow(row, data)
     row.name:SetTextColor(Theme.Unpack("text"))
     row.name:SetText(entry.to)
     row.reason:SetText(ns.Funds.Reason(entry))
-    row.worth:SetText(Items.FormatMoney(entry.amount))
+    UI.SetMoney(row, entry.amount)
 end
 
 --- A step for the character playing: what to craft or mail, and why, with
