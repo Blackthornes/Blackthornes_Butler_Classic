@@ -166,7 +166,8 @@ function SettingsUI:Build()
     local fit = pages.Fit
     pages.Fit = function(page)
         fit(page)
-        if ns.ButlerTabs then ns.ButlerTabs:Need("settings", frame:GetWidth(), frame:GetHeight()) end
+        local need = page.need or { frame:GetWidth(), frame:GetHeight() }
+        if ns.ButlerTabs then ns.ButlerTabs:Need("settings", need[1], need[2]) end
     end
     self.pages:Fit()
 
