@@ -504,8 +504,12 @@ function UI.DrawRow(row, data)
     row.worth:SetTextColor(Theme.Unpack("text"))
     row.reason:SetTextColor(Theme.Unpack("muted"))
     if row.action then row.action:Hide() end
-    -- The quality ring (UI/ItemLook.lua) only on an item's own row.
-    if ns.ItemLook then ns.ItemLook.SetQuality(row.icon, nil) end
+    -- The quality ring and stack count (UI/ItemLook.lua) only on an item's
+    -- own row.
+    if ns.ItemLook then
+        ns.ItemLook.SetQuality(row.icon, nil)
+        ns.ItemLook.SetCount(row.icon, nil)
+    end
     if data.type == "ammo" then return UI.UpdateAmmoRow(row, data) end
     if data.type == "everyone" then return UI.UpdateItemRow(row, data) end
     if data.type == "holder" then return UI.UpdateHolderRow(row, data) end
@@ -533,9 +537,15 @@ function UI.DrawRow(row, data)
     row.fold:Hide()
     row.icon:Show()
     row.icon:SetTexture(data.icon or [[Interface\Icons\INV_Misc_QuestionMark]])
-    if ns.ItemLook then ns.ItemLook.SetQuality(row.icon, data.quality) end
     row.name:SetTextColor(QualityColor(data.quality))
-    row.name:SetText(data.count > 1 and L.Format("%s x%d", data.name, data.count) or data.name)
+    if ns.ItemLook then
+        ns.ItemLook.SetQuality(row.icon, data.quality)
+        -- The stack's count sits on the icon's corner, as in the bags.
+        ns.ItemLook.SetCount(row.icon, data.count)
+        row.name:SetText(data.name)
+    else
+        row.name:SetText(data.count > 1 and L.Format("%s x%d", data.name, data.count) or data.name)
+    end
     row.reason:SetText(data.reason or "")
     -- Bought to disenchant reads in the tag's violet, as on Tradeskills' tab.
     if data.bought then
