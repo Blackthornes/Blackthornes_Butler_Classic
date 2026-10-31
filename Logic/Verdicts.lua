@@ -1681,6 +1681,7 @@ function Verdicts:Groups()
                 quality = entry.quality, bound = entry.bound,
                 mailTo = extra and extra.to, mailCount = extra and extra.count,
                 upgrade = extra and extra.upgrade or nil,
+                keptUpgrade = verdict == "keep" and extra and extra.wear ~= nil or nil,
                 bought = extra and extra.bought,
                 craft = extra and extra.craft,
                 name = Items.NameFromLink(entry.link) or L.Format("item %s", tostring(entry.itemID)),

@@ -386,6 +386,13 @@ function UI.CreateRow(row)
     row.reason:SetPoint("RIGHT", row.worth, "LEFT", -8, 0)
     row.reason:SetWordWrap(true)
 
+    -- The small mark before what to do (UI/Marks.lua), on an item's row.
+    if ns.Marks then
+        row.mark = row:CreateTexture(nil, "ARTWORK")
+        ns.Marks.Attach(row.mark)
+        row.mark:SetPoint("LEFT", row.name, "RIGHT", 8, 0)
+    end
+
     -- The Ammo row's Fill button and a job's Craft or Buy button sit where
     -- the worth goes (Logic/Ammo.lua, Logic/Jobs.lua).
     row.action = Widgets.CreateButton(row, L["Fill"], function() UI.RowAction(row.data) end, {
@@ -466,7 +473,7 @@ function UI.RowHeight(row)
     local ok2, worthWidth = pcall(row.worth.GetWidth, row.worth)
     worthWidth = ok2 and tonumber(worthWidth) or UI.WORTH_WIDTH
     local nameWidth = 184
-    local reasonWidth = rowWidth - 34 - nameWidth - 8 - 8 - worthWidth - 6
+    local reasonWidth = rowWidth - 34 - nameWidth - (rawget(row, "markGap") or 8) - 8 - worthWidth - 6
     if reasonWidth < 40 then reasonWidth = 40 end
     local tallest = math.max(
         TextHeight(row.name, "small", nameWidth),
@@ -503,6 +510,7 @@ function UI.DrawRow(row, data)
     if openEdge then openEdge:Hide() end
     row.worth:SetTextColor(Theme.Unpack("text"))
     row.reason:SetTextColor(Theme.Unpack("muted"))
+    UI.PlaceMark(row, nil)
     if row.action then row.action:Hide() end
     -- The quality ring and stack count (UI/ItemLook.lua) only on an item's
     -- own row.
@@ -553,7 +561,37 @@ function UI.DrawRow(row, data)
     else
         row.reason:SetTextColor(Theme.Unpack("muted"))
     end
+    -- What to do, with its mark, in the mark's colour.
+    local kind = UI.MarkFor(data)
+    UI.PlaceMark(row, kind)
+    if kind and not data.bought and ns.Marks then ns.Marks.Paint(row.reason, kind) end
     row.worth:SetText((data.worth or 0) > 0 and Items.FormatMoney(data.worth) or "")
+end
+
+-- Each verdict's mark (UI/Marks.lua): a coin for Sell, a letter for Mail and
+-- so on; a kept upgrade gets the arrow.
+UI.VERDICT_MARKS = {
+    sell = "sell", mail = "mail", keep = "keep", disenchant = "disenchant",
+    bank = "bank", look = "look", auction = "list", wait = "waiting", craft = "craft",
+}
+
+function UI.MarkFor(data)
+    if not data or data.type ~= "item" then return nil end
+    if data.verdict == "keep" and data.keptUpgrade then return "upgrade" end
+    return UI.VERDICT_MARKS[data.verdict]
+end
+
+-- Shows the mark (or none) and moves the words past it.
+function UI.PlaceMark(row, kind)
+    local mark = rawget(row, "mark")
+    if not mark or not ns.Marks then return end
+    ns.Marks.Set(mark, kind)
+    local gap = kind and (8 + ns.Marks.SIZE + 4) or 8
+    if row.markGap == gap then return end
+    row.markGap = gap
+    row.reason:ClearAllPoints()
+    row.reason:SetPoint("LEFT", row.name, "RIGHT", gap, 0)
+    row.reason:SetPoint("RIGHT", row.worth, "LEFT", -8, 0)
 end
 
 --- A gold top-up: who it goes to, what they have and keep, and how much.
