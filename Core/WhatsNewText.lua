@@ -5,15 +5,17 @@
 local _, ns = ...
 
 ns.WHATS_NEW = {
+    { version = "0.7.0", lines = {
+        "Item icons now have a ring and a name colour that match their quality.",
+        "Stack counts show on the corner of item icons.",
+        "Items show a small mark and colour for what to do with them.",
+        "Worth shows in gold, silver and copper coins, lined up in columns.",
+    } },
     { version = "0.6.0", lines = {
         "All your Blackthornes add-ons now open in one window, with a button for each add-on down the side.",
         "The window moves beside the auction house, mailbox, vendor and trainer when you open them.",
     } },
     { version = "0.5.0", lines = {
         "Every window has a new look that matches the other Blackthornes add-ons.",
-    } },
-    { version = "0.4.0", lines = {
-        "The minimap button has a new Blackthornes badge.",
-        "Show the way now puts a gold marker on your map.",
     } },
 }
