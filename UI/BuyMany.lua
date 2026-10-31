@@ -136,16 +136,42 @@ function BuyManyUI:Build()
     return frame
 end
 
---- Beside the vendor window, else in the middle.
+--- The one window, when it sits beside the vendor, else nil.
+local function DockedHere()
+    local shared = ns.SharedWindow
+    if not (shared and shared.DockedFrame and shared.Place) then return nil end
+    local ok, place = pcall(shared.Place)
+    if not ok or place ~= "vendor" then return nil end
+    local okFrame, docked = pcall(shared.DockedFrame)
+    if okFrame then return docked end
+    return nil
+end
+
+--- Beside the vendor window (past the one window when it sits there),
+--- else in the middle.
 function BuyManyUI:Place()
     local frame = self.frame
     frame:ClearAllPoints()
     local merchant = rawget(_G, "MerchantFrame")
-    if type(merchant) == "table" and Ask(merchant, "IsShown") then
+    local docked = DockedHere()
+    if docked then
+        frame:SetPoint("TOPLEFT", docked, "TOPRIGHT", 12, -24)
+    elseif type(merchant) == "table" and Ask(merchant, "IsShown") then
         frame:SetPoint("TOPLEFT", merchant, "TOPRIGHT", 12, -24)
     else
         frame:SetPoint("CENTER", UIParent, "CENTER", 0, 80)
     end
+    self:WatchWindow()
+end
+
+--- Place the box again when the one window docks or goes back, once.
+function BuyManyUI:WatchWindow()
+    local shared = ns.SharedWindow
+    if self.watching or not (shared and shared.Watch) then return end
+    self.watching = true
+    shared.Watch(function()
+        if BuyManyUI.frame and Ask(BuyManyUI.frame, "IsShown") then BuyManyUI:Place() end
+    end)
 end
 
 --- Open the box for the vendor's item at `index`, with `amount` filled in

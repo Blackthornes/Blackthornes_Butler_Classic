@@ -262,6 +262,31 @@ ns.HandleSlash("buy 5 nothinglikeit")
 suite.check("a name the vendor doesn't sell says so",
     env.ChatText():find("doesn't sell anything called nothinglikeit", 1, true) ~= nil)
 
+-- The one window docked beside the vendor: the box sits past it, and moves
+-- back beside the vendor when the window goes back to its place.
+do
+    local SW = ns.SharedWindow
+    local docked, place = env.Stub(), "vendor"
+    local savedFrame, savedPlace, savedWatch = SW.DockedFrame, SW.Place, SW.Watch
+    local watchers = {}
+    SW.DockedFrame = function() return docked end
+    SW.Place = function() return place end
+    SW.Watch = function(fn) watchers[#watchers + 1] = fn end
+    Box.watching = nil
+    Box:Open(1, 3)
+    suite.check("beside the docked window", Box.frame._point and Box.frame._point[2] == docked)
+    suite.check("it listens for the window once", #watchers == 1)
+    docked = nil
+    for _, fn in ipairs(watchers) do fn() end
+    suite.check("back beside the vendor", Box.frame._point and Box.frame._point[2] == _G.MerchantFrame)
+    docked, place = env.Stub(), "mail"
+    Box:Place()
+    suite.check("a window docked elsewhere is not followed", Box.frame._point[2] ~= docked)
+    suite.check("still listens once", #watchers == 1)
+    Box:Hide()
+    SW.DockedFrame, SW.Place, SW.Watch = savedFrame, savedPlace, savedWatch
+end
+
 suite.check("the probe line reads", type(Box:ProbeText()) == "string")
 
 suite.done()
