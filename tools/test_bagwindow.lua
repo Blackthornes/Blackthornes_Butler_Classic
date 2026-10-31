@@ -87,6 +87,26 @@ _G.CloseAllBags(); EndFrame()
 suite.check("closing the bags closes it", not BagWindow:IsShown())
 BagWindow:Show(); EndFrame()
 
+-- The search sits on the header row on the very first open; the chips and
+-- Group By have the row under the gold rule to themselves.
+do
+    local sp = BagWindow.search and BagWindow.search._point
+    local searchY = sp and sp[#sp]
+    suite.check("the search sits on the header row", searchY == -17)
+    local chipY
+    for _, chip in pairs(BagWindow.chips or {}) do
+        local cp = chip._point
+        chipY = cp and cp[#cp]
+    end
+    suite.check("the chips sit on their own row, under the search", chipY ~= nil and chipY < searchY - 20)
+    BagWindow:SetTab("bank"); EndFrame()
+    sp = BagWindow.search._point
+    suite.check("on Bank the search stays on the header row", sp[#sp] == -17)
+    BagWindow:SetTab("bags"); EndFrame()
+    sp = BagWindow.search._point
+    suite.check("and on Bags again", sp[#sp] == -17)
+end
+
 -- 4. Grouping.
 ns.Bags:Scan(); EndFrame()
 local sections = BagView:Sections("todo")

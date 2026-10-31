@@ -494,19 +494,23 @@ function BagWindow:PaintTabs()
     self:PlaceSearch(bags)
 end
 
---- The search runs the width of the window, or stops short of Group By
---- while that shows beside it.
+--- The search sits on the header row past the portrait, as Forever's does,
+--- and runs up to Empty Slots and Sort while they show (Bags), else up to
+--- the close gem. The chips and Group By have the row under the gold rule
+--- to themselves, so nothing lies on top of the search on any open.
+BagWindow.SEARCH_GAP = 10
 function BagWindow:PlaceSearch(beside)
     local search = self.search
     if not search then return end
-    local right = PADDING
-    if beside and self.groupStepper then
-        local labelWidth = Theme.TextWidth("small", L["Group By:"])
-        right = PADDING + (tonumber(self.groupStepper:GetWidth()) or 0) + 6 + math.ceil(labelWidth) + 12
+    local right = SORT_RIGHT
+    local sort, empty = rawget(self, "sortButton"), rawget(self, "emptyBox")
+    if beside and sort and empty then
+        if sort:IsShown() then right = right + (tonumber(sort:GetWidth()) or 0) + 12 end
+        right = right + (tonumber(empty:GetWidth()) or 0) + BagWindow.SEARCH_GAP
     end
     search:ClearAllPoints()
-    search:SetPoint("TOPLEFT", PADDING, -52)
-    search:SetPoint("TOPRIGHT", -right, -52)
+    search:SetPoint("TOPLEFT", 59, -EDGE_PAD - 6)
+    search:SetPoint("TOPRIGHT", -right, -EDGE_PAD - 6)
 end
 
 function BagWindow:PaintChips()
@@ -613,6 +617,7 @@ function BagWindow:BuildFoot()
     end, ns.BagView:ShowsEmpty())
     empty:SetPoint("RIGHT", sort, "LEFT", -12, 0)
     self.emptyBox = empty
+    self:PlaceSearch(self.tab == "bags")
 end
 
 
@@ -669,6 +674,7 @@ function BagWindow:UpdateFoot()
         self.emptyBox:SetShown(self.tab == "bags")
         self.emptyBox:SetChecked(ns.BagView:ShowsEmpty())
     end
+    self:PlaceSearch(self.tab == "bags")
     if self.sortButton.SetEnabled then
         local busy = ns.BagSort and ns.BagSort:Running()
         self.sortButton:SetEnabled(not InCombat() and not busy)
