@@ -77,4 +77,25 @@ suite.check("one shows no number", ns.ItemLook.CountShown(row.icon) == nil)
 UI.DrawRow(row, { type = "job", step = step })
 suite.check("a job row shows no count", ns.ItemLook.CountShown(row.icon) == nil)
 
+-- 6. Each verdict gets its mark and colour; the words stay.
+local Marks = ns.Marks
+local cases = {
+    { "sell", "sell" }, { "mail", "mail" }, { "keep", "keep" }, { "disenchant", "disenchant" },
+    { "bank", "bank" }, { "look", "look" }, { "auction", "list" }, { "wait", "waiting" },
+    { "craft", "craft" },
+}
+for _, case in ipairs(cases) do
+    UI.DrawRow(row, { type = "item", name = "Linen Cloth", count = 1, quality = 1,
+        verdict = case[1], reason = "Words" })
+    suite.check(case[1] .. " shows its mark", Marks.KindOf(row.mark) == case[2], Marks.KindOf(row.mark))
+end
+suite.check("the words stay", row.reason:GetText() == "Words")
+UI.DrawRow(row, { type = "item", name = "Truefaith Gloves", count = 1, quality = 2,
+    verdict = "keep", keptUpgrade = true, reason = "An upgrade: wear it" })
+suite.check("a kept upgrade gets the arrow", Marks.KindOf(row.mark) == "upgrade")
+UI.DrawRow(row, { type = "header", group = { label = "Sell", count = 2, worth = 0 } })
+suite.check("a heading has no mark", Marks.KindOf(row.mark) == nil)
+UI.DrawRow(row, { type = "job", step = step })
+suite.check("a job row has no mark", Marks.KindOf(row.mark) == nil)
+
 suite.done()
