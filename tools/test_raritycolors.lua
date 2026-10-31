@@ -68,4 +68,13 @@ suite.check("the row shows it", row.name:GetText() == "Craft 2 " .. GREEN .. "Tr
 suite.check("colour codes take no room", ns.Theme.TextWidth("small", title)
     == ns.Theme.TextWidth("small", "Craft 2 Truefaith Gloves"))
 
+-- 5. A stack's count sits on its icon's corner, not after its name.
+UI.DrawRow(row, { type = "item", name = "Linen Cloth", count = 20, quality = 1, worth = 260 })
+suite.check("the name has no count", row.name:GetText() == "Linen Cloth", row.name:GetText())
+suite.check("the icon shows 20", ns.ItemLook.CountShown(row.icon) == 20)
+UI.DrawRow(row, { type = "item", name = "Truefaith Gloves", count = 1, quality = 2, worth = 900 })
+suite.check("one shows no number", ns.ItemLook.CountShown(row.icon) == nil)
+UI.DrawRow(row, { type = "job", step = step })
+suite.check("a job row shows no count", ns.ItemLook.CountShown(row.icon) == nil)
+
 suite.done()
