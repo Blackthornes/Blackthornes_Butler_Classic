@@ -365,6 +365,7 @@ function UI.CreateRow(row)
     row.icon:SetSize(ROW_HEIGHT - 6, ROW_HEIGHT - 6)
     row.icon:SetPoint("LEFT", 6, 0)
     if row.icon.SetTexCoord then row.icon:SetTexCoord(0.07, 0.93, 0.07, 0.93) end
+    if ns.ItemLook then ns.ItemLook.Attach(row.icon) end
 
     row.fold = Theme.CreateLabel(row, "normal", "accent", "CENTER")
     row.fold:SetPoint("CENTER", row, "LEFT", 14, 0)
@@ -503,6 +504,8 @@ function UI.DrawRow(row, data)
     row.worth:SetTextColor(Theme.Unpack("text"))
     row.reason:SetTextColor(Theme.Unpack("muted"))
     if row.action then row.action:Hide() end
+    -- The quality ring (UI/ItemLook.lua) only on an item's own row.
+    if ns.ItemLook then ns.ItemLook.SetQuality(row.icon, nil) end
     if data.type == "ammo" then return UI.UpdateAmmoRow(row, data) end
     if data.type == "everyone" then return UI.UpdateItemRow(row, data) end
     if data.type == "holder" then return UI.UpdateHolderRow(row, data) end
@@ -530,6 +533,7 @@ function UI.DrawRow(row, data)
     row.fold:Hide()
     row.icon:Show()
     row.icon:SetTexture(data.icon or [[Interface\Icons\INV_Misc_QuestionMark]])
+    if ns.ItemLook then ns.ItemLook.SetQuality(row.icon, data.quality) end
     row.name:SetTextColor(QualityColor(data.quality))
     row.name:SetText(data.count > 1 and L.Format("%s x%d", data.name, data.count) or data.name)
     row.reason:SetText(data.reason or "")
@@ -600,6 +604,7 @@ function UI.UpdateQuestBuyRow(row, data)
         or [[Interface\Icons\INV_Misc_QuestionMark]])
     local quality = Items.Call({ "C_Item.GetItemQualityByID" }, item.itemID)
     row.name:SetTextColor(QualityColor(tonumber(quality)))
+    if ns.ItemLook then ns.ItemLook.SetQuality(row.icon, tonumber(quality)) end
     row.name:SetText(ns.Jobs.ItemName(item.itemID))
     local text, money = ns.QuestBuy:Text(item)
     row.reason:SetText(text)
@@ -732,6 +737,7 @@ function UI.UpdateItemRow(row, data)
     row.fold:Hide()
     row.icon:Show()
     row.icon:SetTexture(item.icon or [[Interface\Icons\INV_Misc_QuestionMark]])
+    if ns.ItemLook then ns.ItemLook.SetQuality(row.icon, item.quality) end
     row.name:SetTextColor(QualityColor(item.quality))
     row.name:SetText(item.name)
     row.reason:SetText(ns.Everyone.Summary(item))
