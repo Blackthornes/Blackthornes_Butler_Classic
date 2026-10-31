@@ -4,6 +4,14 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.7.0
+
+- Item icons now have a ring and a name colour that match their quality.
+- Stack counts show on the corner of item icons.
+- Items show a small mark and colour for what to do with them.
+- Worth shows in gold, silver and copper coins, lined up in columns.
+- Various bug fixes.
+
 ## 0.6.0
 
 - All your Blackthornes add-ons now open in one window, with a button for each add-on down the side.
