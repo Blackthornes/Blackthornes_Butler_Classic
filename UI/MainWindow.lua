@@ -139,7 +139,8 @@ function UI:Build()
         end
         -- Closed by the player (close gem, Escape, /bbutler, the minimap
         -- button), not by leaving the vendor, mailbox or bank it came up for.
-        if UI.closingByItself then
+        local byItself = UI.closingByItself
+        if byItself then
             UI.closingByItself = false
         else
             UI:Say("close")
@@ -151,7 +152,7 @@ function UI:Build()
         if ns.Selling then ns.Selling:Update() end
         if ns.Errands then ns.Errands:TellTradeskills(false) end
         -- Inside the one window, it closes with this one.
-        if ns.ButlerTabs then ns.ButlerTabs:Closed(frame) end
+        if ns.ButlerTabs then ns.ButlerTabs:Closed(frame, byItself) end
     end)
 
     -- The fold gem beside the close gem (UI/FoldWindow.lua): the window
@@ -2205,6 +2206,10 @@ UI.ONLY_WITH_SALES = false
 --- a vendor").
 function UI:AtVendor()
     if self:IsShown() or not (ns.db and ns.db.openAtVendor) then return end
+    -- The bags are read first, a few slots a frame, so the vendor may have
+    -- closed by now: never come up after it (a player saw the window open
+    -- as a vendor closed, 2026-11-01).
+    if not (ns.Selling and ns.Selling.merchantOpen) then return end
     if UI.ONLY_WITH_SALES then
         local sell = ns.Verdicts:Group("sell")
         if not (sell and sell.count > 0) then return end
@@ -2250,6 +2255,11 @@ end
 function UI:LeftVendor()
     if self.openedByVendor then
         self.openedByVendor = false
+        if not self:IsShown() and ns.ButlerTabs and ns.ButlerTabs:AnyShown() then
+            -- Settings is the tab up: the whole window goes, as it came.
+            ns.ButlerTabs:Close(true)
+            return
+        end
         self.closingByItself = true
         self:Hide()
     elseif ns.Selling then
