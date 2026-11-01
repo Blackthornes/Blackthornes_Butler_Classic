@@ -418,15 +418,33 @@ function BagView:Sections(groupBy)
 end
 
 --- The empty slots as a last group of their own (the owner, 2026-11-01:
---- always shown).
+--- always shown). The heading counts only the bags that take anything, as
+--- the foot's "N free" does (a player saw 5 over 2 free, 2026-11-01: a
+--- quiver's or a herb bag's empty slots were counted too). A bag that takes
+--- only some things keeps its empty slots on rows of its own under it, as
+--- One Grid lays them out, with no heading or count.
 function BagView:WithEmpty(sections)
-    local places = {}
+    local special = self.SpecialBags()
+    local general, extra, byBag = {}, {}, {}
     for _, place in ipairs(self.AllSlots()) do
-        if not place.entry then places[#places + 1] = place end
+        if not place.entry then
+            if special[place.bag] then
+                local section = byBag[place.bag]
+                if not section then
+                    section = { key = "empty:" .. place.bag, places = {} }
+                    byBag[place.bag] = section
+                    extra[#extra + 1] = section
+                end
+                section.places[#section.places + 1] = place
+            else
+                general[#general + 1] = place
+            end
+        end
     end
-    if #places > 0 then
-        sections[#sections + 1] = { key = "empty", label = L["EMPTY SLOTS"], places = places }
+    if #general > 0 or #extra > 0 then
+        sections[#sections + 1] = { key = "empty", label = L["EMPTY SLOTS"], places = general }
     end
+    for _, section in ipairs(extra) do sections[#sections + 1] = section end
     return sections
 end
 

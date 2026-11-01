@@ -162,6 +162,17 @@ do
     suite.check("the bags that take anything stay together", split[1] and #split[1].places == 3
         and split[1].places[3].bag == 2)
     suite.check("with what is in the mining bag", split[2] and split[2].places[1].entry.itemID == 2901)
+    -- EMPTY SLOTS counts only the bags that take anything, so it matches
+    -- the foot's "N free"; the mining bag's empty slot sits on its own row
+    -- under it (a player saw 5 against 2 free, 2026-11-01).
+    local empty, extra
+    for _, section in ipairs(BagView:Sections("todo")) do
+        if section.key == "empty" then empty = section end
+        if section.key == "empty:1" then extra = section end
+    end
+    suite.check("EMPTY SLOTS counts the bags that take anything", empty and #empty.places == 3)
+    suite.check("the mining bag's empty slot sits on its own row", extra and #extra.places == 1
+        and extra.places[1].bag == 1 and extra.label == nil)
     ns.FreeSpace.Read, ns.BagView.AllSlots = read, slots
 end
 

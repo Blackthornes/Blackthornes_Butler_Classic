@@ -1375,7 +1375,10 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
 - **Empty slots always show** (the owner, 2026-11-01; the Empty Slots
   tick box from 2026-10-20 is gone): under What To Do and Item Type an
   EMPTY SLOTS group comes last (`BagView:WithEmpty`), and One Grid keeps
-  every slot in place. `bagEmptySlots` stays in the save, unread; never
+  every slot in place. EMPTY SLOTS counts only the bags that take
+  anything, so its number matches the foot's "N free" (a player saw 5
+  against 2 free, 2026-11-01); a bag that takes only some things puts its
+  empty slots on rows of their own under it, with no heading. `bagEmptySlots` stays in the save, unread; never
   rename it. The foot's "N free" is bigger and turns amber
   and red as Free bag space does (`BagWindow.FREE_SIZE_UP`,
   `FreeSpace.Level`).
