@@ -1372,18 +1372,16 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   `BagWindow:ButtonFor`, only on Your bags, 2026-10-20: the window had
   drawn only a thin red edge, full bags or not); `Bags:Wanted` reads the
   bags while it shows; `Verdicts:Redraw` redraws it.
-- **Empty Slots** (the owner said build it, 2026-10-20, from a mockup):
-  a tick box left of Sort, on Your bags only, kept for each Group By in
-  `bagEmptySlots` (`{ [group] = true/false }`, nil reads as
-  `BagView.EMPTY_DEFAULT`: One Grid ticked, the others not, so nothing
-  looked different). Ticked under What To Do or Item Type, an EMPTY SLOTS
-  group comes last (`BagView:WithEmpty`); unticked under One Grid, the
-  items pack with no gaps. The foot's "N free" is bigger and turns amber
+- **Empty slots always show** (the owner, 2026-11-01; the Empty Slots
+  tick box from 2026-10-20 is gone): under What To Do and Item Type an
+  EMPTY SLOTS group comes last (`BagView:WithEmpty`), and One Grid keeps
+  every slot in place. `bagEmptySlots` stays in the save, unread; never
+  rename it. The foot's "N free" is bigger and turns amber
   and red as Free bag space does (`BagWindow.FREE_SIZE_UP`,
   `FreeSpace.Level`).
 
 Saved, account wide, never rename them: `bagWindow` (off unless ticked),
-`bagGroupBy`, `bagItemSize`, `bagItemLevel`, `bagNewGlow`, `bagEmptySlots`, `bagScale`,
+`bagGroupBy`, `bagItemSize`, `bagItemLevel`, `bagNewGlow`, `bagEmptySlots` (unread), `bagScale`,
 `bagPoint`, `bagRelPoint`, `bagX`, `bagY`. Tested in
 `tools/test_bagwindow.lua`. Not yet seen in game.
 

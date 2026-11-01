@@ -495,18 +495,16 @@ function BagWindow:PaintTabs()
 end
 
 --- The search sits on the header row past the portrait, as Forever's does,
---- and runs up to Empty Slots and Sort while they show (Bags), else up to
---- the close gem. The chips and Group By have the row under the gold rule
+--- and runs up to Sort while it shows (Bags), else up to the close gem. The chips and Group By have the row under the gold rule
 --- to themselves, so nothing lies on top of the search on any open.
 BagWindow.SEARCH_GAP = 10
 function BagWindow:PlaceSearch(beside)
     local search = self.search
     if not search then return end
     local right = SORT_RIGHT
-    local sort, empty = rawget(self, "sortButton"), rawget(self, "emptyBox")
-    if beside and sort and empty then
-        if sort:IsShown() then right = right + (tonumber(sort:GetWidth()) or 0) + 12 end
-        right = right + (tonumber(empty:GetWidth()) or 0) + BagWindow.SEARCH_GAP
+    local sort = rawget(self, "sortButton")
+    if beside and sort and sort:IsShown() then
+        right = right + (tonumber(sort:GetWidth()) or 0) + BagWindow.SEARCH_GAP
     end
     search:ClearAllPoints()
     search:SetPoint("TOPLEFT", 59, -EDGE_PAD - 6)
@@ -611,12 +609,6 @@ function BagWindow:BuildFoot()
     self.sortButton = sort
     sort:SetShown(BagWindow.CanSort())
 
-    -- Empty Slots: each way of grouping keeps its own choice (BagView).
-    local empty = Widgets.CreateCheckbox(frame, L["Empty Slots"], function(on)
-        ns.BagView:SetShowsEmpty(on)
-    end, ns.BagView:ShowsEmpty())
-    empty:SetPoint("RIGHT", sort, "LEFT", -12, 0)
-    self.emptyBox = empty
     self:PlaceSearch(self.tab == "bags")
 end
 
@@ -670,10 +662,6 @@ function BagWindow:UpdateFoot()
     local gold = ns.BagView.Gold()
     self.goldLabel:SetText(gold and L.Format("All characters: %s", Items.FormatMoney(gold)) or "")
     self.sortButton:SetShown(BagWindow.CanSort() and self.tab == "bags")
-    if self.emptyBox then
-        self.emptyBox:SetShown(self.tab == "bags")
-        self.emptyBox:SetChecked(ns.BagView:ShowsEmpty())
-    end
     self:PlaceSearch(self.tab == "bags")
     if self.sortButton.SetEnabled then
         local busy = ns.BagSort and ns.BagSort:Running()

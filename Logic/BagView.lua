@@ -11,8 +11,8 @@
 -- Saved, account wide, never rename them: `bagWindow` (on only when true),
 -- `bagGroupBy` ("todo", "type" or "grid"), `bagItemSize` ("normal",
 -- "large" or "larger"), `bagItemLevel` and `bagNewGlow` (on unless false),
--- `bagScale` (the size grip's), `bagEmptySlots` ({ [group] = true or
--- false }, only the ones a player changed; nil reads as EMPTY_DEFAULT).
+-- `bagScale` (the size grip's). `bagEmptySlots` stays in the save, unread:
+-- empty slots always show now.
 
 local _, ns = ...
 local L = ns.L
@@ -120,25 +120,6 @@ end
 
 function BagView:SetNewGlowOn(on)
     if ns.db then ns.db.bagNewGlow = on and true or false end
-    self:Changed()
-end
-
--- Empty Slots (the owner, 2026-10-20): each way of grouping keeps its own
--- choice. One Grid shows them as it always has; the others start without.
-BagView.EMPTY_DEFAULT = { todo = false, type = false, grid = true }
-
-function BagView:ShowsEmpty(groupBy)
-    groupBy = groupBy or self:GroupBy()
-    local saved = DB().bagEmptySlots
-    if type(saved) == "table" and type(saved[groupBy]) == "boolean" then return saved[groupBy] end
-    return self.EMPTY_DEFAULT[groupBy] == true
-end
-
-function BagView:SetShowsEmpty(on, groupBy)
-    if not ns.db then return end
-    groupBy = groupBy or self:GroupBy()
-    if type(ns.db.bagEmptySlots) ~= "table" then ns.db.bagEmptySlots = {} end
-    ns.db.bagEmptySlots[groupBy] = on and true or false
     self:Changed()
 end
 
@@ -392,18 +373,7 @@ function BagView:Sections(groupBy)
     local sections = {}
 
     if groupBy == "grid" then
-        local grid = self.GridSections()
-        if self:ShowsEmpty("grid") then return grid end
-        -- Unticked: the items packed together, a bag with none left out.
-        for _, section in ipairs(grid) do
-            local places = {}
-            for _, place in ipairs(section.places) do
-                if place.entry then places[#places + 1] = place end
-            end
-            section.places = places
-            if #places > 0 then sections[#sections + 1] = section end
-        end
-        return sections
+        return self.GridSections()
     end
 
     if groupBy == "type" then
@@ -425,7 +395,7 @@ function BagView:Sections(groupBy)
         for _, key in ipairs(self.TYPE_ORDER) do
             if #byType[key].places > 0 then sections[#sections + 1] = byType[key] end
         end
-        return self:WithEmpty(sections, "type")
+        return self:WithEmpty(sections)
     end
 
     -- What To Do: Butler's own groups, in its order, most worth first.
@@ -444,13 +414,12 @@ function BagView:Sections(groupBy)
             }
         end
     end
-    return self:WithEmpty(sections, "todo")
+    return self:WithEmpty(sections)
 end
 
---- The empty slots as a last group of their own, while ticked for this way
---- of grouping.
-function BagView:WithEmpty(sections, groupBy)
-    if not self:ShowsEmpty(groupBy) then return sections end
+--- The empty slots as a last group of their own (the owner, 2026-11-01:
+--- always shown).
+function BagView:WithEmpty(sections)
     local places = {}
     for _, place in ipairs(self.AllSlots()) do
         if not place.entry then places[#places + 1] = place end

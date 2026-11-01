@@ -129,29 +129,21 @@ suite.check("One Grid is one section", #grid == 1)
 suite.check("holding every slot, empty ones too", grid[1] and #grid[1].places == 16)
 suite.check("in bag order", grid[1] and grid[1].places[4].entry == nil and grid[1].places[5].entry.itemID == 804)
 
--- Empty Slots: each way of grouping keeps its own choice, and nothing is
--- saved until one is changed.
+-- Empty slots always show (the owner, 2026-11-01): What To Do and Item
+-- Type end with them, One Grid keeps its gaps, and an old saved choice is
+-- left in the save, unread.
 do
     local function Last(list) return list[#list] end
-    suite.check("What To Do starts without empty slots", not BagView:ShowsEmpty("todo")
-        and Last(BagView:Sections("todo")).key ~= "empty")
-    suite.check("One Grid starts with them, as before", BagView:ShowsEmpty("grid"))
-    suite.check("nothing is saved for it yet", ns.db.bagEmptySlots == nil)
-    BagView:SetShowsEmpty(true, "todo")
+    ns.db.bagEmptySlots = { todo = false, type = false, grid = false }
     local last = Last(BagView:Sections("todo"))
-    suite.check("ticked, What To Do ends with EMPTY SLOTS", last.key == "empty" and last.label == "EMPTY SLOTS")
+    suite.check("What To Do ends with EMPTY SLOTS", last.key == "empty" and last.label == "EMPTY SLOTS")
     suite.check("holding only the empty slots", last.places[1] and last.places[1].entry == nil)
-    suite.check("Item Type keeps its own choice", Last(BagView:Sections("type")).key ~= "empty")
-    BagView:SetShowsEmpty(true, "type")
-    suite.check("and can show them too", Last(BagView:Sections("type")).key == "empty")
-    BagView:SetShowsEmpty(false, "grid")
-    local packed = BagView:Sections("grid")
-    local gaps = false
-    for _, place in ipairs(packed[1] and packed[1].places or {}) do
-        if not place.entry then gaps = true end
-    end
-    suite.check("unticked, One Grid packs the items with no gaps", packed[1] and not gaps and #packed[1].places < 16)
-    suite.check("What To Do is left as it was", BagView:ShowsEmpty("todo"))
+    suite.check("Item Type ends with them too", Last(BagView:Sections("type")).key == "empty")
+    local grid = BagView:Sections("grid")
+    suite.check("One Grid keeps every slot, gaps and all", grid[1] and #grid[1].places == 16)
+    suite.check("the old saved choice is kept, not read", type(ns.db.bagEmptySlots) == "table"
+        and ns.db.bagEmptySlots.grid == false)
+    suite.check("there is no tick box for it", BagView.SetShowsEmpty == nil and BagView.ShowsEmpty == nil)
     ns.db.bagEmptySlots = nil
 end
 
