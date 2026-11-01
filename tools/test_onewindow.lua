@@ -116,5 +116,27 @@ SettingsUI:SetOneWindow(true)
 suite.check("ticked again in every save", ns.db.oneWindow == true and other.oneWindow == true)
 suite.check("and Settings moves into the one window", Tabs:Hosted() and SettingsUI.frame:GetParent() == hub.frame.area)
 
+-- 7. At a vendor (a player saw the window open as a vendor closed,
+-- 2026-11-01). The bags are read first, so the vendor may be gone by the
+-- time Butler would come up: then it doesn't.
+hub.frame:Hide()
+local onHideVendor = hub.frame:GetScript("OnHide")
+if onHideVendor then onHideVendor(hub.frame) end
+ns.db.openAtVendor = true
+ns.Selling.merchantOpen = false
+UI:AtVendor()
+suite.check("the vendor closed before the bags were read: Butler stays shut",
+    not hub.frame:IsShown() and not Tabs:Hosted() and not UI.openedByVendor)
+ns.Selling.merchantOpen = true
+UI:AtVendor()
+suite.check("at the vendor, Butler comes up in the one window", Tabs:Hosted() and UI.openedByVendor)
+Tabs:Open("settings")
+suite.check("Settings is the tab up", Tabs:Current() == "settings" and not UI.frame:IsShown())
+ns.Selling.merchantOpen = false
+UI:LeftVendor()
+suite.check("leaving the vendor on Settings closes the one window too",
+    not hub.frame:IsShown() and not UI.openedByVendor)
+if onHideVendor then onHideVendor(hub.frame) end
+
 _G.BlackthornesWindow = nil
 suite.done()

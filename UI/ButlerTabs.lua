@@ -201,10 +201,10 @@ function ButlerTabs:Open(key)
 end
 
 --- Close the whole window, whichever tab is up.
-function ButlerTabs:Close()
+function ButlerTabs:Close(byItself)
     if self.area then
         local One = ButlerTabs.One()
-        if One and One.Close then pcall(One.Close) end
+        if One and One.Close then pcall(One.Close, byItself) end
         return
     end
     local _, window = self:Current()
@@ -490,13 +490,15 @@ function ButlerTabs:Route(key)
     return false
 end
 
---- One of Butler's windows closed by itself (Escape, leaving a vendor):
---- inside the one window, the one window closes with it.
-function ButlerTabs:Closed(frame)
+--- One of Butler's windows closed (Escape, leaving a vendor): inside the
+--- one window, the one window closes with it. `byItself` is true when
+--- Butler closed it on leaving a place, so the one window may go back to
+--- what was open before; a player's close stays closed.
+function ButlerTabs:Closed(frame, byItself)
     if not self.area or self.leaving or self.switching then return end
     -- A window built for the first time hides itself before it is laid
     -- in, and that is no close: only one inside the area counts.
     if frame and frame.GetParent and frame:GetParent() ~= self.area then return end
     local One = ButlerTabs.One()
-    if One and One.Close then pcall(One.Close) end
+    if One and One.Close then pcall(One.Close, byItself) end
 end
