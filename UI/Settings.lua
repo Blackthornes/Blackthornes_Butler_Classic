@@ -49,15 +49,29 @@ local PAGES = {
       tip = L["How these addons are made, the version, the Discord and the other Blackthornes addons"] },
 }
 
---- Put the Butler window and this one back where they started.
+--- Put the Butler window and this one back where they started. The place
+--- every tab opens at is `windowLeft`/`windowTop`; the older keys are only
+--- read when those are missing, so all of them are cleared. Inside the one
+--- window the pages fill its area, so nothing is moved there: pulling a
+--- page onto UIParent left it hanging off the one window until Butler was
+--- opened again (a player's report, 2026-10-31). The cleared place is used
+--- once the pages are back in their own window.
 function SettingsUI:ResetPositions()
-    ns.db.settingsPoint = nil
-    ns.db.settingsRelativePoint = nil
-    ns.db.settingsX = nil
-    ns.db.settingsY = nil
-    self:RestorePosition()
-    ns.db.point, ns.db.relativePoint, ns.db.x, ns.db.y = nil, nil, nil, nil
-    if ns.UI and ns.UI.RestorePosition then ns.UI:RestorePosition() end
+    local db = ns.db
+    if not db then return end
+    db.settingsPoint, db.settingsRelativePoint, db.settingsX, db.settingsY = nil, nil, nil, nil
+    db.point, db.relativePoint, db.x, db.y = nil, nil, nil, nil
+    db.windowLeft, db.windowTop = nil, nil
+    local tabs = ns.ButlerTabs
+    if tabs and tabs.Hosted and tabs:Hosted() then return end
+    for _, window in ipairs({ self, ns.UI }) do
+        local frame = window and rawget(window, "frame")
+        if frame and frame:IsShown() then
+            frame:ClearAllPoints()
+            frame:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+            if tabs and tabs.Settle then tabs:Settle(frame) end
+        end
+    end
 end
 
 --------------------------------------------------------------------------------
