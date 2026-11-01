@@ -1800,8 +1800,9 @@ function UI:Refresh(force)
     end
 end
 
---- The gold goals under the list: the window grows by their height, so
---- the list keeps its own, and its top stays where it is.
+--- The gold goals under the list: the window keeps its size (every tab
+--- is one size, the owner 2026-11-01), so the list gives up their height
+--- and scrolls.
 function UI:PlaceGoals()
     local goalsUI = ns.GoldGoalsUI
     if not (goalsUI and goalsUI.panel) then return end
@@ -1815,23 +1816,7 @@ function UI:PlaceGoals()
     if extra == self.goalsExtra then return end
     self.goalsExtra = extra
     self.well:SetPoint("BOTTOMRIGHT", -PADDING, FOOT + extra)
-    local frame = self.frame
-    local left, top = frame:GetLeft(), frame:GetTop()
-    if ns.ButlerTabs then
-        -- Every tab is one size, so the Settings tab grows with it.
-        ns.ButlerTabs:Need("bags", nil, HEIGHT + extra)
-    else
-        frame:SetHeight(HEIGHT + extra)
-    end
-    -- Laid in the one window, it fills that window's area and keeps no
-    -- place of its own.
-    local hosted = ns.ButlerTabs and ns.ButlerTabs.area
-        and frame:GetParent() == ns.ButlerTabs.area
-    if left and top and frame:IsShown() and not hosted then
-        frame:ClearAllPoints()
-        frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
-        self:SavePosition()
-    end
+    if self.list and self.list.Refresh then pcall(self.list.Refresh, self.list) end
     if ns.Selling then ns.Selling:Update() end
 end
 
