@@ -450,28 +450,52 @@ end
 -- Events
 --------------------------------------------------------------------------------
 
+--- The vendor closed. Said twice when the client sends both
+--- MERCHANT_CLOSED and the interaction ending; the second does nothing.
+function Selling:LeftVendor()
+    if not self.merchantOpen and not (ns.UI and ns.UI.openedByVendor) then return end
+    self.merchantOpen = false
+    self.selling = false
+    self.run = (self.run or 0) + 1
+    local button = self.button
+    if button and not InCombat() then
+        button:SetAttribute("type", nil)
+        button:SetAttribute("macrotext", nil)
+        button:Hide()
+    end
+    if ns.UI then ns.UI:LeftVendor() end
+end
+
+--- True for the game's Merchant interaction type.
+function Selling.IsMerchant(kind)
+    local types = rawget(_G, "Enum") and rawget(Enum, "PlayerInteractionType")
+    local merchant = type(types) == "table" and rawget(types, "Merchant") or 5
+    return kind ~= nil and kind == merchant
+end
+
 function Selling:OnEnable()
     ns.RegisterEvent(self, "MERCHANT_SHOW", function()
         Selling.merchantOpen = true
         Selling.sold, Selling.soldWorth = 0, 0
         Selling.soldIDs = {}
+        Selling.visit = (Selling.visit or 0) + 1
+        local visit = Selling.visit
         Bags:Fresh(function()
+            -- The bags can take a few frames to read. A vendor closed in the
+            -- meantime (or another one opened) must not bring the window up
+            -- after the player walked away (a player's report, 2026-11-01).
+            if not Selling.merchantOpen or Selling.visit ~= visit then return end
             if ns.UI then ns.UI:AtVendor() end
             Selling:Update()
         end)
     end)
 
-    ns.RegisterEvent(self, "MERCHANT_CLOSED", function()
-        Selling.merchantOpen = false
-        Selling.selling = false
-        Selling.run = (Selling.run or 0) + 1
-        local button = Selling.button
-        if button and not InCombat() then
-            button:SetAttribute("type", nil)
-            button:SetAttribute("macrotext", nil)
-            button:Hide()
-        end
-        if ns.UI then ns.UI:LeftVendor() end
+    ns.RegisterEvent(self, "MERCHANT_CLOSED", function() Selling:LeftVendor() end)
+
+    -- Forever can end the vendor's interaction without MERCHANT_CLOSED, as
+    -- it does for the mailbox and bank (see Errands); heard as well.
+    ns.RegisterEvent(self, "PLAYER_INTERACTION_MANAGER_FRAME_HIDE", function(_, _, kind)
+        if Selling.IsMerchant(kind) then Selling:LeftVendor() end
     end)
 
     -- Fires just before combat locks secure frames, so the button can still

@@ -847,7 +847,13 @@ function Errands:Arrived(place)
         self.bankOpen = true
         self:ForgetBankUpgrades()
     end
+    self.visit = (self.visit or 0) + 1
+    local visit = self.visit
     Bags:Fresh(function()
+        -- The bags can take a few frames to read; a mailbox or bank closed
+        -- in the meantime must not bring the window up afterwards.
+        local open = place == "mail" and Errands.mailOpen or place ~= "mail" and Errands.bankOpen
+        if not open or Errands.visit ~= visit then return end
         if ns.UI then ns.UI:AtPlace(place) end
         Errands:Update()
     end)
