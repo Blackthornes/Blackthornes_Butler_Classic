@@ -107,6 +107,12 @@ Every Forever catch-up checks this note first, before sorting commits into
 - No Arrow Size here: the shared choice is heard and left alone.
 - The Bags window's chips shrink the room round their words when the row
   would run under Group By (Classic's own fit, kept from before).
+- The Bags window's search box leaves room for Classic's own Sort button
+  (`BagWindow:PlaceSearch`, `Logic/BagSort.lua`, since Era has no bag
+  sort of its own). Forever's Empty Slots tick box is gone in both.
+- A vendor that closes before the bag read keeps Butler shut by two
+  guards: Classic's `merchantOpen` check (PR #54) and Forever's visit
+  number (`448c647`). Keep both.
 
 ## The one window
 

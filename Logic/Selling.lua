@@ -492,7 +492,7 @@ function Selling:OnEnable()
 
     ns.RegisterEvent(self, "MERCHANT_CLOSED", function() Selling:LeftVendor() end)
 
-    -- Forever can end the vendor's interaction without MERCHANT_CLOSED, as
+    -- The client can end the vendor's interaction without MERCHANT_CLOSED, as
     -- it does for the mailbox and bank (see Errands); heard as well.
     ns.RegisterEvent(self, "PLAYER_INTERACTION_MANAGER_FRAME_HIDE", function(_, _, kind)
         if Selling.IsMerchant(kind) then Selling:LeftVendor() end
