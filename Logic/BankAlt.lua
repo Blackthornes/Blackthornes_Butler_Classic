@@ -25,8 +25,18 @@
 -- Saved account wide, never renamed: bankAlt (the character's full name,
 -- nil off), bankAltWhen ("first", "vendor" or "leftovers"), bankAltKinds
 -- ([kind] = false for each kind unticked; ticked unless unticked),
--- bankAltList (a shopping list's name, nil for none) and bankAltAuctions
--- (true while Auction Items is ticked, off unless ticked).
+-- bankAltList (a shopping list's name, nil for none), bankAltAuctions
+-- (true while Auction Items is ticked, off unless ticked) and
+-- bankAltFullStacks (true while Full Stacks Only is ticked, off unless
+-- ticked).
+--
+-- Full Stacks Only (a player asked, the owner said build it, 2026-11-02):
+-- each mail slot costs postage however few it holds, and small stacks cost
+-- more to list at the auction house. Ticked, the bank alt takes a stack
+-- only once it is full (its count reaches the item's stack size; an item
+-- that doesn't stack always counts). A smaller stack gets its next verdict
+-- and stays in the bags. An item whose stack size the client hasn't loaded
+-- yet is let through, as with the box unticked.
 --
 -- Auction Items (a player asked, the owner said build it, 2026-10-22): one
 -- character sells everything at the auction house. Ticked, whatever
@@ -172,6 +182,25 @@ function BankAlt:SetAuctions(on)
     self:Changed()
 end
 
+function BankAlt:FullStacksOn()
+    return ns.db and ns.db.bankAltFullStacks == true or false
+end
+
+function BankAlt:SetFullStacks(on)
+    if not ns.db then return end
+    ns.db.bankAltFullStacks = on and true or nil
+    self:Changed()
+end
+
+--- Is this carried stack full? True when its count reaches the item's
+--- stack size, or the stack size isn't known yet.
+function BankAlt:FullStack(entry)
+    if not (entry and entry.itemID) then return false end
+    local most = tonumber((select(8, Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, entry.itemID))))
+    if not most or most <= 1 then return true end
+    return (tonumber(entry.count) or 1) >= most
+end
+
 --- The shopping list it takes, by name, or nil.
 function BankAlt:ListName()
     return ns.db and Text(ns.db.bankAltList) or nil
@@ -260,6 +289,7 @@ function BankAlt:MayTake(entry)
     local name = self:Name()
     if not (name and entry and entry.itemID) then return nil end
     if entry.bound or entry.quality == 0 then return nil end
+    if self:FullStacksOn() and not self:FullStack(entry) then return nil end
     if ns.Verdicts and ns.Verdicts:IsMe(name) then return nil end
     return name
 end

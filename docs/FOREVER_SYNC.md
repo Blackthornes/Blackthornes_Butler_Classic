@@ -3,8 +3,9 @@
 Where this Classic Era copy stands against Forever Butler
 (`Blackthornes/Blackthornes_Butler`). Forever is only ever read from here.
 
-Last Forever commit copied over: `3cd8d77` (Forever main, the merge of its
-PR #183, 2026-10-23). This copy was made from it with its history on
+Last Forever commit copied over: `112ff29` (Forever main, 2026-11-02).
+The first copy was made from `3cd8d77` (Forever main, the merge of
+its PR #183, 2026-10-23). This copy was made from it with its history on
 2026-10-24.
 
 Copied over since, one at a time:
@@ -47,6 +48,17 @@ Copied over since, one at a time:
   when it docks, moves or undocks (`SharedWindow.Watch`, `DockedFrame`).
   `UI/SharedWindow.lua` is FILE_VERSION 5, the same in all five Classic
   repos. Butler's buy box (`UI/BuyMany.lua`) sits past the docked window at a vendor.
+- `e85da58` Set Default under Window Position keeps pages in the one
+  window (2026-11-02; its test sits beside Classic's vendor test).
+- `448c647` A vendor, mailbox or bank that closes before the bag read keeps
+  Butler shut, by visit number (2026-11-02), on top of Classic's own
+  `merchantOpen` check from PR #54; both guards stay.
+- `0d0c22d`, `cbc6c57` Empty slots always show in the Bags window and EMPTY
+  SLOTS counts only the bags that take anything (2026-11-02). The Empty
+  Slots tick box is gone; `bagEmptySlots` stays in the save, unread. The
+  search box keeps Classic's Sort button room.
+- `112ff29` Bank alt "Full Stacks Only:" (2026-11-02, `bankAltFullStacks`,
+  off unless ticked).
 
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.

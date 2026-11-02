@@ -182,8 +182,18 @@ BankAlt:SetAuctions(false)
 suite.check("unticked it stays Auction", Row("Light Leather").verdict == "auction" and ns.db.bankAltAuctions == nil)
 BankAlt:SetKind("cloth", true)
 BankAlt:SetKind("leather", true)
-BankAlt:SetName(nil)
+
+-- 11. Full Stacks Only: a stack goes only once it is full.
 BankAlt:SetWhen("first")
+suite.check("full stacks only is off unless ticked", not BankAlt:FullStacksOn() and ToBank("Light Leather"))
+BankAlt:SetFullStacks(true)
+suite.check("ticked, it is saved", ns.db.bankAltFullStacks == true)
+suite.check("a full stack still goes", ToBank("Linen Cloth"), Row("Linen Cloth").verdict)
+suite.check("a smaller stack stays", not ToBank("Light Leather"), Row("Light Leather").verdict)
+suite.check("a stack with no known size goes", BankAlt:FullStack({ itemID = 999999, count = 1 }))
+BankAlt:SetFullStacks(false)
+suite.check("unticked, the smaller stack goes again", ToBank("Light Leather") and ns.db.bankAltFullStacks == nil)
+BankAlt:SetName(nil)
 
 -- 8.
 ns.HandleSlash("bankalt Banky Vault")
@@ -209,6 +219,9 @@ suite.check("the list picker picks a list", ns.db.bankAltList == "Gems", tostrin
 local auctions = controls.bankAltAuctions
 auctions:GetScript("OnClick")(auctions)
 suite.check("the Auction Items box ticks it", ns.db.bankAltAuctions == true)
+local fullBox = controls.bankAltFullStacks
+fullBox:GetScript("OnClick")(fullBox)
+suite.check("the Full Stacks Only box ticks it", ns.db.bankAltFullStacks == true)
 
 _G.BlackthornesTS = nil
 suite.done()
