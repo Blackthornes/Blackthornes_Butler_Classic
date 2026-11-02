@@ -475,6 +475,7 @@ function SettingsUI:SyncBankAlt()
     end
     for key, box in pairs(controls.bankAltKinds) do box:SetChecked(BankAlt:KindOn(key)) end
     if controls.bankAltAuctions then controls.bankAltAuctions:SetChecked(BankAlt:AuctionsOn()) end
+    if controls.bankAltFullStacks then controls.bankAltFullStacks:SetChecked(BankAlt:FullStacksOn()) end
 end
 
 --- The Tradeskills list picked on the Lists page: { name, id, items }, or
@@ -875,6 +876,13 @@ function SettingsUI:BuildPages()
         ns.BankAlt:SetAuctions(checked)
     end, false)
     controls.bankAltAuctions:SetPoint("TOPLEFT", CONTROL_X, -2)
+
+    local fullRow = pages:Row("bankalt", 2, L["Full Stacks Only:"],
+        L["Only mail stacks that are full. Smaller stacks stay in your bags."])
+    controls.bankAltFullStacks = Widgets.CreateCheckbox(fullRow, L["On"], function(checked)
+        ns.BankAlt:SetFullStacks(checked)
+    end, false)
+    controls.bankAltFullStacks:SetPoint("TOPLEFT", CONTROL_X, -2)
 
     -- Gold: the gold fund (the owner asked 2026-10-11). The usual amount on
     -- the left, one character's own on the right. Logic/Funds.lua.

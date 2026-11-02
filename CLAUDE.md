@@ -408,7 +408,12 @@ postage (`Funds.POSTAGE`) stays (`BankAlt:Verdict`'s `worth`,
 `MayTake`). A typed bank alt is also offered in the right-click
 Always mail menu (`Errands:MailNames`: `Characters()` plus the bank alt
 when it isn't one of them or the one playing; `Characters()` itself is
-unchanged, so `IsKnown` still tells a typed name apart). All account
+unchanged, so `IsKnown` still tells a typed name apart). Full Stacks Only
+(a player asked, the owner said build it, 2026-11-02): with "Full Stacks
+Only:" ticked under WHAT GOES THERE (`bankAltFullStacks`, off unless
+ticked), `MayTake` lets only full stacks go (`BankAlt:FullStack`: the
+count reaches the item's stack size; an item that doesn't stack, or one
+the client can't size yet, goes), so smaller stacks stay in the bags. All account
 wide, never rename them. A BANK ALT page in Settings and `/bbutler
 bankalt [Full Name|off|first|vendor|leftovers]`. Tested in
 `tools/test_bankalt.lua`.
