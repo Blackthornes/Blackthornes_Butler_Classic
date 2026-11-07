@@ -314,6 +314,13 @@ end
 -- The probe line is read without raising.
 suite.check("the probe says what it found", type(BagWindow:ProbeText()) == "string")
 
+-- The game's split box and other pop-ups sit in DIALOG: the window stays
+-- under them, so splitting a stack in it shows the split box on top.
+do
+    local frame = BagWindow:Build()
+    suite.check("the window sits under the game's pop-ups", frame:GetFrameStrata() == "HIGH")
+end
+
 -- Suites share one Lua state: take the game's bag calls away again.
 _G.hooksecurefunc, _G.ToggleAllBags, _G.OpenAllBags, _G.CloseAllBags = nil, nil, nil, nil
 _G.ContainerFrameCombinedBags = nil

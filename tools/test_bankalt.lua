@@ -35,6 +35,7 @@ env.FakeBags({
     { bag = 0, slot = 10, id = 3004, name = "Quest Hide", quality = 1, price = 4, class = 7, subclass = 6, quest = "item" },
     { bag = 0, slot = 11, id = 3005, name = "Wool Cloth", quality = 1, price = 30, count = 10, class = 7, subclass = 5 },
     { bag = 0, slot = 12, id = 3006, name = "Shiny Pebble", quality = 1, price = 7, class = 15 },
+    { bag = 0, slot = 13, id = 2589, name = "Linen Cloth", quality = 1, price = 13, count = 7, class = 7, subclass = 5 },
 })
 
 local ts = { Butler = {
@@ -188,9 +189,37 @@ BankAlt:SetWhen("first")
 suite.check("full stacks only is off unless ticked", not BankAlt:FullStacksOn() and ToBank("Light Leather"))
 BankAlt:SetFullStacks(true)
 suite.check("ticked, it is saved", ns.db.bankAltFullStacks == true)
-suite.check("a full stack still goes", ToBank("Linen Cloth"), Row("Linen Cloth").verdict)
+suite.check("a full stack still goes", (function()
+    for _, group in ipairs(Verdicts:Groups()) do
+        for _, row in ipairs(group.rows) do
+            if row.name == "Linen Cloth" and row.verdict == "mail" and row.mailTo == "Banky Vault" then return true end
+        end
+    end
+end)())
 suite.check("a smaller stack stays", not ToBank("Light Leather"), Row("Light Leather").verdict)
 suite.check("a stack with no known size goes", BankAlt:FullStack({ itemID = 999999, count = 1 }))
+-- A full stack and a short one of the same item: only the full one goes,
+-- whichever is judged first.
+local fullCount, shortCount = 0, 0
+for _, group in ipairs(Verdicts:Groups()) do
+    for _, row in ipairs(group.rows) do
+        if row.name == "Linen Cloth" then
+            if row.verdict == "mail" and row.mailTo == "Banky Vault" then fullCount = fullCount + row.count
+            else shortCount = shortCount + row.count end
+        end
+    end
+end
+suite.check("the short stack of a mailed item stays", fullCount == 20 and shortCount == 7,
+    fullCount .. " mailed, " .. shortCount .. " kept")
+local mailed
+for _, recipient in ipairs(ns.Errands:Recipients()) do
+    if recipient.to == "Banky Vault" then
+        for _, item in ipairs(recipient.items) do
+            if item.itemID == 2589 then mailed = item.count end
+        end
+    end
+end
+suite.check("Fill mail asks for the full stack only", mailed == 20, tostring(mailed))
 BankAlt:SetFullStacks(false)
 suite.check("unticked, the smaller stack goes again", ToBank("Light Leather") and ns.db.bankAltFullStacks == nil)
 BankAlt:SetName(nil)
