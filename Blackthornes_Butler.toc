@@ -39,6 +39,7 @@ Logic\Verdicts.lua
 Logic\Everyone.lua
 Logic\BankAlt.lua
 Logic\KeepHere.lua
+Logic\KeepAcross.lua
 Logic\ListRules.lua
 Logic\VendorPrices.lua
 
