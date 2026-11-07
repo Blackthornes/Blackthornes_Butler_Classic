@@ -442,6 +442,214 @@ function SettingsUI:SyncKeepHere()
     controls.keepRemove:SetLabelColor(picked and nil or "dim")
 end
 
+--------------------------------------------------------------------------------
+-- Keep across characters: the list
+--------------------------------------------------------------------------------
+
+-- Where each column ends, from the list's left edge.
+local ACROSS_KEEP_RIGHT = 214
+local ACROSS_HAVE_RIGHT = 262
+local ACROSS_NAME_WIDTH = 160
+local ACROSS_ROW = 22
+local ACROSS_LINE = 18
+local ACROSS_HEADER = 18
+
+-- Items whose characters are shown, by item ID, for this session only.
+SettingsUI.acrossOpen = {}
+
+--- The ITEM, KEEP, HAVE and STATUS headings over the list.
+function SettingsUI.BuildAcrossHeader(list)
+    local function Heading(text, right, justify)
+        local label = Theme.CreateLabel(list, "tiny", "muted", justify)
+        label:SetText(text)
+        if right then
+            label:SetPoint("TOPRIGHT", list, "TOPLEFT", right, -3)
+        else
+            label:SetPoint("TOPLEFT", 8, -3)
+        end
+        return label
+    end
+    Heading(L["ITEM"])
+    Heading(L["KEEP"], ACROSS_KEEP_RIGHT, "RIGHT")
+    Heading(L["HAVE"], ACROSS_HAVE_RIGHT, "RIGHT")
+    Heading(L["STATUS"], COLUMN_WIDTH - 8, "RIGHT")
+    list.rows, list.lines = {}, {}
+    list.empty = Theme.CreateLabel(list, "small", "dim")
+    list.empty:SetPoint("TOPLEFT", 8, -(ACROSS_HEADER + 4))
+    list.empty:SetText(L["Nothing kept yet"])
+end
+
+--- How tall a label wants to be, or `least`.
+local function TextHeight(label, least)
+    local ok, height = pcall(label.GetStringHeight, label)
+    height = ok and tonumber(height) or nil
+    return math.max(least, height and (height + 8) or least)
+end
+
+--- An item's row: dark glass, its name, the numbers and a status.
+local function AcrossRow(list, index)
+    local row = list.rows[index]
+    if row then return row end
+    row = CreateFrame("Button", nil, list)
+    row:SetWidth(COLUMN_WIDTH)
+    row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    row.fill = Theme.Fill(row, "glass")
+    row.line = row:CreateTexture(nil, "BORDER")
+    row.line:SetPoint("BOTTOMLEFT")
+    row.line:SetPoint("BOTTOMRIGHT")
+    row.line:SetHeight(1)
+    row.line:SetColorTexture(Theme.Unpack("border", 0.6))
+    row.edge = row:CreateTexture(nil, "ARTWORK")
+    row.edge:SetPoint("TOPLEFT")
+    row.edge:SetPoint("BOTTOMLEFT")
+    row.edge:SetWidth(2)
+    row.edge:SetColorTexture(Theme.Unpack("accentHi"))
+    row.name = Theme.CreateLabel(row, "normal", "text")
+    row.name:SetPoint("LEFT", 8, 0)
+    row.name:SetWidth(ACROSS_NAME_WIDTH)
+    row.name:SetWordWrap(true)
+    row.keep = Theme.CreateLabel(row, "normal", "text", "RIGHT")
+    row.keep:SetPoint("RIGHT", row, "LEFT", ACROSS_KEEP_RIGHT, 0)
+    row.have = Theme.CreateLabel(row, "normal", "text", "RIGHT")
+    row.have:SetPoint("RIGHT", row, "LEFT", ACROSS_HAVE_RIGHT, 0)
+    row.status = Theme.CreateLabel(row, "normal", "good", "RIGHT")
+    row.status:SetPoint("RIGHT", -8, 0)
+    row:SetScript("OnClick", function(self, button)
+        if not self.itemID then return end
+        if button == "RightButton" then
+            if ns.KeepAcrossUI then ns.KeepAcrossUI:Open(self.itemID) end
+            return
+        end
+        SettingsUI.acrossOpen[self.itemID] = not SettingsUI.acrossOpen[self.itemID] or nil
+        SettingsUI:SyncKeepAcross()
+    end)
+    row:SetScript("OnEnter", function(self)
+        self.fill:SetColorTexture(Theme.Unpack(self.open and "glassActive" or "glassHover"))
+        if not self.tip then return end
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(self.tip, Theme.Unpack("accentHi"))
+        GameTooltip:AddLine(L["Click to see who has them. Right-click to change it."],
+            Theme.Unpack("dim"))
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function(self)
+        self.fill:SetColorTexture(Theme.Unpack(self.open and "glassActive" or self.band))
+        GameTooltip:Hide()
+    end)
+    list.rows[index] = row
+    return row
+end
+
+--- A character's line under an open item: whole name, then where they are.
+local function AcrossLine(list, index)
+    local line = list.lines[index]
+    if line then return line end
+    line = CreateFrame("Frame", nil, list)
+    line:SetWidth(COLUMN_WIDTH)
+    line.fill = Theme.Fill(line, "glassAlt")
+    line.name = Theme.CreateLabel(line, "small", "text")
+    line.name:SetPoint("LEFT", 20, 0)
+    line.name:SetWidth(150)
+    line.name:SetWordWrap(true)
+    line.where = Theme.CreateLabel(line, "small", "muted", "RIGHT")
+    line.where:SetPoint("RIGHT", -8, 0)
+    line.where:SetPoint("LEFT", line.name, "RIGHT", 6, 0)
+    line.where:SetWordWrap(true)
+    list.lines[index] = line
+    return line
+end
+
+--- Where a character's copies are: "60 bags, 30 bank".
+function SettingsUI.AcrossWhere(holder)
+    local parts = {}
+    if (holder.bags or 0) > 0 then parts[#parts + 1] = L.Format("%d bags", holder.bags) end
+    if (holder.bank or 0) > 0 then parts[#parts + 1] = L.Format("%d bank", holder.bank) end
+    if (holder.mail or 0) > 0 then parts[#parts + 1] = L.Format("%d mail", holder.mail) end
+    if #parts == 0 then return L["None"] end
+    return table.concat(parts, ", ")
+end
+
+--- Keep across characters: a row an item, the open ones' characters under
+--- them, the ticks and the count. Only drawn while Settings shows.
+function SettingsUI:SyncKeepAcross()
+    local controls = self.controls
+    local list = controls and controls.acrossList
+    if not (list and ns.KeepAcross) then return end
+    local across = ns.KeepAcross
+    if controls.acrossBank.SetChecked then controls.acrossBank:SetChecked(across:CountsBank()) end
+    if controls.acrossMail.SetChecked then controls.acrossMail:SetChecked(across:CountsMail()) end
+
+    local items = across:Items()
+    local n = #items
+    controls.acrossCount:SetText(n == 1 and L.Format("%d item kept", n) or L.Format("%d items kept", n))
+    if self.frame and self.frame.IsShown and not self.frame:IsShown() then
+        list.stale = true
+        return
+    end
+    list.stale = nil
+
+    local y, rowCount, lineCount = ACROSS_HEADER, 0, 0
+    for index, each in ipairs(items) do
+        local status = across:Status(each.itemID)
+        if status then
+            rowCount = rowCount + 1
+            local row = AcrossRow(list, rowCount)
+            row.itemID = each.itemID
+            row.open = SettingsUI.acrossOpen[each.itemID] and true or false
+            row.band = (index % 2 == 0) and "glassAlt" or "glass"
+            row.fill:SetColorTexture(Theme.Unpack(row.open and "glassActive" or row.band))
+            row.edge:SetShown(row.open)
+            local name = ns.KeepAcrossUI and ns.KeepAcrossUI.ItemName(each.itemID) or tostring(each.itemID)
+            row.name:SetText(ns.Items:ColorName(name, each.itemID) or name)
+            local all = ns.KeepHere.IsAll(status.count)
+            row.keep:SetText(all and L["All"] or tostring(status.count))
+            row.have:SetText(tostring(status.have))
+            if status.short > 0 then
+                row.status:SetText(L.Format("Short %d", status.short))
+                row.status:SetTextColor(Theme.Unpack("warn"))
+                row.tip = L.Format("Your characters need %d more.", status.short)
+            else
+                row.status:SetText(L["Kept"])
+                row.status:SetTextColor(Theme.Unpack("good"))
+                row.tip = all and L["Your characters keep every one."] or L["Your characters have enough."]
+            end
+            local height = TextHeight(row.name, ACROSS_ROW)
+            row:SetHeight(height)
+            row:ClearAllPoints()
+            row:SetPoint("TOPLEFT", list, "TOPLEFT", 0, -y)
+            row:Show()
+            y = y + height
+            if row.open then
+                for _, holder in ipairs(status.holders) do
+                    lineCount = lineCount + 1
+                    local line = AcrossLine(list, lineCount)
+                    local who = holder.name ~= "" and holder.name or (UnitName and UnitName("player") or "")
+                    line.name:SetText(holder.isCurrent and L.Format("%s (you)", who) or who)
+                    line.where:SetText(SettingsUI.AcrossWhere(holder))
+                    local lineHeight = math.max(TextHeight(line.name, ACROSS_LINE),
+                        TextHeight(line.where, ACROSS_LINE))
+                    line:SetHeight(lineHeight)
+                    line:ClearAllPoints()
+                    line:SetPoint("TOPLEFT", list, "TOPLEFT", 0, -y)
+                    line:Show()
+                    y = y + lineHeight
+                end
+            end
+        end
+    end
+    for i = rowCount + 1, #list.rows do list.rows[i]:Hide() end
+    for i = lineCount + 1, #list.lines do list.lines[i]:Hide() end
+    list.empty:SetShown(rowCount == 0)
+    if rowCount == 0 then y = y + ACROSS_ROW end
+
+    local height = math.ceil(y + 2)
+    if list.fixedHeight ~= height then
+        list.fixedHeight = height
+        list:SetHeight(height)
+        if self.pages and self.pages.fitted then self.pages:Fit() end
+    end
+end
+
 --- The bank alt page: who, when, which list and the kinds, as saved.
 function SettingsUI:SyncBankAlt()
     local controls = self.controls
@@ -749,6 +957,46 @@ function SettingsUI:BuildPages()
         SettingsUI:SyncKeepHere()
     end, { width = 100, height = 20 })
     controls.keepRemove:SetPoint("TOPLEFT", CONTROL_X, 0)
+
+    -- Keep across characters (Logic/KeepAcross.lua, a player asked, the
+    -- owner said build it from a mockup 2026-11-07): one number an item for
+    -- the account, a row each with what is kept, what all the characters
+    -- have and whether that's enough. A click opens who has them.
+    local acrossHead = pages:Section("selling", 2, L["KEEP ACROSS CHARACTERS"])
+    controls.acrossAdd = Widgets.CreateButton(acrossHead, L["Add Item"], function()
+        if ns.KeepAcrossUI then ns.KeepAcrossUI:Open() end
+    end, { height = 18 })
+    controls.acrossAdd:SetPoint("BOTTOMRIGHT", acrossHead, "TOPRIGHT", 0, -12)
+
+    local acrossList = CreateFrame("Frame", nil, pages.pages.selling.content)
+    acrossList:SetWidth(COLUMN_WIDTH)
+    acrossList.fixedHeight = 40
+    acrossList:SetHeight(40)
+    pages:Place("selling", 2, acrossList, 4)
+    controls.acrossList = acrossList
+    SettingsUI.BuildAcrossHeader(acrossList)
+
+    local acrossBankRow = pages:Row("selling", 2, L["Count Bank:"], nil)
+    controls.acrossBank = Widgets.CreateCheckbox(acrossBankRow, L["On"], function(checked)
+        if ns.KeepAcross then ns.KeepAcross:SetCountsBank(checked) end
+    end)
+    controls.acrossBank:SetPoint("TOPLEFT", CONTROL_X, 0)
+
+    local acrossMailRow = pages:Row("selling", 2, L["Count Mail:"], nil)
+    controls.acrossMail = Widgets.CreateCheckbox(acrossMailRow, L["On"], function(checked)
+        if ns.KeepAcross then ns.KeepAcross:SetCountsMail(checked) end
+    end)
+    controls.acrossMail:SetPoint("TOPLEFT", CONTROL_X, 0)
+
+    local acrossFoot = CreateFrame("Frame", nil, pages.pages.selling.content)
+    acrossFoot:SetSize(COLUMN_WIDTH, 16)
+    acrossFoot.fixedHeight = 16
+    pages:Place("selling", 2, acrossFoot, 6)
+    controls.acrossCount = Theme.CreateLabel(acrossFoot, "small", "muted")
+    controls.acrossCount:SetPoint("LEFT", 0, 0)
+    local acrossSaves = Theme.CreateLabel(acrossFoot, "small", "dim", "RIGHT")
+    acrossSaves:SetPoint("RIGHT", 0, 0)
+    acrossSaves:SetText(L["Changes save as you make them."])
 
     -- Bank alt (Logic/BankAlt.lua, a player asked, the owner said build it
     -- 2026-10-14): who, where it sits among the verdicts and which list on
@@ -1211,6 +1459,7 @@ function SettingsUI:Refresh()
     controls.heldPick:SetNames(heldNames)
     self:SyncHeld()
     self:SyncKeepHere()
+    self:SyncKeepAcross()
     self:SyncBankAlt()
     self:SyncLists()
     controls.textSize:Sync()

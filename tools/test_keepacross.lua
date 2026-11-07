@@ -118,6 +118,33 @@ KeepAcross.read = nil
 kept = Kept("Copper Bar")
 suite.check("own bags only without Tradeskills", kept == 40, kept)
 
+-- Settings lists it: a row with keep, have and status; a click opens
+-- each character's line.
+_G.BlackthornesTS = { Butler = { Holdings = function() return holdings end } }
+KeepAcross.read = nil
+KeepAcross:Set(2840, 140)
+local SettingsUI = ns.SettingsUI
+SettingsUI:Show()
+local controls = SettingsUI.controls
+local list = controls.acrossList
+local row = list.rows[1]
+suite.check("Settings has a row", row and row.itemID == 2840)
+suite.check("row shows the number", row and row.keep:GetText() == "140", row and row.keep:GetText())
+suite.check("row says kept", row and row.status:GetText() == "Kept", row and row.status:GetText())
+suite.check("foot counts it", controls.acrossCount:GetText() == "1 item kept", controls.acrossCount:GetText())
+local closedHeight = list.fixedHeight
+row:GetScript("OnClick")(row, "LeftButton")
+suite.check("a click opens the characters", #list.lines >= 2 and list.fixedHeight > closedHeight)
+suite.check("whole names, you marked", list.lines[1].name:GetText() == "Mirelda Stormvale (you)",
+    list.lines[1].name:GetText())
+suite.check("where they are", list.lines[1].where:GetText() == "60 bags, 30 bank", list.lines[1].where:GetText())
+KeepAcross:Set(2840, 400)
+suite.check("short shows", list.rows[1].status:GetText():find("Short") ~= nil, list.rows[1].status:GetText())
+SettingsUI:Hide()
+KeepAcross:Set(2840, 0)
+_G.BlackthornesTS = nil
+KeepAcross.read = nil
+
 -- Taking it off clears the save.
 KeepAcross:Set(2840, 0)
 suite.check("emptied list leaves nothing saved", ns.db.keepAcross == nil)
