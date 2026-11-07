@@ -139,8 +139,10 @@ function KeepHere.FromTradeskills(itemID)
 end
 
 --- The number Butler keeps by: the biggest of its own, Tradeskills' and a
---- list's Keep Here (Logic/ListRules.lua). The second return is that
---- list's name when its number is the one kept.
+--- list's Keep Here (Logic/ListRules.lua) and this character's share of
+--- Keep Across Characters (Logic/KeepAcross.lua). The second return is
+--- that list's name when its number is the one kept; the third is true
+--- when the number across characters is.
 function KeepHere:Effective(itemID)
     local own = self:Count(itemID)
     local ts = self.FromTradeskills(itemID)
@@ -148,6 +150,10 @@ function KeepHere:Effective(itemID)
     if own and ts then best = math.max(own, ts) end
     local list, listName
     if ns.ListRules then list, listName = ns.ListRules:Keep(itemID) end
+    local across = ns.KeepAcross and ns.KeepAcross:Here(itemID)
+    if across and (not best or across > best) and (not list or across > list) then
+        return across, nil, true
+    end
     if list and (not best or list > best) then return list, listName end
     return best
 end

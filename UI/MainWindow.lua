@@ -1372,6 +1372,13 @@ function UI:BuildMenu()
     -- Keep a number on this character (Logic/KeepHere.lua, a player asked,
     -- the owner said build it 2026-10-17): its own page with a box.
     menu.keepHere = UI.MenuRow(menu, L["Keep on This Character..."], function() UI:ShowKeepMenu() end)
+    -- One number across every character (Logic/KeepAcross.lua, the owner
+    -- said build it 2026-11-07): its own small box.
+    menu.keepAcross = UI.MenuRow(menu, L["Keep Across Characters..."], function()
+        local data = UI.menu and UI.menu.data
+        UI.menu:Hide()
+        if data and ns.KeepAcrossUI then ns.KeepAcrossUI:Open(data.itemID, UI.ItemTitle(data)) end
+    end)
     local function SaveKeep()
         local data = UI.menu.data
         local count = tonumber(menu.keepBox.editBox:GetText()) or 0
@@ -1545,6 +1552,14 @@ function UI:ShowMenu(data, stay)
     menu.keepHere:ClearAllPoints()
     menu.keepHere:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 0)
     if ns.KeepHere then last = menu.keepHere end
+    -- Keep across characters: the number, when there is one.
+    local acrossCount = ns.KeepAcross and ns.KeepAcross:Count(data.itemID)
+    menu.keepAcross:SetShown(ns.KeepAcross ~= nil)
+    menu.keepAcross:SetText(acrossCount and (ns.KeepHere.IsAll(acrossCount) and L["Keep Across Characters: All"]
+        or L.Format("Keep Across Characters: %d", acrossCount)) or L["Keep Across Characters..."])
+    menu.keepAcross:ClearAllPoints()
+    menu.keepAcross:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 0)
+    if ns.KeepAcross then last = menu.keepAcross end
     menu.decide:ClearAllPoints()
     menu.decide:SetPoint("TOPLEFT", last, "BOTTOMLEFT", 0, 0)
     -- Also there for what Butler learned from the player (a buyback, a
@@ -1555,10 +1570,10 @@ function UI:ShowMenu(data, stay)
     menu.decide:SetText(learned and L["Forget what Butler learned"] or L["Let Butler Decide"])
 
     local rows = 3 + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
-        + (craft and 1 or 0) + (ns.KeepHere and 1 or 0) + (decides and 1 or 0)
+        + (craft and 1 or 0) + (ns.KeepHere and 1 or 0) + (ns.KeepAcross and 1 or 0) + (decides and 1 or 0)
     menu:SetHeight(30 + rows * MENU_ROW)
     UI.FitMenu(menu, { menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
-        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.decide })
+        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.keepAcross, menu.decide })
 
     if stay and menu:IsShown() then return end
     local x, y = 0, 0
@@ -1579,8 +1594,8 @@ function UI:ShowJobMenu(data)
     menu.away = 0
     menu.title:SetText(data.job.name)
     for _, button in ipairs({ menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
-        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.decide, menu.back, menu.keepSave,
-        menu.keepAll }) do
+        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.keepAcross, menu.decide, menu.back,
+        menu.keepSave, menu.keepAll }) do
         button:Hide()
     end
     for _, button in ipairs(menu.characters) do button:Hide() end
@@ -1648,6 +1663,7 @@ function UI:ShowMailMenu()
     menu.skipCraft:Hide()
     menu.decide:Hide()
     menu.keepHere:Hide()
+    menu.keepAcross:Hide()
     menu.disenchant:Hide()
     menu.ignoreJobs:Hide()
 
@@ -1697,7 +1713,7 @@ function UI:ShowKeepMenu()
     menu.away = 0
     menu.title:SetText(L.Format("Keep %s on this character", UI.ItemTitle(data)))
     for _, button in ipairs({ menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
-        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.decide, menu.ignoreJobs }) do
+        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.keepAcross, menu.decide, menu.ignoreJobs }) do
         button:Hide()
     end
     for _, button in ipairs(menu.characters) do button:Hide() end

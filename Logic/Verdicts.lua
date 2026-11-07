@@ -455,8 +455,14 @@ end
 -- judges the rest again past this rule.
 function STEPS.keepHere(self, c)
     if c.pastKeep or not ns.KeepHere then return nil end
-    local count, listName = ns.KeepHere:Effective(c.itemID)
+    local count, listName, across = ns.KeepHere:Effective(c.itemID)
     if not count then return nil end
+    if across then
+        if ns.KeepHere.IsAll(count) then
+            return "keep", L["Keeping all for your characters"], nil, true, { keepHere = count }
+        end
+        return "keep", L.Format("Keeping %d for your characters", count), nil, true, { keepHere = count }
+    end
     if listName then
         return "keep", L.Format("Your %s list keeps %d here", listName, count), nil, true, { keepHere = count }
     end

@@ -39,6 +39,7 @@ Logic\Verdicts.lua
 Logic\Everyone.lua
 Logic\BankAlt.lua
 Logic\KeepHere.lua
+Logic\KeepAcross.lua
 Logic\ListRules.lua
 Logic\VendorPrices.lua
 
@@ -80,6 +81,7 @@ Logic\Funds.lua
 Logic\Ammo.lua
 Logic\BuyMany.lua
 UI\BuyMany.lua
+UI\KeepAcross.lua
 Logic\Learning.lua
 Logic\Jobs.lua
 Logic\SkillUp.lua

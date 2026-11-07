@@ -1163,6 +1163,34 @@ Tradeskills reads) and Tradeskills' `_G.BlackthornesTS.KeepHere:Count(itemID)`,
 inside a pcall, read only; the menu and Settings still show Butler's own.
 If that call changes, change `KeepHere.FromTradeskills` too. Tested in `tools/test_keephere.lua`.
 
+## Keep across characters
+
+A player asked on Discord, the owner said build it from a mockup
+(2026-11-07): keep a number of an item across all your characters on this
+realm and side, bank included, and let anything past it follow the usual
+rules. `Logic/KeepAcross.lua` keeps one number an item, account wide, in
+`keepAcross[itemID]` (`KeepHere.MOST`, 9999, is Keep All); `keepAcrossBank`
+is false when Count Bank is unticked (nil reads as on) and `keepAcrossMail`
+true when Count Mail is ticked (nil reads as off). Never rename them.
+Nothing changes until an item is added. Counts come from `Everyone:Read`
+(Tradeskills' `Holdings`; this character's bags are Butler's live read),
+kept `KEEP_FOR` seconds while bags and verdicts stand still; without
+Tradeskills only the bags here count. So two characters never both let
+go, the number is shared out the same way everywhere (`KeepAcross.Share`):
+bank and mail (when counted) come off first, then each character's bags in
+order of character key. `KeepAcross:Here` is this character's share;
+`KeepHere:Effective` takes the biggest of it, Butler's own keep,
+Tradeskills' and a list rule, so the `keepHere` rule keeps it ("Keeping 60
+for your characters"). `KeepHere:Count`, which Tradeskills reads, stays
+Butler's own number. The right-click menu's "Keep Across Characters..."
+and Settings' Add Item open `UI/KeepAcross.lua` (Add Item takes the item
+on the cursor, else asks for a name, ID or link). Settings, Errands page,
+KEEP ACROSS CHARACTERS: a dark glass list (ITEM, KEEP, HAVE, STATUS "Kept"
+or "Short N"), a click shows each character's whole name with "60 bags,
+30 bank", right-click changes it; Count Bank and Count Mail; the open rows
+last the session. Tested in `tools/test_keepacross.lua`. Not yet seen in
+game.
+
 ## Your Tradeskills lists
 
 The owner said build it (2026-10-19, from a mockup), with Tradeskills'
