@@ -81,6 +81,7 @@ Logic\Funds.lua
 Logic\Ammo.lua
 Logic\BuyMany.lua
 UI\BuyMany.lua
+UI\KeepAcross.lua
 Logic\Learning.lua
 Logic\Jobs.lua
 Logic\SkillUp.lua
