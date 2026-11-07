@@ -69,5 +69,11 @@ Copied over since, one at a time:
   `f22dec5` the Bags window sits in HIGH so the split stack box shows over
   it; `06799f2` Full Stacks Only judges full and short stacks apart.
 
+- Keep Across Characters (copied 2026-11-07): `ffd115a`, `75516f3`,
+  `894d937`, `09ce1da`, cherry-picked as they are. In the right-click
+  menu Classic's "Don't Suggest This Craft" row stays, with Keep Across
+  Characters after Keep on This Character. Nothing changes until an item
+  is added (`keepAcross`, `keepAcrossBank`, `keepAcrossMail`).
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
