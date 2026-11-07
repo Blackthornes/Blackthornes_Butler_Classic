@@ -247,11 +247,13 @@ end
 
 --- The stack worth the least that may be thrown away: { entry, row, worth,
 --- unit }, or nil. `bags` is the set of bag IDs that take anything. A trade
---- good is weighed at MATERIAL_LEAN times its worth.
-function Trash:Pick(bags)
+--- good is weighed at MATERIAL_LEAN times its worth. `from` is the set of
+--- verdicts to look in, Trash.FROM unless given (Swap When Full's quest loot).
+function Trash:Pick(bags, from)
+    from = from or self.FROM
     local best
     for _, group in ipairs(ns.Verdicts:Groups()) do
-        if self.FROM[group.verdict] then
+        if from[group.verdict] then
             for _, row in ipairs(group.rows) do
                 local unit = tonumber(row.unit)
                 if unit and unit > 0 then

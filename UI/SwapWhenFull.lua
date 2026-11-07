@@ -11,6 +11,17 @@
 -- when the loot is worth more, at Butler's own worth (Verdicts:Judge's
 -- `unit` times the count) on both sides.
 --
+-- Quest loot always wins (the owner, 2026-11-06, from Forever: picking up
+-- a quest item with full bags should always offer the swap for the least
+-- valuable item). A quest item sells for nothing, so worth alone never
+-- offered it. Loot the game marks as a quest item (GetLootSlotInfo's
+-- isQuestItem), item class 12 or an item an open quest collects
+-- (Quests:For) is offered before any other loot, whatever it is worth,
+-- against Trash:Pick's item, and when nothing is under Sell, Auction or
+-- Disenchant, the cheapest item waiting for a better price
+-- (`Swap.QUEST_FROM`). Keep, Mail, Bank and Look at it are never offered,
+-- and nor is a quest item.
+--
 -- The one place Butler destroys an item (the owner, 2026-10-28: a player
 -- who turned this on wants Butler to do it, with no step past saying yes).
 -- The popup is the question and Swap is the yes: the click picks the cheap
@@ -44,6 +55,8 @@ local ROW_HEIGHT = 40
 local ICON = 30
 -- GetLootSlotType's answer for an item (LOOT_SLOT_ITEM on every build).
 local LOOT_ITEM = 1
+-- What quest loot may push out: Trash's own verdicts, then Wait.
+Swap.QUEST_FROM = { sell = true, auction = true, disenchant = true, wait = true }
 
 local function Field(object, key)
     if type(object) ~= "table" then return nil end
@@ -139,8 +152,9 @@ function Swap.IsQuestLoot(itemID, gameSays)
     return false
 end
 
---- The loot worth the most that has nowhere to go: { slot, itemID, link,
---- name, icon, quality, count, worth }, or nil.
+--- The loot that has nowhere to go and is wanted most: quest loot first,
+--- then the loot worth the most. { slot, itemID, link, name, icon,
+--- quality, count, worth, quest }, or nil.
 function Swap:BestLoot(read)
     local best
     local slots = tonumber(Global("GetNumLootItems")) or 0
@@ -148,18 +162,22 @@ function Swap:BestLoot(read)
         local kind = Global("GetLootSlotType", slot)
         local link = Global("GetLootSlotLink", slot)
         if (kind == nil or kind == LOOT_ITEM) and type(link) == "string" then
-            local icon, name, count, _, quality, locked = Global("GetLootSlotInfo", slot)
+            local icon, name, count, _, quality, locked, isQuest = Global("GetLootSlotInfo", slot)
             local itemID = tonumber(link:match("item:(%d+)"))
             count = tonumber(count) or 1
             if count < 1 then count = 1 end
             if itemID and not locked and not self.Fits(itemID, read) then
+                local quest = self.IsQuestLoot(itemID, isQuest)
                 local unit = self.Worth(itemID, link, tonumber(quality))
-                if unit and unit > 0 then
-                    local worth = unit * count
-                    if not best or worth > best.worth then
+                if quest or (unit and unit > 0) then
+                    local worth = (unit or 0) * count
+                    local better = not best
+                        or (quest and not best.quest)
+                        or (quest == best.quest and worth > best.worth)
+                    if better then
                         best = { slot = slot, itemID = itemID, link = link, icon = icon, count = count,
                             name = type(name) == "string" and name or ns.Items.NameFromLink(link),
-                            quality = tonumber(quality), worth = worth }
+                            quality = tonumber(quality), worth = worth, quest = quest }
                     end
                 end
             end
@@ -172,10 +190,15 @@ end
 function Swap:Offer(read)
     local bags = {}
     for _, entry in ipairs(read.bags) do bags[entry.bag] = true end
-    local pick = ns.Trash:Pick(bags)
-    if not pick then return nil end
     local loot = self:BestLoot(read)
-    if not loot or loot.worth <= pick.worth then return nil end
+    if not loot then return nil end
+    if loot.quest then
+        local pick = ns.Trash:Pick(bags) or ns.Trash:Pick(bags, self.QUEST_FROM)
+        if not pick then return nil end
+        return loot, pick
+    end
+    local pick = ns.Trash:Pick(bags)
+    if not pick or loot.worth <= pick.worth then return nil end
     return loot, pick
 end
 
@@ -328,6 +351,7 @@ function Swap:Build()
     say:SetWordWrap(true)
     say:SetJustifyV("TOP")
     say:SetText(L["Your bags are full. This is worth more than what you have."])
+    self.say = say
 
     local newHead = Heading(frame, L["NEW LOOT"])
     newHead:SetPoint("TOPLEFT", say, "BOTTOMLEFT", 0, -8)
@@ -377,18 +401,24 @@ function Swap:Place()
     end
 end
 
-local function Fill(row, icon, name, itemID, quality, count, worth)
+local function Fill(row, icon, name, itemID, quality, count, worth, quest)
     row.icon:SetTexture(icon or 134400)
     name = ns.Items:ColorName(name or L.Format("item %s", tostring(itemID)), itemID, quality)
     if (count or 1) > 1 then name = L.Format("%s x%d", name, count) end
     row.name:SetText(name)
-    row.worth:SetText(ns.Items.FormatMoney(worth))
+    if quest and not ((worth or 0) > 0) then
+        row.worth:SetText(L["Quest item"])
+    else
+        row.worth:SetText(ns.Items.FormatMoney(worth))
+    end
 end
 
 function Swap:Show(loot, pick)
     self:Build()
     self.loot, self.pick = loot, pick
-    Fill(self.newRow, loot.icon, loot.name, loot.itemID, loot.quality, loot.count, loot.worth)
+    Fill(self.newRow, loot.icon, loot.name, loot.itemID, loot.quality, loot.count, loot.worth, loot.quest)
+    self.say:SetText(loot.quest and L["Your bags are full. You need this for a quest."]
+        or L["Your bags are full. This is worth more than what you have."])
     local entry = pick.entry
     local pickIcon = ns.Items.Call({ "C_Item.GetItemIconByID", "GetItemIcon" }, entry.itemID)
     Fill(self.dropRow, pickIcon, pick.row.name, entry.itemID, entry.quality, entry.count, pick.worth)
