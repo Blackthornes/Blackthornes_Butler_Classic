@@ -1367,6 +1367,9 @@ Bank and Look at it never. The popup then says "Your bags are full. You
 need this for a quest." and the row "Quest item"
 (`tools/test_swapquest.lua`). Tested in
 `tools/test_swapwhenfull.lua`. Not yet seen in game.
+No swap is offered while two short stacks of one item fit in one slot
+(`Trash:Merge`, the same check the trash can makes first): stacking them
+makes room without destroying anything (2026-11-07, from Forever).
 
 ## The Bags window
 

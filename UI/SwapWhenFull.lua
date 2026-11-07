@@ -192,6 +192,10 @@ function Swap:Offer(read)
     for _, entry in ipairs(read.bags) do bags[entry.bag] = true end
     local loot = self:BestLoot(read)
     if not loot then return nil end
+    -- Two short stacks that fit in one slot make room without destroying
+    -- anything (the trash can says "Stack these to make room" then), so
+    -- nothing is offered while they can (the owner, 2026-11-07).
+    if ns.Trash.Merge and ns.Trash:Merge(bags) then return nil end
     if loot.quest then
         local pick = ns.Trash:Pick(bags) or ns.Trash:Pick(bags, self.QUEST_FROM)
         if not pick then return nil end
