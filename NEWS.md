@@ -23,6 +23,14 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.8.0
+
+- Keep Across Characters lets you keep a set number of an item across all your characters.
+- Swap When Full now offers a swap for quest loot.
+
+Fixes and changes:
+- Various bug fixes.
+
 ## 0.7.5
 
 Fixes and changes:

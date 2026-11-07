@@ -4,6 +4,12 @@ Versions follow [semantic versioning](https://semver.org): the middle number
 moves for new behaviour, the last for fixes alone. The newest version goes at
 the top; a release is refused if its version has no section here.
 
+## 0.8.0
+
+- Keep Across Characters lets you keep a set number of an item across all your characters.
+- Swap When Full now offers a swap for quest loot.
+- Various bug fixes.
+
 ## 0.7.5
 
 - Various bug fixes.
