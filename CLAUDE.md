@@ -1349,7 +1349,14 @@ window; hidden in a fight. "Swap When Full:" on the General page
 `/bbutler probe` has a "swap when full" line. Swap never destroys a quest
 item: `Swap:Take` reads the bag item again and refuses one the game flags,
 item class 12 or an open quest collects (`Swap.IsQuestLoot`,
-`Bags.ReadQuest`; 2026-11-07, from Forever). Tested in
+`Bags.ReadQuest`; 2026-11-07, from Forever). Quest loot always gets
+the offer (2026-11-07, from Forever): loot the game flags as a quest
+item, item class 12 or an item an open quest collects comes before
+other loot whatever its worth, against `Trash:Pick`, else the cheapest
+Wait item (`Swap.QUEST_FROM`, `Trash:Pick(bags, from)`); Keep, Mail,
+Bank and Look at it never. The popup then says "Your bags are full. You
+need this for a quest." and the row "Quest item"
+(`tools/test_swapquest.lua`). Tested in
 `tools/test_swapwhenfull.lua`. Not yet seen in game.
 
 ## The Bags window

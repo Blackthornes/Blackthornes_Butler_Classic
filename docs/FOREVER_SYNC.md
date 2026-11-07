@@ -75,5 +75,11 @@ Copied over since, one at a time:
   Characters after Keep on This Character. Nothing changes until an item
   is added (`keepAcross`, `keepAcrossBank`, `keepAcrossMail`).
 
+- `27546f4` Swap When Full offers the swap for quest loot (copied
+  2026-11-07, by hand: Classic already had `Swap.IsQuestLoot` and the
+  quest item check on the click). Quest loot comes first, against
+  `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
+  `tools/test_swapquest.lua` as it is.
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
