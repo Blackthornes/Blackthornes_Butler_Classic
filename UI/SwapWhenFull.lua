@@ -126,6 +126,19 @@ function Swap.Worth(itemID, link, quality)
     return unit
 end
 
+--- Is this loot for a quest: the game says so, its item class, or an open
+--- quest collects it.
+function Swap.IsQuestLoot(itemID, gameSays)
+    if gameSays == true then return true end
+    if ns.Items.IsQuestClass(itemID) then return true end
+    local quests = ns.Quests
+    if quests and quests.For then
+        local ok, item = pcall(quests.For, quests, itemID)
+        if ok and item then return true end
+    end
+    return false
+end
+
 --- The loot worth the most that has nowhere to go: { slot, itemID, link,
 --- name, icon, quality, count, worth }, or nil.
 function Swap:BestLoot(read)
@@ -212,6 +225,13 @@ function Swap:Take()
     local entry = pick.entry
     local now = ns.Bags.ReadSlot(entry.bag, entry.slot)
     if not now or now.key ~= entry.key or Global("GetLootSlotLink", loot.slot) ~= loot.link then
+        self:Changed()
+        return false
+    end
+    -- Never destroy a quest item, whatever the verdicts said (the owner,
+    -- 2026-11-07): the bag item is read again here, last of all.
+    if now.quest or entry.quest or self.IsQuestLoot(entry.itemID)
+        or ns.Bags.ReadQuest(entry.bag, entry.slot, entry.itemID) then
         self:Changed()
         return false
     end

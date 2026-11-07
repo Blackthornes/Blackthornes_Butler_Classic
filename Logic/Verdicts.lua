@@ -210,6 +210,13 @@ function Verdicts:Judge(entry, noAlt, pastKeep, pastWear)
     local key = (noAlt and "x|" or "") .. (pastKeep and "k|" or "") .. (pastWear and "w|" or "")
         .. (entry.bound and "b|" or "")
         .. tostring(entry.link or entry.itemID) .. "#" .. carried
+    -- With Full Stacks Only ticked a full stack and a short one of the same
+    -- item can get different answers, so each is kept apart (a short stack
+    -- judged after a full one was mailed with it, 2026-11-05).
+    local bankAlt = ns.BankAlt
+    if bankAlt and bankAlt.FullStacksOn and bankAlt:FullStacksOn() then
+        key = key .. (bankAlt:FullStack(entry) and "|full" or "|short")
+    end
     local known = memo[key]
     if known then return known[1], known[2], known[3], known[4] end
 

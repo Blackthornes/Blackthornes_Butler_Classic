@@ -147,4 +147,16 @@ env.Fire("PLAYER_REGEN_DISABLED")
 suite.check("hidden in a fight", not Showing())
 suite.check("nothing else was deleted", deleted == 1)
 
+-- 9. A quest item is never destroyed, even if it ended up as the pick.
+env.Fire("PLAYER_REGEN_ENABLED")
+env.Fire("LOOT_CLOSED")
+picked = {}
+Open({ { id = 801, name = "Ringed Helm", quality = 2 } })
+local realQuest = Swap.IsQuestLoot
+Swap.IsQuestLoot = function(id) return id == 702 or realQuest(id) end
+Swap:Take()
+Swap.IsQuestLoot = realQuest
+suite.check("a quest item in the bags: nothing deleted", deleted == 1, tostring(deleted))
+suite.check("and nothing picked up", #picked == 0 and holding == nil, table.concat(picked, ","))
+
 suite.done()

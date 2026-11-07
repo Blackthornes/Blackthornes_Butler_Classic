@@ -33,6 +33,13 @@ local FOOT = 40
 -- The free count's size over large: well above the foot's other words, so
 -- it reads at a glance.
 BagWindow.FREE_SIZE_UP = 6
+-- One step under the game's own pop-ups. The box that splits a stack, the
+-- "Delete this item?" box and the like sit in DIALOG, and a click on a
+-- square brings this window to the front of its layer, so in DIALOG it
+-- covered the split box it had just opened (a player's report,
+-- 2026-11-05). In HIGH it stays over the game's bags (MEDIUM) and under
+-- those boxes. Nothing is written on the game's frames.
+BagWindow.STRATA = "HIGH"
 local WELL_TOP = 82
 local GAP = 4
 local HEADING = 24
@@ -333,7 +340,7 @@ function BagWindow:Build()
     local frame = CreateFrame("Frame", "BlackthornesButlerBags", UIParent)
     frame:SetSize(WIDTH, HEIGHT)
     frame:SetScale(BagWindow.ClampScale(ns.db and ns.db.bagScale or 1))
-    frame:SetFrameStrata("DIALOG")
+    frame:SetFrameStrata(BagWindow.STRATA)
     frame:SetToplevel(true)
     frame:SetClampedToScreen(true)
     frame:EnableMouse(true)

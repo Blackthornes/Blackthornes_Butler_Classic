@@ -413,7 +413,10 @@ unchanged, so `IsKnown` still tells a typed name apart). Full Stacks Only
 Only:" ticked under WHAT GOES THERE (`bankAltFullStacks`, off unless
 ticked), `MayTake` lets only full stacks go (`BankAlt:FullStack`: the
 count reaches the item's stack size; an item that doesn't stack, or one
-the client can't size yet, goes), so smaller stacks stay in the bags. All account
+the client can't size yet, goes), so smaller stacks stay in the bags. With it ticked a full
+and a short stack of one item are judged apart (`Verdicts` keeps each by
+`|full` or `|short`), so a short stack is never mailed along with a full
+one. All account
 wide, never rename them. A BANK ALT page in Settings and `/bbutler
 bankalt [Full Name|off|first|vendor|leftovers]`. Tested in
 `tools/test_bankalt.lua`.
@@ -1315,7 +1318,10 @@ loot window is still open, Butler loots that item (`FollowSwap`,
 `LootSlot`). Not Now and the close gem put it away until the next loot
 window; hidden in a fight. "Swap When Full:" on the General page
 (`swapWhenFull`, account wide, off unless ticked, never rename it).
-`/bbutler probe` has a "swap when full" line. Tested in
+`/bbutler probe` has a "swap when full" line. Swap never destroys a quest
+item: `Swap:Take` reads the bag item again and refuses one the game flags,
+item class 12 or an open quest collects (`Swap.IsQuestLoot`,
+`Bags.ReadQuest`; 2026-11-07, from Forever). Tested in
 `tools/test_swapwhenfull.lua`. Not yet seen in game.
 
 ## The Bags window
@@ -1552,6 +1558,12 @@ an addon closing it on leaving a place, `SharedWindow.Close(true)`, lets it
 go back to the addon open before (`hub.byItself`, read in OnHide). Butler
 passes it from `UI:LeftVendor` and `LeftPlace` (`ButlerTabs:Closed(frame,
 byItself)`). Tested in `tools/test_sharedwindow.lua`.
+
+Folded and docked (2026-11-07, FILE_VERSION 8, from Forever): docked or
+undocked while folded with the fold gem, the sizes are worked from the
+size it opens back up to (`SharedWindow.FullSize`, FoldWindow's
+`state.width`/`state.full`), never the folded strip's, so it never opens
+squashed.
 
 Butler's pages are the first in (2026-10-30): "One Window:" sits under
 WINDOWS on the General page (`SettingsUI:SetOneWindow`, writing every

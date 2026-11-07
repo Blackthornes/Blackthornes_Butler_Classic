@@ -60,5 +60,14 @@ Copied over since, one at a time:
 - `112ff29` Bank alt "Full Stacks Only:" (2026-11-02, `bankAltFullStacks`,
   off unless ticked).
 
+- Fixes of 2026-11-05 to 11-07 (copied 2026-11-07): `f3155dd` One Window
+  keeps its size when it docks or undocks while folded
+  (`UI/SharedWindow.lua` FILE_VERSION 8, the same in all five Classic
+  repos); `3d46e22` Swap When Full never destroys a quest item (with
+  `Swap.IsQuestLoot` from `27546f4`, but not that commit's quest loot
+  swap; Classic also reads `Bags.ReadQuest` again on the click);
+  `f22dec5` the Bags window sits in HIGH so the split stack box shows over
+  it; `06799f2` Full Stacks Only judges full and short stacks apart.
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
