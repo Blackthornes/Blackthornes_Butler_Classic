@@ -221,6 +221,7 @@ L["On your Always disenchant list, but it's an upgrade for you"] = "Auf deiner L
 L["On your Always disenchant list: mail to %s"] = "Auf deiner Liste „Immer entzaubern“: an %s schicken"
 L["On your Always disenchant list, but none of your characters can break it yet"] = "Auf deiner Liste „Immer entzaubern“, aber noch kann es keiner deiner Charaktere entzaubern"
 L["On your Always mail list, but it's an upgrade for you"] = "Auf deiner Liste „Immer verschicken“, aber eine Verbesserung für dich"
+L["On your Always mail list, waiting for a full stack"] = "Auf deiner Liste „Immer verschicken“, wartet auf einen vollen Stapel"
 L["On your Always sell list, but your goal needs %d more"] = "Auf deiner Liste „Immer verkaufen“, aber dein Ziel braucht noch %d"
 L["On your Always sell list, but your craft queue needs %d"] = "Auf deiner Liste „Immer verkaufen“, aber deine Herstellungsliste braucht %d"
 L["Still loading from the game"] = "Wird noch vom Spiel geladen"

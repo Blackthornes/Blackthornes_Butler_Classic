@@ -504,6 +504,14 @@ function STEPS.mailList(self, c)
     if eq and eq.upgrade == "now" then
         return "look", L["On your Always mail list, but it's an upgrade for you"], Unit(c), true
     end
+    -- With Full Stacks Only ticked, an Always mail item for the bank alt
+    -- waits in the bags until its stack is full, as the bank alt's own
+    -- picks do (a player's report, 2026-11-07).
+    local bankAlt = ns.BankAlt
+    if bankAlt and bankAlt:FullStacksOn() and not bankAlt:FullStack(entry)
+        and ns.Errands and ns.Errands.SameName(mailTo, bankAlt:Name()) then
+        return "keep", L["On your Always mail list, waiting for a full stack"], Unit(c), true
+    end
     -- This character's own queued crafts come first (the owner,
     -- 2026-10-14): Tradeskills' `need` is what they still use from the
     -- bags, so only what is left over goes in the mail.

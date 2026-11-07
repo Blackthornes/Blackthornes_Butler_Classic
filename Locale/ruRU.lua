@@ -209,6 +209,7 @@ L["On your Always disenchant list, but it's an upgrade for you"] = "В твоё�
 L["On your Always disenchant list: mail to %s"] = "В твоём списке «Всегда распылять»: отправить персонажу %s"
 L["On your Always disenchant list, but none of your characters can break it yet"] = "В твоём списке «Всегда распылять», но пока никто из твоих персонажей не может это распылить"
 L["On your Always mail list, but it's an upgrade for you"] = "В твоём списке «Всегда отправлять», но для тебя это улучшение"
+L["On your Always mail list, waiting for a full stack"] = "В твоём списке «Всегда отправлять», ждёт полной стопки"
 L["On your Always sell list, but your goal needs %d more"] = "В твоём списке «Всегда продавать», но для цели нужно ещё %d"
 L["On your Always sell list, but your craft queue needs %d"] = "В твоём списке «Всегда продавать», но очереди создания нужно %d"
 L["Still loading from the game"] = "Ещё загружается из игры"

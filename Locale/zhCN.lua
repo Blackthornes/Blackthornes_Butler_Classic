@@ -220,6 +220,7 @@ L["On your Always disenchant list, but it's an upgrade for you"] = "在你的“
 L["On your Always disenchant list: mail to %s"] = "在你的“总是分解”清单上：邮寄给 %s"
 L["On your Always disenchant list, but none of your characters can break it yet"] = "在你的“总是分解”清单上，但你的角色还没人能分解它"
 L["On your Always mail list, but it's an upgrade for you"] = "在你的“总是邮寄”清单上，但它对你是升级"
+L["On your Always mail list, waiting for a full stack"] = "在你的“总是邮寄”清单上，等待满一组"
 L["On your Always sell list, but your goal needs %d more"] = "在你的“总是出售”清单上，但你的目标还需要 %d 个"
 L["On your Always sell list, but your craft queue needs %d"] = "在你的“总是出售”清单上，但你的制造队列需要 %d 个"
 L["Still loading from the game"] = "还在从游戏里读取"

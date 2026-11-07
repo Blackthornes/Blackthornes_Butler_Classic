@@ -220,6 +220,17 @@ for _, recipient in ipairs(ns.Errands:Recipients()) do
     end
 end
 suite.check("Fill mail asks for the full stack only", mailed == 20, tostring(mailed))
+-- Always mail to the bank alt waits for a full stack too; to anyone else
+-- it still goes as it is.
+Verdicts:SetChoice(2318, "mail", "Banky Vault")
+suite.check("an Always mail short stack for the bank alt stays", Row("Light Leather").verdict == "keep"
+    and Row("Light Leather").reason == "On your Always mail list, waiting for a full stack",
+    Row("Light Leather").verdict)
+Verdicts:SetChoice(2318, "mail", "Cara Reed")
+suite.check("an Always mail short stack for another character still goes",
+    Row("Light Leather").verdict == "mail" and Row("Light Leather").mailTo == "Cara Reed",
+    Row("Light Leather").verdict)
+Verdicts:SetChoice(2318, nil)
 BankAlt:SetFullStacks(false)
 suite.check("unticked, the smaller stack goes again", ToBank("Light Leather") and ns.db.bankAltFullStacks == nil)
 BankAlt:SetName(nil)
