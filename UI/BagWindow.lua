@@ -967,6 +967,12 @@ end
 
 local headings = {}
 
+-- The bag's name as the game gives it, for a tooltip with no bag item.
+local function BagName(section)
+    local name = ns.BagView.BagInfo(section.bag)
+    return name
+end
+
 local function Heading(index)
     local heading = headings[index]
     if heading then return heading end
@@ -979,9 +985,32 @@ local function Heading(index)
     line:SetHeight(1)
     line:SetColorTexture(Theme.Unpack("border", 0.6))
 
+    -- By Bag: the bag's own icon before its name, and the game's tooltip
+    -- for the bag on hover.
+    local icon = heading:CreateTexture(nil, "OVERLAY")
+    icon:SetSize(HEADING - 8, HEADING - 8)
+    icon:SetPoint("LEFT", 6, 0)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    icon:Hide()
+    heading.icon = icon
+
     local name = Theme.CreateLabel(heading, "small", "accent", "LEFT")
     name:SetPoint("LEFT", 6, 0)
     heading.nameLabel = name
+    heading:SetScript("OnEnter", function(self)
+        local section = self.section
+        if not (section and section.bag) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        local shown = false
+        if section.invSlot then
+            shown = pcall(GameTooltip.SetInventoryItem, GameTooltip, "player", section.invSlot)
+        end
+        if not shown or (GameTooltip.NumLines and GameTooltip:NumLines() == 0) then
+            GameTooltip:SetText(BagName(section) or "", 1, 1, 1)
+        end
+        GameTooltip:Show()
+    end)
+    heading:SetScript("OnLeave", function() GameTooltip:Hide() end)
     local count = Theme.CreateLabel(heading, "small", "muted", "LEFT")
     count:SetPoint("LEFT", name, "RIGHT", 6, 0)
     heading.countLabel = count
@@ -1100,9 +1129,24 @@ function BagWindow:DrawBags(width, search)
             heading:ClearAllPoints()
             heading:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, -y)
             heading:SetPoint("RIGHT", self.content, "RIGHT", 0, 0)
+            heading.section = section
+            heading:EnableMouse(section.bag ~= nil)
+            heading.nameLabel:ClearAllPoints()
+            if section.bag and section.icon then
+                heading.icon:SetTexture(section.icon)
+                heading.icon:Show()
+                heading.nameLabel:SetPoint("LEFT", heading.icon, "RIGHT", 5, 0)
+            else
+                heading.icon:Hide()
+                heading.nameLabel:SetPoint("LEFT", 6, 0)
+            end
             heading.nameLabel:SetText(section.label)
             heading.countLabel:SetText(tostring(#section.places))
-            heading.worthLabel:SetText(section.worth and Items.FormatMoney(section.worth) or "")
+            if section.bag then
+                heading.worthLabel:SetText(L.Format("%d free", section.free or 0))
+            else
+                heading.worthLabel:SetText(section.worth and Items.FormatMoney(section.worth) or "")
+            end
             heading:Show()
             local kind = (section.verdict == "mail" and errands and errands.mailOpen and "mail")
                 or (section.verdict == "bank" and errands and errands.bankOpen and "bank") or nil

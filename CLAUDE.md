@@ -1388,7 +1388,11 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   WEAPONS, TRADE GOODS, FOOD AND DRINK, OTHER, greys under Sell) or One
   Grid (every slot in bag order, empty ones too; a bag that takes only
   some things, such as a mining bag, on rows of its own,
-  `BagView.GridSections`, so what Sort puts there is not mid-grid). Search by name or ID and
+  `BagView.GridSections`, so what Sort puts there is not mid-grid), or By Bag
+  (a player asked, the owner said build it from a mockup, 2026-11-08:
+  `bagGroupBy` "bag", `BagView.BagSections`, one section a bag in bag bar
+  order, its icon, name and "N free" on the heading, the game's bag tooltip
+  on its hover, every slot in order, empty ones too). Search by name or ID and
   the Upgrades, To Sell, For My Crafts and For My Goals chips dim what does
   not match. Marks come from `Verdicts` and the sisters' answers
   (`BagView:Marks`, kept per `Verdicts.version`); the gold coin is for

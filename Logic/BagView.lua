@@ -9,7 +9,7 @@
 -- sisters and Tradeskills' Holdings already know. UI/BagWindow.lua draws it.
 --
 -- Saved, account wide, never rename them: `bagWindow` (on only when true),
--- `bagGroupBy` ("todo", "type" or "grid"), `bagItemSize` ("normal",
+-- `bagGroupBy` ("todo", "type", "grid" or "bag"), `bagItemSize` ("normal",
 -- "large" or "larger"), `bagItemLevel` and `bagNewGlow` (on unless false),
 -- `bagScale` (the size grip's). `bagEmptySlots` stays in the save, unread:
 -- empty slots always show now.
@@ -21,11 +21,12 @@ local BagView = ns.NewModule("BagView")
 
 local Items = ns.Items
 
-BagView.GROUPS = { "todo", "type", "grid" }
+BagView.GROUPS = { "todo", "type", "grid", "bag" }
 BagView.GROUP_WORDS = {
     todo = L["What To Do"],
     type = L["Item Type"],
     grid = L["One Grid"],
+    bag = L["By Bag"],
 }
 
 BagView.SIZES = { "normal", "large", "larger" }
@@ -365,6 +366,49 @@ function BagView.GridSections()
     return sections
 end
 
+--- A carried bag's name, icon and inventory slot, from the game: the
+--- bag's own item for bags 1 and up, the game's backpack for bag 0.
+function BagView.BagInfo(bag)
+    local name = Items.Call({ "C_Container.GetBagName", "GetBagName" }, bag)
+    if type(name) ~= "string" or name == "" then
+        name = bag == 0 and L["Backpack"] or L.Format("Bag %d", bag)
+    end
+    local invSlot, icon
+    if bag > 0 then
+        invSlot = Items.Call({ "C_Container.ContainerIDToInventoryID", "ContainerIDToInventoryID" }, bag)
+        if type(invSlot) ~= "number" then invSlot = nil end
+        if invSlot then
+            icon = Items.Call({ "GetInventoryItemTexture" }, "player", invSlot)
+        end
+    end
+    if bag == 0 then icon = "Interface\\Buttons\\Button-Backpack-Up" end
+    if type(icon) ~= "string" and type(icon) ~= "number" then icon = nil end
+    return name, icon, invSlot
+end
+
+--- By Bag (a player asked, the owner said build it, 2026-11-08): each
+--- carried bag a section of its own, in bag bar order, its slots in the
+--- game's own order, empty ones too. The heading has the bag's icon, name,
+--- slot count and free slots.
+function BagView.BagSections()
+    local sections, byBag = {}, {}
+    for _, place in ipairs(BagView.AllSlots()) do
+        local section = byBag[place.bag]
+        if not section then
+            local name, icon, invSlot = BagView.BagInfo(place.bag)
+            section = {
+                key = "bag:" .. place.bag, bag = place.bag, label = name:upper(),
+                icon = icon, invSlot = invSlot, places = {}, free = 0,
+            }
+            byBag[place.bag] = section
+            sections[#sections + 1] = section
+        end
+        section.places[#section.places + 1] = place
+        if not place.entry then section.free = section.free + 1 end
+    end
+    return sections
+end
+
 --- The carried bags as the window lays them out: a list of sections, each
 --- { key, label, verdict, places = { { bag, slot, entry } } }. A section
 --- with no label is One Grid.
@@ -374,6 +418,10 @@ function BagView:Sections(groupBy)
 
     if groupBy == "grid" then
         return self.GridSections()
+    end
+
+    if groupBy == "bag" then
+        return self.BagSections()
     end
 
     if groupBy == "type" then
