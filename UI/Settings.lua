@@ -682,6 +682,25 @@ function SettingsUI:SyncBankAlt()
         if when == BankAlt:When() then controls.bankAltWhen:SetValue(index, true) end
     end
     for key, box in pairs(controls.bankAltKinds) do box:SetChecked(BankAlt:KindOn(key)) end
+    for key, kindPicker in pairs(controls.bankAltKindTo or {}) do
+        local to = BankAlt:KindTo(key)
+        local choices = { L["Bank Alt"] }
+        local listed = false
+        for _, name in ipairs(ns.Errands:Characters()) do
+            choices[#choices + 1] = name
+            listed = listed or name == to
+        end
+        table.sort(choices, function(a, b)
+            if a == L["Bank Alt"] then return b ~= a end
+            if b == L["Bank Alt"] then return false end
+            return a < b
+        end)
+        if to and not listed then table.insert(choices, 2, to) end
+        choices[#choices + 1] = L["Type a Name..."]
+        kindPicker:SetNames(choices)
+        kindPicker:Select(to)
+        kindPicker.text:SetTextColor(Theme.Unpack((to and not BankAlt:IsKnown(to)) and "warn" or "text"))
+    end
     if controls.bankAltAuctions then controls.bankAltAuctions:SetChecked(BankAlt:AuctionsOn()) end
     if controls.bankAltFullStacks then controls.bankAltFullStacks:SetChecked(BankAlt:FullStacksOn()) end
 end
@@ -1090,7 +1109,7 @@ function SettingsUI:BuildPages()
     keepNote:SetText(L["of each, on every character"])
 
     pages:Section("bankalt", 2, L["WHAT GOES THERE"])
-    controls.bankAltKinds = {}
+    controls.bankAltKinds, controls.bankAltKindTo, controls.bankAltKindTyped = {}, {}, {}
     -- The kinds' names as the Settings rows show them; chat keeps kind.label.
     local KIND_LABELS = {
         cloth = L["Cloth:"],
@@ -1109,11 +1128,45 @@ function SettingsUI:BuildPages()
             and L["Green or better weapons and armor that bind when worn and aren't an upgrade for you."]
             or nil
         local row = pages:Row("bankalt", 2, KIND_LABELS[key] or kind.label, description)
-        local box = Widgets.CreateCheckbox(row, L["On"], function(checked)
+        local box = Widgets.CreateCheckbox(row, "", function(checked)
             ns.BankAlt:SetKind(key, checked)
         end, true)
         box:SetPoint("TOPLEFT", CONTROL_X, -2)
         controls.bankAltKinds[key] = box
+
+        -- Who this kind goes to (the owner said build it, 2026-11-09): the
+        -- bank alt, one of the player's characters, or a name typed by hand.
+        local typed
+        local picker = SettingsUI.CharacterPicker(row, CONTROL_X + 26, function()
+            local pick = controls.bankAltKindTo[key]
+            if pick.index == #pick.names then
+                pick:Hide()
+                typed:Show()
+                typed:SetText("")
+                if typed.editBox.SetFocus then typed.editBox:SetFocus() end
+                return
+            end
+            ns.BankAlt:SetKindTo(key, pick.index > 1 and pick:GetName() or nil)
+        end)
+        picker.least = 150
+        controls.bankAltKindTo[key] = picker
+
+        local function Back()
+            if not typed:IsShown() then return end
+            typed:Hide()
+            picker:Show()
+            SettingsUI:SyncBankAlt()
+        end
+        typed = Widgets.CreateSearchBox(row, L["First Last"], nil, function(text)
+            local name, why = ns.BankAlt:TypeKindTo(key, text)
+            if not name and why then ns.Print(why) end
+            Back()
+        end, { plain = true })
+        typed:SetPoint("TOPLEFT", CONTROL_X + 26, 0)
+        typed:SetWidth(150)
+        typed:Hide()
+        typed.editBox:HookScript("OnEditFocusLost", Back)
+        controls.bankAltKindTyped[key] = typed
     end
 
     -- Auction Items (a player asked, the owner said build it, 2026-10-22):

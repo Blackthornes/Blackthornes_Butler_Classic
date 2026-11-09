@@ -421,6 +421,22 @@ wide, never rename them. A BANK ALT page in Settings and `/bbutler
 bankalt [Full Name|off|first|vendor|leftovers]`. Tested in
 `tools/test_bankalt.lua`.
 
+Each kind to its own character (a player asked, the owner said build it
+from a mockup, 2026-11-09): beside each kind's tick box under WHAT GOES
+THERE a drop-down picks Bank Alt (the usual), one of the player's
+characters on this realm and side (`Errands:Characters`) or Type a
+Name... (`BankAlt:TypeKindTo`, the same whole-name rule as `TypeName`).
+Kept account wide in `bankAltKindTo[kind] = full name` (nil is the bank
+alt, the table made only when one is picked; never rename it).
+`BankAlt:Takes` sends a ticked kind with its own character there
+(`OwnTarget`, `MayTakeFor`), even with no bank alt set (`BankAlt:Active`
+keeps the rule on), under the same When, Full Stacks Only, bound, grey
+and `IsMe` rules; the row reads "Cloth, for NAME". On the character a
+kind points to (`BankAlt:Stays`) the bank alt rule passes the item by,
+so the usual rules decide it there. The shopping list and Auction Items
+still go to the bank alt. `/bbutler bankalt` lists the kinds with their
+own character. Tested in `tools/test_bankalt.lua`.
+
 ## All characters
 
 A player asked for an account-wide inventory and the owner said build it

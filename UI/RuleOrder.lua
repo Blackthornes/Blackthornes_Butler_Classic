@@ -123,8 +123,12 @@ local function Tooltip(row)
             or L["Off. Set an amount on the Errands page."], Theme.Unpack("text"))
     elseif row.id == "bankAlt" then
         local name = ns.BankAlt and ns.BankAlt:Name()
-        GameTooltip:AddLine(name and L.Format("Now: %s.", name)
-            or L["Off. Pick a character on the Bank Alt page."], Theme.Unpack("text"))
+        if name then
+            GameTooltip:AddLine(L.Format("Now: %s.", name), Theme.Unpack("text"))
+        elseif not (ns.BankAlt and ns.BankAlt:Active()) then
+            -- A kind sent to its own character keeps the rule on with no bank alt.
+            GameTooltip:AddLine(L["Off. Pick a character on the Bank Alt page."], Theme.Unpack("text"))
+        end
     elseif not row.locked then
         GameTooltip:AddLine(L["Drag it up or down to change when Butler asks it."], Theme.Unpack("dim"))
     end

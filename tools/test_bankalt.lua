@@ -17,6 +17,9 @@
 --   8. The command and Settings change the same saved values.
 --   9. A name typed for another account's character must be whole, first
 --      and last, and is known as not one of this account's characters.
+--  10. A kind can go to its own character, with or without a bank alt;
+--      on that character it stays, the list and Auction Items still go to
+--      the bank alt, and the character playing never gets mail.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("bankalt")
@@ -251,6 +254,73 @@ suite.check("the Auction Items box ticks it", ns.db.bankAltAuctions == true)
 local fullBox = controls.bankAltFullStacks
 fullBox:GetScript("OnClick")(fullBox)
 suite.check("the Full Stacks Only box ticks it", ns.db.bankAltFullStacks == true)
+
+-- 10. Each kind to its own character.
+local SettingsUI = ns.SettingsUI
+BankAlt:SetName(nil)
+BankAlt:SetWhen("first")
+BankAlt:SetKind("leather", true)
+BankAlt:SetList(nil)
+BankAlt:SetAuctions(false)
+BankAlt:SetFullStacks(false)
+suite.check("nothing is saved for kinds until one is picked", ns.db.bankAltKindTo == nil)
+BankAlt:SetKindTo("herb", "Cara Reed")
+suite.check("a kind's own character is saved", ns.db.bankAltKindTo and ns.db.bankAltKindTo.herb == "Cara Reed")
+suite.check("with no bank alt, Tigerseye stays", not ToBank("Tigerseye"))
+local wool = Row("Wool Cloth")
+suite.check("an unpicked kind waits for a bank alt", not (wool.verdict == "mail"), wool.verdict)
+BankAlt:SetKindTo("cloth", "Cara Reed")
+wool = Row("Wool Cloth")
+suite.check("a kind goes to its own character with no bank alt",
+    wool.verdict == "mail" and wool.mailTo == "Cara Reed", wool.verdict .. " " .. tostring(wool.mailTo))
+suite.check("its reason names the character", wool.reason == "Cloth, for Cara Reed", tostring(wool.reason))
+suite.check("soulbound cloth never goes", Row("Soulbound Cloth").verdict ~= "mail")
+BankAlt:SetName("Banky Vault")
+suite.check("other kinds go to the bank alt", ToBank("Tigerseye"))
+wool = Row("Wool Cloth")
+suite.check("a kind with its own character skips the bank alt", wool.mailTo == "Cara Reed")
+BankAlt:SetList("Gems")
+BankAlt:SetKindTo("tradegoods", "Cara Reed")
+suite.check("the shopping list still goes to the bank alt", ToBank("Shiny Pebble"))
+BankAlt:SetList(nil)
+BankAlt:SetKindTo("tradegoods", nil)
+local found
+for _, recipient in ipairs(ns.Errands:Recipients()) do
+    if recipient.to == "Cara Reed" then
+        for _, item in ipairs(recipient.items) do found = found or item.itemID == 3005 end
+    end
+end
+suite.check("Fill mail sends the kind to its character", found)
+BankAlt:SetKindTo("cloth", "Me Here")
+wool = Row("Wool Cloth")
+suite.check("on the character a kind points to, it stays", wool.verdict ~= "mail", wool.verdict)
+suite.check("the character playing is never mailed", wool.mailTo ~= "Me Here")
+BankAlt:SetName(nil)
+BankAlt:SetKindTo("cloth", "Cara Reed")
+suite.check("a typed kind name must be whole", BankAlt:TypeKindTo("cloth", "Otto") == nil
+    and BankAlt:KindTo("cloth") == "Cara Reed")
+suite.check("a whole typed name is kept", BankAlt:TypeKindTo("cloth", "Otto Faraway") == "Otto Faraway"
+    and BankAlt:KindTo("cloth") == "Otto Faraway")
+ns.HandleSlash("bankalt")
+SettingsUI:Show()
+SettingsUI:SyncBankAlt()
+local kindPick = controls.bankAltKindTo.cloth
+suite.check("the drop-down shows the typed name", kindPick:GetName() == "Otto Faraway", tostring(kindPick:GetName()))
+kindPick:Pick(1)
+suite.check("Bank Alt clears the kind's character", BankAlt:KindTo("cloth") == nil and ns.db.bankAltKindTo.cloth == nil)
+SettingsUI:SyncBankAlt()
+local caraIndex
+for index, name in ipairs(kindPick.names) do if name == "Cara Reed" then caraIndex = index end end
+kindPick:Pick(caraIndex)
+suite.check("the drop-down picks a character", BankAlt:KindTo("cloth") == "Cara Reed")
+SettingsUI:SyncBankAlt()
+suite.check("the last choice is Type a Name...", kindPick.names[#kindPick.names] == "Type a Name...")
+kindPick:Pick(#kindPick.names)
+suite.check("Type a Name... opens the name box", controls.bankAltKindTyped.cloth:IsShown()
+    and BankAlt:KindTo("cloth") == "Cara Reed")
+BankAlt:SetKindTo("cloth", nil)
+BankAlt:SetKindTo("herb", nil)
+suite.check("clearing every kind leaves the save as it was", next(ns.db.bankAltKindTo or {}) == nil)
 
 _G.BlackthornesTS = nil
 suite.done()
