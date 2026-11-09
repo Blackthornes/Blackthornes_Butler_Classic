@@ -38,6 +38,18 @@
 -- and stays in the bags. An item whose stack size the client hasn't loaded
 -- yet is let through, as with the box unticked.
 --
+-- Each kind to its own character (the owner said build it, 2026-11-09,
+-- from a mockup): a ticked kind can name a character of its own beside its
+-- tick box, saved account wide in bankAltKindTo ([kind] = full name; nil,
+-- the usual, sends it to the bank alt; never renamed). That kind then goes
+-- to its own character, even when no bank alt is picked, by the same When,
+-- Full Stacks Only, bound, grey and character-playing rules. On the
+-- character a kind names, that kind stays put: it is never sent on to the
+-- bank alt (as an Always mail item stays on its own character), so it
+-- falls to Butler's usual rules there. The shopping list and Auction Items
+-- still go to the bank alt everywhere else. Fill mail already makes one
+-- mail a character.
+--
 -- Auction Items (a player asked, the owner said build it, 2026-10-22): one
 -- character sells everything at the auction house. Ticked, whatever
 -- Butler's final word is Auction goes to the bank alt, whatever its kind,
@@ -171,6 +183,65 @@ function BankAlt:SetKind(key, on)
     self:Changed()
 end
 
+local function KindTo()
+    local map = ns.db and ns.db.bankAltKindTo
+    return type(map) == "table" and map or nil
+end
+
+--- The character this kind goes to instead of the bank alt, or nil for
+--- the bank alt (the usual).
+function BankAlt:KindTo(key)
+    local map = KindTo()
+    return map and Text(map[key]) or nil
+end
+
+--- Send a kind to its own character (nil puts it back on the bank alt).
+--- A first name alone or "Ana S." is read as one of the player's
+--- characters, as for the bank alt.
+function BankAlt:SetKindTo(key, name)
+    if not (ns.db and LABELS[key]) then return end
+    name = Text(name)
+    if name and ns.Errands and ns.Errands.FullName then name = ns.Errands:FullName(name) end
+    local map = KindTo()
+    if name then
+        if not map then
+            map = {}
+            ns.db.bankAltKindTo = map
+        end
+        map[key] = name
+    elseif map then
+        map[key] = nil
+    end
+    self:Changed()
+end
+
+--- A name the player typed for a kind: the same rules as TypeName, so a
+--- name that isn't one of theirs must be whole. Returns the name kept, or
+--- nil and why.
+function BankAlt:TypeKindTo(key, name)
+    name = Text(name)
+    if not name then return nil end
+    if ns.Errands and ns.Errands.FullName then name = ns.Errands:FullName(name) end
+    if not self:IsKnown(name) and not name:find("%S%s+%S") then
+        return nil, L["Type the whole name, first and last."]
+    end
+    self:SetKindTo(key, name)
+    return self:KindTo(key)
+end
+
+--- Does any ticked kind go to a character of its own?
+function BankAlt:AnyKindTo()
+    for _, kind in ipairs(self.KINDS) do
+        if self:KindOn(kind.key) and self:KindTo(kind.key) then return true end
+    end
+    return false
+end
+
+--- Is anything sent by kind at all (a bank alt, or a kind's own character)?
+function BankAlt:Active()
+    return self:Name() ~= nil or self:AnyKindTo()
+end
+
 --- Does everything Butler would auction go to the bank alt?
 function BankAlt:AuctionsOn()
     return ns.db and ns.db.bankAltAuctions == true or false
@@ -283,10 +354,10 @@ function BankAlt.KindOf(entry)
     return nil
 end
 
---- The bank alt's name when it may take this carried item at all: not
---- soulbound, not grey, and not the character playing.
-function BankAlt:MayTake(entry)
-    local name = self:Name()
+--- `name` when that character may take this carried item at all: not
+--- soulbound, not grey, a full stack when asked for, and not the
+--- character playing.
+function BankAlt:MayTakeFor(entry, name)
     if not (name and entry and entry.itemID) then return nil end
     if entry.bound or entry.quality == 0 then return nil end
     if self:FullStacksOn() and not self:FullStack(entry) then return nil end
@@ -294,9 +365,38 @@ function BankAlt:MayTake(entry)
     return name
 end
 
---- Does the bank alt take this carried item? Its name and why ("Cloth" or
---- the list's name), or nil.
+--- The bank alt's name when it may take this carried item at all.
+function BankAlt:MayTake(entry)
+    return self:MayTakeFor(entry, self:Name())
+end
+
+--- The ticked kind of this item and the character of its own it goes to,
+--- or nil when it goes to the bank alt (or nowhere).
+function BankAlt:OwnTarget(entry)
+    local kind = self.KindOf(entry)
+    if not (kind and self:KindOn(kind)) then return nil end
+    local to = self:KindTo(kind)
+    if to then return kind, to end
+    return nil
+end
+
+--- On the character this item's kind is sent to, it stays put: never sent
+--- on to the bank alt.
+function BankAlt:Stays(entry)
+    local _, to = self:OwnTarget(entry)
+    return to ~= nil and ns.Verdicts ~= nil and ns.Verdicts:IsMe(to)
+end
+
+--- Who takes this carried item? Their name, why ("Cloth" or the list's
+--- name) and true when it is a kind's own character, not the bank alt; or
+--- nil.
 function BankAlt:Takes(entry)
+    local kind, to = self:OwnTarget(entry)
+    if to then
+        local name = self:MayTakeFor(entry, to)
+        if name then return name, LABELS[kind], true end
+        return nil
+    end
     local name = self:MayTake(entry)
     if not name then return nil end
     if self:OnList(entry.itemID) then
@@ -312,9 +412,12 @@ end
 --- `worth` is one's worth, for Auction Items' postage check.
 --- Returns "mail", why and { to, bankAlt = true }, or nil to leave it.
 function BankAlt:Verdict(entry, verdict, worth)
+    if self:Stays(entry) then return nil end
     if TAKES[self:When()][verdict] then
-        local name, what = self:Takes(entry)
-        if name then
+        local name, what, own = self:Takes(entry)
+        if name and own then
+            return "mail", L.Format("%s, for %s", what, name), { to = name }
+        elseif name then
             return "mail", L.Format("%s, for your bank alt %s", what, name), { to = name, bankAlt = true }
         end
     end
@@ -336,17 +439,24 @@ end
 --- Say in chat who the bank alt is and what goes there.
 function BankAlt:Report()
     local name = self:Name()
+    local own = {}
+    for _, kind in ipairs(self.KINDS) do
+        local to = self:KindOn(kind.key) and self:KindTo(kind.key)
+        if to then own[#own + 1] = L.Format("%s, for %s", kind.label, to) end
+    end
     if not name then
         ns.Print(L["no bank alt yet. Pick one on the Bank alt page in Settings, or type /bbutler bankalt Name."])
+        for _, line in ipairs(own) do ns.Print(line) end
         return
     end
     local kinds = {}
     for _, kind in ipairs(self.KINDS) do
-        if self:KindOn(kind.key) then kinds[#kinds + 1] = kind.label end
+        if self:KindOn(kind.key) and not self:KindTo(kind.key) then kinds[#kinds + 1] = kind.label end
     end
     ns.Print(L.Format("your bank alt is %s (%s).", name, self.WHEN_LABELS[self:When()]))
     ns.Print(#kinds > 0 and L.Format("It takes: %s.", table.concat(kinds, ", ")) or L["It takes no kinds of items."])
     if self:ListName() then ns.Print(L.Format("And everything on your %s list.", self:ListName())) end
+    for _, line in ipairs(own) do ns.Print(line) end
 end
 
 ns.RegisterCommand("bankalt", L["mail whole kinds of items to one of your characters (bankalt Name, off, first, vendor or leftovers)"], function(rest)

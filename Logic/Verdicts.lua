@@ -255,7 +255,7 @@ local OWN_SWITCH = {
         set = function(on) Verdicts:SetDisenchantGreens(on) end },
     -- These need an amount or a character, so their own page turns them on.
     sellBelow = { on = function() return Verdicts:SellBelow() ~= nil end },
-    bankAlt = { on = function() return ns.BankAlt ~= nil and ns.BankAlt:Name() ~= nil end },
+    bankAlt = { on = function() return ns.BankAlt ~= nil and ns.BankAlt:Active() end },
 }
 Verdicts.OWN_SWITCH = OWN_SWITCH
 
