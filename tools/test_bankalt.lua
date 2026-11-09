@@ -179,6 +179,10 @@ suite.check("with its kind unticked, a vendor sale is not sent", Row("Linen Clot
 BankAlt:SetName("Me Here")
 suite.check("on the bank alt itself it stays Auction", Row("Light Leather").verdict == "auction", Row("Light Leather").verdict)
 BankAlt:SetName("Banky Vault")
+-- Postage is paid once a mail of 12 stacks, so a stack needs only its share.
+suite.check("a stack's share of postage is about 3c", BankAlt.StackPostage() == 3, BankAlt.StackPostage())
+suite.check("a 10c stack goes", BankAlt:Verdict({ itemID = 2318, count = 1, quality = 1 }, "auction", 10) == "mail")
+suite.check("a 2c stack stays", BankAlt:Verdict({ itemID = 2318, count = 1, quality = 1 }, "auction", 2) == nil)
 BankAlt:SetAuctions(false)
 suite.check("unticked it stays Auction", Row("Light Leather").verdict == "auction" and ns.db.bankAltAuctions == nil)
 BankAlt:SetKind("cloth", true)
