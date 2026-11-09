@@ -770,6 +770,13 @@ function SettingsUI:BuildPages()
     end, true)
     controls.fillNext:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    -- The Pick button by the mail To box (UI/MailPicker.lua, 2026-11-09).
+    local pickRow = pages:Row("selling", 1, L["Name Picker:"], nil)
+    controls.namePicker = Widgets.CreateCheckbox(pickRow, L["On"], function(checked)
+        ns.MailPicker:SetEnabled(checked)
+    end, true)
+    controls.namePicker:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- Jobs for the craft queue on other characters (Logic/Jobs.lua, asked
     -- 2026-10-11).
     local jobRow = pages:Row("selling", 1, L["Jobs at Login:"],
@@ -1414,6 +1421,7 @@ function SettingsUI:Refresh()
     controls.openAtVendor:SetChecked(ns.db.openAtVendor ~= false)
     controls.openAtMailbox:SetChecked(ns.db.openAtMailbox ~= false)
     controls.fillNext:SetChecked(ns.db.fillNext ~= false)
+    controls.namePicker:SetChecked(ns.db.namePicker ~= false)
     controls.altUpgrades:SetChecked(ns.Verdicts:AltUpgradesOn())
     controls.disenchantGreens:SetChecked(ns.Verdicts:DisenchantGreensOn())
     controls.craftPays:SetChecked(ns.Verdicts:CraftPaysOn())

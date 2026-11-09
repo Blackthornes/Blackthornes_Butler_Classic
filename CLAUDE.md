@@ -583,6 +583,26 @@ again first; a stack that does not move means the other side is full, and
 the run stops and says so. Nothing in combat. The bank is read only for a
 click. Not yet seen in game.
 
+## The name picker
+
+A player compared mail features, and the owner said build it from a
+mockup (2026-11-09), on by default: a small Pick button right of the
+game's To box on the Send Mail page opens LAST MAILED (the last name this
+account mailed, from any character, never the one playing) and YOUR
+CHARACTERS (`Errands:Characters`: this realm and side, whole names, the
+one playing left out). A click puts the name in the box
+(`SendMailNameEditBox:SetText`, the only call into the game's mail frames)
+and closes the list. `UI/MailPicker.lua`: the button and list are Butler's
+own frames on UIParent, placed by screen position beside the box
+(`MailPicker.BoxSpot`), looked at every `LOOK` seconds only while a
+mailbox is open; hidden in a fight, when Send Mail is not up, or when
+there is nothing to list (without Tradeskills only LAST MAILED). The last
+name is kept on `MAIL_SEND_SUCCESS` from a SendMail post-hook, not on
+`MAIL_FAILED`. "Name Picker:" under MAIL AND BANK on the Errands page.
+Saved, account wide, never rename them: `namePicker` (nil reads as on) and
+`namePickerLast`. Tested in `tools/test_mailpicker.lua`. Not yet seen in
+game.
+
 ## The gold fund
 
 The owner asked (2026-10-11) for a minimum gold balance on his characters,

@@ -812,6 +812,10 @@ L["Open at Mailboxes:"] = "Abrir en buzones:"
 L["Opens Butler at every mailbox. Fill Mail fills in the mail and you press Send. Needs Blackthornes Tradeskills."] =
     "Abre Butler en cada buzón. Llenar correo llena el correo y tú pulsas Enviar. Necesita Blackthornes Tradeskills."
 L["Fill the Next Mail:"] = "Llenar el siguiente correo:"
+L["Pick"] = "Elegir"
+L["LAST MAILED"] = "ÚLTIMO CORREO"
+L["YOUR CHARACTERS"] = "TUS PERSONAJES"
+L["Name Picker:"] = "Elegir nombre:"
 L["After you send one, Butler fills the next character's mail."] =
     "Después de enviar uno, Butler llena el correo del siguiente personaje."
 L["Jobs at Login:"] = "Tareas al entrar:"

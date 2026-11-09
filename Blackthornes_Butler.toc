@@ -77,6 +77,7 @@ UI\SwapWhenFull.lua
 Logic\Selling.lua
 Logic\Disenchanting.lua
 Logic\Errands.lua
+UI\MailPicker.lua
 Logic\Funds.lua
 Logic\Ammo.lua
 Logic\BuyMany.lua

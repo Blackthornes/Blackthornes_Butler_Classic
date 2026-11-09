@@ -811,6 +811,10 @@ L["Open at Mailboxes:"] = "在邮箱处打开："
 L["Opens Butler at every mailbox. Fill Mail fills in the mail and you press Send. Needs Blackthornes Tradeskills."] =
     "每次打开邮箱时都打开 Butler。填写邮件会帮你填好邮件，发送由你来点。需要 Blackthornes Tradeskills。"
 L["Fill the Next Mail:"] = "填写下一封邮件："
+L["Pick"] = "选择"
+L["LAST MAILED"] = "上次寄给"
+L["YOUR CHARACTERS"] = "你的角色"
+L["Name Picker:"] = "名字选择："
 L["After you send one, Butler fills the next character's mail."] =
     "你寄出一封后，Butler 会填好下一个角色的邮件。"
 L["Jobs at Login:"] = "登录时的待办："
