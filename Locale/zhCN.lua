@@ -824,6 +824,16 @@ L["Quest Items:"] = "任务物品："
 L["Keeps what your quests need and lists what's still missing."] =
     "保留你的任务需要的东西，并列出还缺什么。"
 L["Open at the Bank:"] = "在银行处打开："
+-- Mail contents on the inbox tooltip
+L["Mail Contents:"] = "邮件内容："
+L["IN THIS MAIL"] = "此邮件内含"
+L["Gold:"] = "金币："
+L["Items worth:"] = "物品价值："
+L["Runs out in:"] = "剩余时间："
+L["Costs:"] = "付款取信："
+L["1 day"] = "1天"
+L["%d days"] = "%d天"
+L["x%d"] = "x%d"
 L["Opens Butler at the bank when there's something to move."] =
     "有东西要搬时，在银行打开 Butler。"
 L["Disenchant Greens Here:"] = "在这里分解绿色物品："

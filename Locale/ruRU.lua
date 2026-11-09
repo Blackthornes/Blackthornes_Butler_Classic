@@ -800,6 +800,16 @@ L["Opens Butler at login when this character has crafting or mail to do."] = "О
 L["Quest Items:"] = "Вещи для заданий:"
 L["Keeps what your quests need and lists what's still missing."] = "Оставляет то, что нужно заданиям, и показывает, чего ещё не хватает."
 L["Open at the Bank:"] = "Открывать в банке:"
+-- Mail contents on the inbox tooltip
+L["Mail Contents:"] = "Содержимое письма:"
+L["IN THIS MAIL"] = "В ЭТОМ ПИСЬМЕ"
+L["Gold:"] = "Золото:"
+L["Items worth:"] = "Предметы стоят:"
+L["Runs out in:"] = "Истекает через:"
+L["Costs:"] = "Стоит:"
+L["1 day"] = "1 день"
+L["%d days"] = "%d дн."
+L["x%d"] = "x%d"
 L["Opens Butler at the bank when there's something to move."] = "Открывает Butler в банке, когда есть что перенести."
 L["Disenchant Greens Here:"] = "Распылять зелёное здесь:"
 L["On your disenchanter, greens go under Disenchant unless selling pays more. Crafted greens, upgrades and things you need are still kept."] =

@@ -71,6 +71,7 @@ UI\MainWindow.lua
 UI\FreeSpace.lua
 UI\WhoHas.lua
 UI\VerdictTip.lua
+UI\MailContents.lua
 UI\Trash.lua
 UI\SwapWhenFull.lua
 

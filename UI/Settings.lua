@@ -809,6 +809,14 @@ function SettingsUI:BuildPages()
     end, true)
     controls.openAtBank:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    pages:Section("selling", 1, L["MAILBOX"])
+    -- What a mail holds, on its row's tooltip in the inbox (2026-11-09).
+    local mailContentsRow = pages:Row("selling", 1, L["Mail Contents:"], nil)
+    controls.mailContents = Widgets.CreateCheckbox(mailContentsRow, L["On"], function(checked)
+        ns.MailContents:SetEnabled(checked)
+    end, true)
+    controls.mailContents:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- The owner asked 2026-10-14: on the disenchanter, break every green.
     pages:Section("selling", 1, L["DISENCHANTING"])
 
@@ -1431,6 +1439,7 @@ function SettingsUI:Refresh()
     controls.questItems:SetChecked(ns.Quests:IsOn())
     controls.questBuy:SetChecked(ns.db.questBuy == true)
     controls.openAtBank:SetChecked(ns.db.openAtBank ~= false)
+    if controls.mailContents then controls.mailContents:SetChecked(ns.MailContents:Enabled()) end
     controls.freeSpace:SetChecked(ns.db.freeSpace ~= false)
     controls.trashCan:SetChecked(ns.db.trashCan ~= false)
     controls.swapWhenFull:SetChecked(ns.db.swapWhenFull == true)

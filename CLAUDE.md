@@ -1135,6 +1135,21 @@ set only when the number or its colour changed. `/bbutler probe` says
 whether the button was found. Tested in `tools/test_freespace.lua`. Not
 yet seen in game.
 
+## Mail contents on inbox hover
+
+The owner said build it from a mockup (2026-11-09, on by default):
+hovering a mail in the inbox adds IN THIS MAIL under the game's tooltip
+lines, then each attachment (icon, name in its quality colour, "xN"),
+"Gold:" (the mail's money), "Items worth:" (Butler's usual prices, greys
+at vendor; left out when nothing is priced), "Runs out in:" (orange at 3
+days or less) and, for cash on delivery, "Costs:" in red. A mail with no
+items or money shows only Runs out in. `UI/MailContents.lua`: the inbox
+rows (`MailItemNButton`) only get an OnEnter post hook (HookScript), only
+lines are added to GameTooltip, everything is read in a pcall, nothing
+is saved. "Mail Contents:" under MAILBOX on the Errands page
+(`mailContents`, account wide, on unless unticked, never rename it).
+Tested in `tools/test_mailcontents.lua`. Not yet seen in game.
+
 ## Who has it
 
 The owner said build it (2026-10-11). `UI/WhoHas.lua` adds lines to every item's tooltip
