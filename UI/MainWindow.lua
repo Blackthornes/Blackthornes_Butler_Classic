@@ -650,6 +650,11 @@ function UI.UpdateJobRow(row, data)
     row.reason:SetText(detail)
     if step.kind == "craft" and not step.ready then row.reason:SetTextColor(Theme.Unpack("accent")) end
     row.worth:SetText("")
+    -- Mail here running out (Logic/MailRunsOut.lua): orange on the right.
+    if step.kind == "pickup" and ns.MailRunsOut then
+        local soon = ns.MailRunsOut.HereText(ns.MailRunsOut:Here())
+        if soon then row.worth:SetText(ns.MailRunsOut.Orange(soon)) end
+    end
     -- At a vendor, Buy from a vendor says what this one has, with Buy.
     local atVendor = ns.Jobs.VendorText(step)
     if atVendor then
@@ -730,6 +735,11 @@ function UI.UpdateNextRow(row, data)
     row.name:SetText(data.isFirst and L.Format("First: %s", job.name)
         or data.isNext and L.Format("Next: %s", job.name) or L.Format("Then: %s", job.name))
     row.reason:SetText(ns.Jobs.Summary(job))
+    -- Their mail runs out (Logic/MailRunsOut.lua): that, in orange.
+    local first = job.steps[1]
+    if first and first.kind == "expiring" then
+        row.reason:SetText(ns.MailRunsOut.Orange(ns.MailRunsOut.ShortText(first.mail)))
+    end
     row.worth:SetText("")
 end
 
@@ -1155,12 +1165,31 @@ function UI:Enter(row, data)
     if data.type == "jobnext" then
         local job = data.job
         GameTooltip:AddLine(job.name, Theme.Unpack("accent"))
-        for _, step in ipairs(job.steps) do
-            local line = ns.Jobs.Short(step)
-            GameTooltip:AddLine(line:sub(1, 1):upper() .. line:sub(2), 1, 1, 1, true)
+        local first = job.steps[1]
+        if first and first.kind == "expiring" then
+            for _, line in ipairs(ns.MailRunsOut.TipLines(first.mail)) do
+                if line[2] == "orange" then
+                    GameTooltip:AddLine(line[1], 1, 0.6, 0.24, true)
+                elseif line[2] == "muted" then
+                    GameTooltip:AddLine(line[1], Theme.Unpack("muted"))
+                else
+                    GameTooltip:AddLine(line[1], 1, 1, 1, true)
+                end
+            end
         end
-        GameTooltip:AddLine(data.isNext and L["Click Log out to switch to them."]
-            or L["Do the steps above first."], Theme.Unpack("muted"))
+        local others = 0
+        for _, step in ipairs(job.steps) do
+            if step.kind ~= "expiring" then
+                others = others + 1
+                local line = ns.Jobs.Short(step)
+                GameTooltip:AddLine(line:sub(1, 1):upper() .. line:sub(2), 1, 1, 1, true)
+            end
+        end
+        -- The mail hover is the mockup's alone when that is all they have.
+        if others > 0 or not (first and first.kind == "expiring") then
+            GameTooltip:AddLine(data.isNext and L["Click Log out to switch to them."]
+                or L["Do the steps above first."], Theme.Unpack("muted"))
+        end
         GameTooltip:Show()
         return
     end

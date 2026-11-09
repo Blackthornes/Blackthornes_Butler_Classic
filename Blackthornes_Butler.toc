@@ -86,6 +86,7 @@ UI\BuyMany.lua
 UI\KeepAcross.lua
 Logic\Learning.lua
 Logic\Jobs.lua
+Logic\MailRunsOut.lua
 Logic\SkillUp.lua
 Logic\Travel.lua
 Logic\ClassTraining.lua

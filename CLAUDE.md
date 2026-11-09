@@ -846,6 +846,31 @@ Smooth play: Tradeskills is asked only while the window draws the list,
 again only when `Bags.version` or `Jobs.version` (moved as the window
 opens) moves; no timer. Tested in `tools/test_jobs.lua`.
 
+## Mail running out
+
+The owner said build it (2026-11-09, from a mockup whose words he
+approved): a mail left 30 days goes back to its sender, or is gone for
+good when it can't go back. Tradeskills reads each character's inbox at
+the mailbox and keeps, on its `Butler:Holdings()` entries, `mailAt`,
+`mailCount`, `mailSoonest` (days left on the soonest then),
+`mailSoonCount` (how many within 3 days), `mailReturns` and `mailGone`.
+`Logic/MailRunsOut.lua` counts on from `mailAt` (`MailRunsOut.Read`), so
+a box read a week ago still says the right thing. With "Mail Running
+Out:" ticked under MAILBOX on the Errands page (`mailRunsOut`, account
+wide, off unless ticked, never rename it): this character's Get your mail
+step says "Runs out in N days" in orange at 3 days or less; another
+character on this realm and side (`Everyone.SameSide`, never `IsMe`)
+whose mail runs out that soon gets an `expiring` step first in its jobs,
+ranked above everything (`Jobs.DAYS_RANK`), so its line is "First: NAME"
+with Log out (`plan.mailFirst`, the row's `isFirst`); its hover says how
+many mails, how many run out, where they go and when the box was last
+seen (`MailRunsOut.TipLines`). At login the shared note slot says "You
+have mail that runs out in N days." once (`Greet`). An alt set aside with
+Ignore Until Next Login is left alone. Nothing is taken out of a mailbox
+and nothing is saved. Tested in `tools/test_mailrunsout.lua`. If
+Tradeskills changes those fields, change `MailRunsOut.Read` too. Not yet
+seen in game.
+
 ## Items for your quests
 
 A player asked (2026-10-14, the owner said build it) to buy what open

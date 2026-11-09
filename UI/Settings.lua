@@ -809,7 +809,15 @@ function SettingsUI:BuildPages()
     end, true)
     controls.openAtBank:SetPoint("TOPLEFT", CONTROL_X, -2)
 
+    -- Mail running out on any of your characters (Logic/MailRunsOut.lua,
+    -- the owner said build it 2026-11-09). Off unless ticked.
     pages:Section("selling", 1, L["MAILBOX"])
+    local runsOutRow = pages:Row("selling", 1, L["Mail Running Out:"], nil)
+    controls.mailRunsOut = Widgets.CreateCheckbox(runsOutRow, L["On"], function(checked)
+        ns.MailRunsOut:SetOn(checked)
+    end, false)
+    controls.mailRunsOut:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     -- What a mail holds, on its row's tooltip in the inbox (2026-11-09).
     local mailContentsRow = pages:Row("selling", 1, L["Mail Contents:"], nil)
     controls.mailContents = Widgets.CreateCheckbox(mailContentsRow, L["On"], function(checked)
@@ -1438,6 +1446,7 @@ function SettingsUI:Refresh()
     controls.jobsAtLogin:SetChecked(ns.db.jobsAtLogin ~= false)
     controls.questItems:SetChecked(ns.Quests:IsOn())
     controls.questBuy:SetChecked(ns.db.questBuy == true)
+    controls.mailRunsOut:SetChecked(ns.db.mailRunsOut == true)
     controls.openAtBank:SetChecked(ns.db.openAtBank ~= false)
     if controls.mailContents then controls.mailContents:SetChecked(ns.MailContents:Enabled()) end
     controls.freeSpace:SetChecked(ns.db.freeSpace ~= false)
