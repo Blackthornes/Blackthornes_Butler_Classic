@@ -13,6 +13,11 @@
 -- "large" or "larger"), `bagItemLevel` and `bagNewGlow` (on unless false),
 -- `bagScale` (the size grip's). `bagEmptySlots` stays in the save, unread:
 -- empty slots always show now.
+-- `bankCopies[guid] = { at, items = { [itemID] = count } }` (account wide,
+-- never rename it): each character's bank as Butler last read it, so the
+-- Bank tab still shows it away from the banker without Tradeskills (a
+-- player's report, 2026-11-10). Written only from a read that saw the
+-- bank's slots, so an empty read never wipes a good copy.
 
 local _, ns = ...
 local L = ns.L
@@ -500,30 +505,80 @@ end
 -- Bank and Everyone (view only)
 --------------------------------------------------------------------------------
 
---- The character playing's bank: read live at a banker, else as
---- Tradeskills last saw it. A list of { itemID, count, link, icon, quality,
---- name }, and whether it was read live.
+--- Read the bank as it is now (only while it is open). Its items, and
+--- whether any of its containers had slots to read.
+local function ReadBank(errands)
+    local list, sawSlots = {}, false
+    for _, bag in ipairs(errands.BankBagIDs()) do
+        local count = tonumber(Items.Call({ "C_Container.GetContainerNumSlots", "GetContainerNumSlots" }, bag)) or 0
+        if count > 0 then sawSlots = true end
+        for slot = 1, count do
+            local entry = ns.Bags.ReadSlot(bag, slot)
+            if entry then
+                list[#list + 1] = {
+                    itemID = entry.itemID, count = entry.count, link = entry.link,
+                    icon = entry.icon, quality = entry.quality, name = BagView.NameOf(entry),
+                }
+            end
+        end
+    end
+    return list, sawSlots
+end
+
+--- Keep the character playing's bank, by GUID, from a live read. A read
+--- that saw no slots (the bank not really open) keeps the copy there was.
+function BagView:KeepBank(list, sawSlots)
+    local db = ns.db
+    if not (db and sawSlots) then return false end
+    local guid = ns.KeepHere and ns.KeepHere.PlayerGUID()
+    if not guid then return false end
+    local items = {}
+    for _, item in ipairs(list) do
+        if type(item.itemID) == "number" then
+            items[item.itemID] = (items[item.itemID] or 0) + (tonumber(item.count) or 1)
+        end
+    end
+    db.bankCopies = type(db.bankCopies) == "table" and db.bankCopies or {}
+    db.bankCopies[guid] = { at = time(), items = items }
+    return true
+end
+
+--- Read the bank and keep a copy, while it is open.
+function BagView:NoteBank()
+    local errands = ns.Errands
+    if not (errands and errands.bankOpen) then return false end
+    local ok, list, sawSlots = pcall(ReadBank, errands)
+    if not ok then return false end
+    return self:KeepBank(list, sawSlots)
+end
+
+--- Butler's own copy of the character playing's bank: counts and when.
+function BagView:OwnBankCopy()
+    local copies = ns.db and ns.db.bankCopies
+    local guid = ns.KeepHere and ns.KeepHere.PlayerGUID()
+    local copy = type(copies) == "table" and guid and copies[guid]
+    if type(copy) ~= "table" or type(copy.items) ~= "table" then return nil end
+    return copy.items, tonumber(copy.at) or 0
+end
+
+--- The character playing's bank: read live at a banker, else the newer of
+--- Butler's own copy and Tradeskills' saved one. A list of { itemID, count,
+--- link, icon, quality, name }, and whether it was read live.
 function BagView:BankItems()
     local list = {}
     local errands = ns.Errands
     if errands and errands.bankOpen then
-        for _, bag in ipairs(errands.BankBagIDs()) do
-            local count = tonumber(Items.Call({ "C_Container.GetContainerNumSlots", "GetContainerNumSlots" }, bag)) or 0
-            for slot = 1, count do
-                local entry = ns.Bags.ReadSlot(bag, slot)
-                if entry then
-                    list[#list + 1] = {
-                        itemID = entry.itemID, count = entry.count, link = entry.link,
-                        icon = entry.icon, quality = entry.quality, name = self.NameOf(entry),
-                    }
-                end
-            end
-        end
-        return list, true
+        local live, sawSlots = ReadBank(errands)
+        self:KeepBank(live, sawSlots)
+        return live, true
     end
 
-    local _, me = errands and errands:Holdings()
+    local _, me
+    if errands then _, me = errands:Holdings() end
     local bank = me and type(me.bank) == "table" and me.bank or {}
+    local tsAt = me and tonumber(me.bankAt) or 0
+    local own, ownAt = self:OwnBankCopy()
+    if own and (ownAt >= tsAt or not next(bank)) then bank = own end
     for itemID, count in pairs(bank) do
         if type(itemID) == "number" and type(count) == "number" and count > 0 then
             local info = ns.Everyone.Info(itemID)

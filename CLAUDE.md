@@ -1415,8 +1415,14 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   move that never settles stops it; nothing is dropped or deleted. Tested in
   `tools/test_bagsort.lua`.
 - **Bank** and **Everyone** tabs are view only: the bank read live at a
-  banker, else as Tradeskills last saw it; Everyone is All characters'
-  list (needs Tradeskills).
+  banker, else the newer of Butler's own copy and Tradeskills' saved one;
+  Everyone is All characters' list (needs Tradeskills). Butler's copy (a
+  player's report, 2026-11-10: the tab forgot the bank once they left) is
+  kept by GUID in `bankCopies[guid] = { at, items = { [itemID] = count } }`
+  (account wide, never rename it), written at the bank's open, after
+  `PLAYERBANKSLOTS_CHANGED` and as it closes (`BagView:NoteBank`,
+  `KeepBank`), never from a read that saw no bank slots. Tested in
+  `tools/test_bankcopy.lua`.
 - While it is on, the trash can and its red glow go on this window's
   squares instead of the game's veiled ones (`Trash.BUTLER_BAGS`,
   `BagWindow:ButtonFor`, only on Your bags, 2026-10-20: the window had
