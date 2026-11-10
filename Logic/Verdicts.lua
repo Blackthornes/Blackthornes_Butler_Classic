@@ -1534,6 +1534,19 @@ function Verdicts:Best(entry, unit, said, noBelow)
         return "sell", L.Format("Not an upgrade: %s each", Items.FormatMoney(unit)), unit
     end
 
+    -- Soulbound green or better that this class can never wear (Equipment's
+    -- `never`), with nothing left to weigh: the disenchant value is known
+    -- and lower, or this character can't disenchant at all. Nothing to look
+    -- at, so say Sell (a player's report, 2026-11-10).
+    if bound and (entry.quality or 0) >= 2 and eq and True(eq, "never") and ts
+        and unit and unit > 0 and (disenchant or not canDisenchant) then
+        if disenchant then
+            return "sell", L.Format("Your class can't use it. Vendor pays more than disenchanting (about %s): %s each",
+                Items.FormatMoney(disenchant), Items.FormatMoney(unit)), unit
+        end
+        return "sell", L.Format("Your class can't use it. Vendor pays %s each", Items.FormatMoney(unit)), unit
+    end
+
     if bound and (entry.quality or 0) >= 2 and eq and True(eq, "sell") then
         if unit and unit > 0 then
             return "look", L.Format("Not an upgrade. Vendor %s each", Items.FormatMoney(unit)), unit

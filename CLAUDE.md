@@ -272,6 +272,18 @@ keep and an item no vendor buys alike (a player's alchemist was never sent
 its materials, 2026-10-14); soulbound and the character playing never.
 Tested in `tools/test_altcraftfirst.lua`.
 
+## Soulbound gear your class can never wear
+
+A player asked (2026-11-10, the owner said build it): soulbound green or
+better gear went to Look at it even when nothing was left to weigh. Now
+`Verdicts:Best` says Sell when Equipment's Advise says `never` (this class
+can never wear it; never for mail or plate learned later, Best Armor Only
+or a hidden untrained weapon), Tradeskills answered, a vendor pays for it,
+and the disenchant value is known and lower (else Disenchant wins) or this
+character can't disenchant. With Tradeskills missing or the disenchant
+value not known yet, it stays Look at it. Selling is still the Sell button.
+Tested in `tools/test_sisters.lua`.
+
 ## Wait for a better price
 
 The owner asked (2026-10-13) for items to auction to be folded away while
