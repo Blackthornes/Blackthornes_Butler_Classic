@@ -112,6 +112,12 @@ Verdicts.LABELS = {
 -- item sells slowly: a slow sale ties up the slot and the deposit.
 Verdicts.SLOW = 0.75
 
+-- A green broken for a skill point (Levelling Enchanting) goes on to its
+-- best price instead when a vendor or the auction house pays more than
+-- this many times what breaking it gives (the owner, 2026-11-10: a green
+-- worth 20s was broken for 4s of essence).
+Verdicts.SKILL_LOSS = 2
+
 -- An item to auction waits for a better price when today's cheapest listing
 -- by someone else (Tradeskills' auctionNow) would fetch less than this much
 -- of its usual price (auction). A little under is normal: the usual price is
@@ -404,8 +410,8 @@ end
 
 -- Tradeskills' disenchanter only takes an item that pays as much broken
 -- as sold (a player asked, the owner said yes, 2026-10-16), unless
--- "Always Disenchant" is ticked. Levelling Enchanting takes it either way
--- (the owner, 2026-10-17): a skill point beats a better sale.
+-- "Always Disenchant" is ticked. Levelling Enchanting takes it while a sale
+-- pays at most Verdicts.SKILL_LOSS times as much (the owner, 2026-11-10).
 local function BreakIt(c)
     if c.breakIt == nil then
         c.breakIt = not Verdicts:SellsForMore(c.entry, Said(c), Unit(c))
@@ -692,6 +698,7 @@ end
 
 function STEPS.levelEnch(self, c)
     if c.noAlt then return nil end
+    if self:SellsForMore(c.entry, Said(c), Unit(c), Verdicts.SKILL_LOSS) then return nil end
     return FromSister(c, self:ForEnchanting(c.entry, Said(c)))
 end
 
@@ -1242,8 +1249,9 @@ end
 --- 2026-10-13). Tradeskills' `forEnchanting` names a green this character
 --- can break, not crafted, whose likely material its Enchanting still lacks
 --- for the crafts that give a point every time, after what it owns. Then
---- Disenchant, whatever the auction house or a vendor pays (the owner,
---- 2026-10-17: a skill point beats a better sale). Returns
+--- Disenchant (the owner, 2026-10-17: a skill point beats a better sale),
+--- unless a sale pays more than Verdicts.SKILL_LOSS times as much
+--- (STEPS.levelEnch asks first; the owner, 2026-11-10). Returns
 --- verdict, reason, worth and { enchanting, yield }; or nil.
 --- Verdicts:Groups stops once the greens already picked cover the shortfall.
 function Verdicts:ForEnchanting(entry, said)
@@ -1304,9 +1312,10 @@ end
 --- breaking it gives? Asked before Tradeskills' disenchanter (a player asked, the owner said yes, 2026-10-16), so a
 --- green that sells for more is sold instead. The auction house counts as
 --- Verdicts:Best counts it (after the cut, less when it sells slowly).
---- False when nothing says what breaking it gives, or while "Always
---- Disenchant" is ticked.
-function Verdicts:SellsForMore(entry, said, unit)
+--- `times` asks whether a sale pays more than that many times as much
+--- (Levelling Enchanting's Verdicts.SKILL_LOSS). False when nothing says
+--- what breaking it gives, or while "Always Disenchant" is ticked.
+function Verdicts:SellsForMore(entry, said, unit, times)
     if self:AlwaysDisenchantOn() then return false end
     local Number = Sisters.Number
     local ts = said and said.ts
@@ -1318,7 +1327,7 @@ function Verdicts:SellsForMore(entry, said, unit)
         if ts.fast == false then auction = math.floor(auction * Verdicts.SLOW) end
         most = math.max(most, auction)
     end
-    return most > disenchant
+    return most > disenchant * (times or 1)
 end
 
 --- Whether "Always Disenchant" is ticked: off unless the player ticks it.

@@ -288,7 +288,12 @@ pays. Only while this character can break it, only greens. Once the
 greens picked so far should give `short` (`yield` each), `Verdicts:Groups`
 judges the rest again without it (`Judge(entry, true)`), so it stops at
 enough. It wins even when the auction house pays more (the owner,
-2026-10-17: a skill point beats a better sale). The player still clicks
+2026-10-17: a skill point beats a better sale), but only up to twice as
+much (the owner, 2026-11-10, a player's green worth 20s at a vendor was
+broken for 4s of essence): when a vendor or the auction house pays more
+than `Verdicts.SKILL_LOSS` (2) times the disenchant value
+(`SellsForMore(entry, said, unit, times)`, asked in `STEPS.levelEnch`),
+the green goes on to its best price. "Always Disenchant" lifts the limit. The player still clicks
 Disenchant. Tested in `tools/test_levelenchanting.lua`.
 
 ## Always disenchant
@@ -375,7 +380,7 @@ that one; with that unticked too, nothing changes. Since 2026-10-16 (a player as
 a vendor or the auction house would (`Verdicts:SellsForMore`, the auction
 counted as `Best` counts it), unless "Always Disenchant" on the Selling page
 is ticked (`disenchantAnyPrice`, account wide, off unless ticked, never
-rename it). Levelling Enchanting no longer waits on it (2026-10-17). Disenchant greens here still takes every green. Tested in `tools/test_disenchantermail.lua`.
+rename it). Levelling Enchanting no longer waits on it (2026-10-17) unless a sale pays more than twice as much (2026-11-10). Disenchant greens here still takes every green. Tested in `tools/test_disenchantermail.lua`.
 
 ## The bank alt
 
