@@ -1,6 +1,6 @@
 -- Mail contents: hovering a mail in the inbox adds what it holds under the
 -- game's own tooltip lines. Only lines are added; the inbox rows get an
--- OnEnter post hook and nothing else. On unless unticked (`mailContents`).
+-- OnEnter post hook and nothing else. Off unless ticked (`mailContents`).
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("mailcontents")
@@ -61,7 +61,7 @@ env.Enable(ns)
 local MC = ns.MailContents
 
 suite.check("each inbox row is hooked", MC.installed == true)
-suite.check("on unless unticked", MC:Enabled())
+suite.check("off until ticked", not MC:Enabled())
 
 local function Hover(row)
     tip._owner = nil
@@ -69,6 +69,10 @@ local function Hover(row)
     buttons[row]:GetScript("OnEnter")(buttons[row])
     return tip._lines
 end
+
+suite.check("off adds nothing at first", #Hover(1) == 0)
+gameRan = 0
+MC:SetEnabled(true)
 
 local lines = Hover(1)
 suite.check("the game's own OnEnter still runs first", gameRan == 1, gameRan)

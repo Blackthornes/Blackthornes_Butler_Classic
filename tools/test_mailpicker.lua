@@ -54,10 +54,15 @@ local function Names()
 end
 
 -- 1.
-suite.check("on unless unticked", Picker:Enabled())
+suite.check("off until ticked", not Picker:Enabled())
 ns.HandleSlash("settings")
 local box = ns.SettingsUI.controls.namePicker
-suite.check("Settings has the box, ticked", box ~= nil and box:GetChecked())
+suite.check("Settings has the box, unticked", box ~= nil and not box:GetChecked())
+env.Fire("MAIL_SHOW")
+suite.check("off shows nothing at the mailbox", not Showing())
+env.Fire("MAIL_CLOSED")
+box:GetScript("OnClick")(box)
+suite.check("ticking turns it on", ns.db.namePicker == true and Picker:Enabled())
 
 -- 2.
 suite.check("nothing before a mailbox", not Showing())

@@ -586,7 +586,7 @@ click. Not yet seen in game.
 ## The name picker
 
 A player compared mail features, and the owner said build it from a
-mockup (2026-11-09), on by default: a small Pick button right of the
+mockup (2026-11-09), off unless ticked since 2026-11-10: a small Pick button right of the
 game's To box on the Send Mail page opens LAST MAILED (the last name this
 account mailed, from any character, never the one playing) and YOUR
 CHARACTERS (`Errands:Characters`: this realm and side, whole names, the
@@ -599,7 +599,7 @@ mailbox is open; hidden in a fight, when Send Mail is not up, or when
 there is nothing to list (without Tradeskills only LAST MAILED). The last
 name is kept on `MAIL_SEND_SUCCESS` from a SendMail post-hook, not on
 `MAIL_FAILED`. "Name Picker:" under MAIL AND BANK on the Errands page.
-Saved, account wide, never rename them: `namePicker` (nil reads as on) and
+Saved, account wide, never rename them: `namePicker` (nil reads as off, so only a tick turns it on) and
 `namePickerLast`. Tested in `tools/test_mailpicker.lua`. Not yet seen in
 game.
 
@@ -1162,7 +1162,7 @@ yet seen in game.
 
 ## Mail contents on inbox hover
 
-The owner said build it from a mockup (2026-11-09, on by default):
+The owner said build it from a mockup (2026-11-09; off unless ticked since 2026-11-10):
 hovering a mail in the inbox adds IN THIS MAIL under the game's tooltip
 lines, then each attachment (icon, name in its quality colour, "xN"),
 "Gold:" (the mail's money), "Items worth:" (Butler's usual prices, greys
@@ -1172,7 +1172,8 @@ items or money shows only Runs out in. `UI/MailContents.lua`: the inbox
 rows (`MailItemNButton`) only get an OnEnter post hook (HookScript), only
 lines are added to GameTooltip, everything is read in a pcall, nothing
 is saved. "Mail Contents:" under MAILBOX on the Errands page
-(`mailContents`, account wide, on unless unticked, never rename it).
+(`mailContents`, account wide, off unless ticked since 2026-11-10, never
+rename it; nil reads as off).
 Tested in `tools/test_mailcontents.lua`. Not yet seen in game.
 
 ## Who has it

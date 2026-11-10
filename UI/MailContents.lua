@@ -1,6 +1,6 @@
 -- Blackthornes Butler -- UI/MailContents.lua
 -- What a mail holds, on the tooltip of its row in the inbox (the owner
--- said build it from a mockup, 2026-11-09, on by default).
+-- said build it from a mockup, 2026-11-09; off unless ticked since 2026-11-10).
 --
 -- Under the game's own tooltip lines: IN THIS MAIL, then each attachment
 -- with its icon, its name in its quality colour and "xN", then Gold:
@@ -28,7 +28,7 @@ MailContents.ROWS = 7
 local ORANGE = "ffff8c1a"
 
 function MailContents:Enabled()
-    return ns.db ~= nil and ns.db.mailContents ~= false
+    return ns.db ~= nil and ns.db.mailContents == true
 end
 
 --- Turn the lines on or off (Settings).

@@ -12,7 +12,7 @@
 -- SetText. It hides in a fight and whenever Send Mail is not showing, and
 -- it only looks while a mailbox is open.
 --
--- Saved, account wide, never rename them: `namePicker` (nil reads as on)
+-- Saved, account wide, never rename them: `namePicker` (nil reads as off, 2026-11-10)
 -- and `namePickerLast` (a full name).
 
 local _, ns = ...
@@ -75,7 +75,7 @@ end
 --------------------------------------------------------------------------------
 
 function Picker:Enabled()
-    return ns.db ~= nil and ns.db.namePicker ~= false
+    return ns.db ~= nil and ns.db.namePicker == true
 end
 
 --- Turn the picker on or off (Settings).
