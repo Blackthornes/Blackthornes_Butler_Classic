@@ -20,8 +20,9 @@
 -- says how old it is. Gold Butler filled and saw leave the purse is kept
 -- in goldSent[full name] = { { amount, at, before } } (never rename it),
 -- counted toward that character until its own record shows it took the
--- gold (its gold seen after the send at least `before` plus the amount),
--- or for 30 days, when unclaimed mail goes back.
+-- gold (its gold seen after the send at least `before` plus the amount,
+-- its mailbox read after the send holding less than the amount, or its
+-- saved items cleared after the send), or for 30 days, when unclaimed mail goes back.
 --
 -- Class training (Logic/ClassTraining.lua) counts too: a character keeps
 -- back what its spells to train cost, as well as its amount, and one that
@@ -163,6 +164,9 @@ function Funds:Characters()
                 name = name,
                 gold = tonumber(entry.gold),
                 goldAt = tonumber(entry.goldAt),
+                mailAt = tonumber(entry.mailAt),
+                mailMoney = tonumber(entry.mailMoney),
+                clearedAt = tonumber(entry.clearedAt),
                 isCurrent = entry.isCurrent == true,
                 key = Text(entry.key),
             }
@@ -183,6 +187,23 @@ local function SentTable()
     return ns.db.goldSent
 end
 
+--- Whether a send of `amount` at `at` has been taken: the character's gold
+--- rose by it since, its mailbox was read after the send and no longer
+--- holds that much gold (Tradeskills' `mailMoney`), or its saved items
+--- were cleared after the send.
+function Funds.Taken(character, amount, at, before)
+    if character.clearedAt and character.clearedAt > at then return true end
+    if before and character.gold and character.goldAt and character.goldAt > at
+        and character.gold >= before + amount then
+        return true
+    end
+    if character.mailAt and character.mailAt > at and character.mailMoney
+        and character.mailMoney < amount then
+        return true
+    end
+    return false
+end
+
 --- Gold sent to `character` and not yet seen taken, after letting go of
 --- sends it has taken or that went back.
 function Funds:OnItsWay(character, now)
@@ -194,10 +215,7 @@ function Funds:OnItsWay(character, now)
     for _, send in ipairs(list) do
         local amount, at = tonumber(type(send) == "table" and send.amount), tonumber(type(send) == "table" and send.at)
         if amount and at and now - at < self.KEEP_SENT then
-            local before = tonumber(send.before)
-            local taken = before and character.gold and character.goldAt and character.goldAt > at
-                and character.gold >= before + amount
-            if not taken then
+            if not Funds.Taken(character, amount, at, tonumber(send.before)) then
                 kept[#kept + 1] = send
                 total = total + amount
             end

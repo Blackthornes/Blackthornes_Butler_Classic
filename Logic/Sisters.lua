@@ -130,6 +130,18 @@ function Sisters:QueueCraft(recipeID, crafts)
     return ok and done == true
 end
 
+--- Ask Tradeskills to forget one character's saved bags, bank, mail and
+--- gold (its Characters tab's Clear Items).
+-- @return true and the full name, or false and why
+function Sisters:ClearHoldings(name)
+    local butler = Sisters.Butler("ts")
+    if not (butler and type(butler.ClearHoldings) == "function") then return false, "missing" end
+    local ok, done, full = pcall(butler.ClearHoldings, butler, name)
+    if not ok then return false, "error" end
+    if done == true then return true, type(full) == "string" and full or name end
+    return false, type(full) == "string" and full or "error"
+end
+
 --------------------------------------------------------------------------------
 -- Reading answers safely: a field of the wrong type counts as not given.
 --------------------------------------------------------------------------------

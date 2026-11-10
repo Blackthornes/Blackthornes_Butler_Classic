@@ -146,6 +146,32 @@ ns.db.goldSent["Bob Stone"] = { { amount = 45 * G, at = now - Funds.KEEP_SENT - 
 Funds:Changed()
 suite.check("unclaimed for 30 days, offered again", Funds:For("Bob Stone") ~= nil)
 
+-- Collected, but Ana spent it since (a player's report, 2026-11-10): her
+-- gold never shows the rise, but her mailbox read after the send holds
+-- less than was sent, so it was taken.
+ns.db.goldSent["Ana Ash"] = { { amount = 10 * G, at = now - 600, before = 40 * G } }
+holdings[3].gold, holdings[3].goldAt = 5 * G, now - 60
+holdings[3].mailAt, holdings[3].mailMoney = now - 60, 0
+Funds:Changed()
+Funds:Plan()
+suite.check("an empty mailbox after the send lets the note go", ns.db.goldSent["Ana Ash"] == nil)
+ns.db.goldSent["Ana Ash"] = { { amount = 10 * G, at = now - 600, before = 40 * G } }
+holdings[3].mailMoney = 10 * G
+Funds:Changed()
+Funds:Plan()
+suite.check("still in the mailbox, the note stays", ns.db.goldSent["Ana Ash"] ~= nil)
+holdings[3].mailAt, holdings[3].mailMoney = now - 900, 0
+Funds:Changed()
+Funds:Plan()
+suite.check("a mailbox read before the send says nothing", ns.db.goldSent["Ana Ash"] ~= nil)
+holdings[3].clearedAt = now - 30
+Funds:Changed()
+Funds:Plan()
+suite.check("Clear Items after the send lets the note go", ns.db.goldSent["Ana Ash"] == nil)
+holdings[3].mailAt, holdings[3].mailMoney, holdings[3].clearedAt = nil, nil, nil
+suite.check("Taken: a fresh note with nothing new is not taken",
+    not Funds.Taken({ gold = 5 * G, goldAt = now - 900 }, 10 * G, now - 600, 40 * G))
+
 -- Without Tradeskills, nothing.
 _G.BlackthornesTS = nil
 Funds:Changed()

@@ -47,6 +47,7 @@ env.Enable(ns)
 suite.check("no Tradeskills, no jobs", #Jobs:Lines() == 0)
 
 local jobs
+local clearedName
 local crafted = {}
 local craftAnswer = { true, "crafting" }
 _G.BlackthornesTS = { Butler = {
@@ -54,6 +55,10 @@ _G.BlackthornesTS = { Butler = {
     Holdings = function() return {} end,
     Mailbox = function() end,
     Jobs = function() return jobs end,
+    ClearHoldings = function(_, name)
+        clearedName = name
+        return true, name
+    end,
     Craft = function(_, recipeID)
         crafted[#crafted + 1] = recipeID
         return craftAnswer[1], craftAnswer[2]
@@ -412,6 +417,45 @@ plan = Fresh({ ANA, CY, WITHER })
 suite.check("all lines are back", plan.here and #plan.others == 2)
 UI:Clicked({ type = "jobnext" }, "RightButton")
 suite.check("a line with no name opens nothing", not UI.menu:IsShown())
+UI:Hide()
+-- 7d. Clear Items (mechiah's report, the owner said build it, 2026-11-10):
+-- under Ignore Until Next Login, armed by one click, done by the second.
+UI:Show("bags")
+plan = Fresh({ ANA, CY, WITHER })
+rows = Jobs:Lines()
+witherRow = nil
+for _, row in ipairs(rows) do
+    if row.type == "jobnext" and row.job.name == "Blackthornes Wither" then witherRow = row end
+end
+ns.db.goldSent = { ["Blackthornes Wither"] = { amount = 500, at = 1 }, ["Cy Waiting"] = { amount = 9, at = 1 } }
+clearedName = nil
+UI:Clicked(witherRow, "RightButton")
+local clear = UI.menu.clearItems
+local heldTimers = {}
+local runTimers = _G.C_Timer.After
+_G.C_Timer.After = function(_, fn) heldTimers[#heldTimers + 1] = fn end
+suite.check("Clear Items shows for another character", clear and clear:IsShown())
+suite.check("it says Clear Items", clear.label:GetText() == "Clear Items")
+clear:GetScript("OnClick")(clear)
+suite.check("the first click only arms it", clearedName == nil and clear.label:GetText() == "Click Again"
+    and UI.menu:IsShown())
+clear:GetScript("OnClick")(clear)
+suite.check("the second click clears that character", clearedName == "Blackthornes Wither")
+suite.check("the menu goes once cleared", not UI.menu:IsShown())
+heldTimers = {}
+UI:Clicked(witherRow, "RightButton")
+clear:GetScript("OnClick")(clear)
+for _, fn in ipairs(heldTimers) do fn() end
+suite.check("an armed click lets go after a while", not clear.armed and clear.label:GetText() == "Clear Items")
+_G.C_Timer.After = runTimers
+suite.check("its gold notes go too", ns.db.goldSent["Blackthornes Wither"] == nil
+    and ns.db.goldSent["Cy Waiting"] ~= nil)
+clearedName = nil
+UI:Clicked(rows[1], "RightButton")
+suite.check("never for the character playing", not UI.menu.clearItems:IsShown())
+_G.UnitName = function() return "Ana Blackthorne" end
+suite.check("the one playing is refused", Jobs:ClearItems("Ana Blackthorne") == false and clearedName == nil)
+_G.UnitName = nil
 UI:Hide()
 
 -- 9. At a mailbox, Fill mail sits on the Jobs line that mails the

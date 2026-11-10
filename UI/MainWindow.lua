@@ -1439,6 +1439,33 @@ function UI:BuildMenu()
         if data and data.job and ns.Jobs then ns.Jobs:Ignore(data.job.name) end
     end)
     menu.ignoreJobs:Hide()
+    -- Clear Items (the owner said build it, 2026-11-10): forget that
+    -- character's saved bags, bank, mail and gold. The first click arms it,
+    -- red "Click Again" for UI.CLEAR_ARMED seconds; the second clears.
+    menu.clearItems = UI.MenuRow(menu, L["Clear Items"], function(self)
+        local data = UI.menu.data
+        if type(data) ~= "table" or type(data.job) ~= "table" or not ns.Jobs then return UI:HideMenu() end
+        if not self.armed then
+            UI.ArmClear(self, true)
+            return
+        end
+        UI.ArmClear(self, false)
+        UI:HideMenu()
+        ns.Jobs:ClearItems(data.job.name)
+    end)
+    menu.clearItems:SetScript("OnEnter", function(self)
+        Widgets.SetRowLight(self, 1)
+        if GameTooltip then
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(L["Forget this character's saved bags, bank, mail and gold. Log in on them to read it again."], 1, 1, 1, 1, true)
+            GameTooltip:Show()
+        end
+    end)
+    menu.clearItems:SetScript("OnLeave", function(self)
+        Widgets.SetRowLight(self, 0)
+        if GameTooltip then GameTooltip:Hide() end
+    end)
+    menu.clearItems:Hide()
 
     menu.characters = {}
     menu.back = UI.MenuRow(menu, L["Back"], function()
@@ -1482,6 +1509,7 @@ function UI:ShowMenu(data, stay)
     for _, button in ipairs(menu.characters) do button:Hide() end
     menu.back:Hide()
     menu.ignoreJobs:Hide()
+    menu.clearItems:Hide()
     menu.keepBox:Hide()
     menu.keepNote:Hide()
     menu.keepSave:Hide()
@@ -1605,8 +1633,19 @@ function UI:ShowJobMenu(data)
     menu.ignoreJobs:ClearAllPoints()
     menu.ignoreJobs:SetPoint("TOPLEFT", 8, -26)
     menu.ignoreJobs:Show()
-    menu:SetHeight(30 + MENU_ROW)
-    UI.FitMenu(menu, { menu.ignoreJobs })
+    -- Clear Items under it, never for the character playing.
+    UI.ArmClear(menu.clearItems, false)
+    local rows = 1
+    if not data.job.isCurrent and not (ns.Jobs and ns.Jobs.IsPlaying(data.job.name)) then
+        menu.clearItems:ClearAllPoints()
+        menu.clearItems:SetPoint("TOPLEFT", menu.ignoreJobs, "BOTTOMLEFT", 0, 0)
+        menu.clearItems:Show()
+        rows = 2
+    else
+        menu.clearItems:Hide()
+    end
+    menu:SetHeight(30 + MENU_ROW * rows)
+    UI.FitMenu(menu, { menu.ignoreJobs, menu.clearItems })
 
     local x, y = 0, 0
     if type(GetCursorPosition) == "function" then
@@ -1617,6 +1656,28 @@ function UI:ShowJobMenu(data)
     menu:ClearAllPoints()
     menu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x - 10, y + 10)
     menu:Show()
+end
+
+UI.CLEAR_ARMED = 4
+
+--- Arm or disarm the Clear Items row.
+function UI.ArmClear(row, on)
+    row.armed = on and true or false
+    row.armedAt = on and (type(GetTime) == "function" and GetTime() or 0) or nil
+    row:SetText(on and L["Click Again"] or L["Clear Items"])
+    if on then
+        row.label:SetTextColor(Theme.Unpack("loss"))
+        local at = row.armedAt
+        if C_Timer and C_Timer.After then
+            C_Timer.After(UI.CLEAR_ARMED, function()
+                if row.armed and row.armedAt == at then UI.ArmClear(row, false) end
+            end)
+        end
+    else
+        row.label:SetTextColor(Theme.Unpack("text"))
+    end
+    local menu = UI.menu
+    if menu and menu.ignoreJobs and row:IsShown() then UI.FitMenu(menu, { menu.ignoreJobs, row }) end
 end
 
 --- The menu as wide as its widest button or title, so a long name (never
@@ -1666,6 +1727,7 @@ function UI:ShowMailMenu()
     menu.keepAcross:Hide()
     menu.disenchant:Hide()
     menu.ignoreJobs:Hide()
+    menu.clearItems:Hide()
 
     local above
     for index, name in ipairs(names) do
@@ -1713,7 +1775,7 @@ function UI:ShowKeepMenu()
     menu.away = 0
     menu.title:SetText(L.Format("Keep %s on this character", UI.ItemTitle(data)))
     for _, button in ipairs({ menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
-        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.keepAcross, menu.decide, menu.ignoreJobs }) do
+        menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.keepAcross, menu.decide, menu.ignoreJobs, menu.clearItems }) do
         button:Hide()
     end
     for _, button in ipairs(menu.characters) do button:Hide() end
