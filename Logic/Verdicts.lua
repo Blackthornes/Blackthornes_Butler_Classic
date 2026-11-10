@@ -440,12 +440,40 @@ function STEPS.sets(self, c)
     end
 end
 
+--- Can this quest item go on the auction house? By how it binds: not on
+--- pickup (1) or as a quest item (4). nil until the client has loaded it,
+--- and the quest rule keeps it until then.
+function Verdicts.QuestItemTrades(itemID)
+    if not Items or not itemID then return nil end
+    local ok, results = pcall(function()
+        return { Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, itemID) }
+    end)
+    if not ok or type(results) ~= "table" then return nil end
+    local bind = tonumber(results[14])
+    if not results[1] or bind == nil then
+        if Items.RequestLoad then Items:RequestLoad(itemID) end
+        return nil
+    end
+    return bind ~= 1 and bind ~= 4
+end
+
 function STEPS.quests(self, c)
     local entry = c.entry
     if entry.quest == "starts" then
         return "keep", L["Starts a quest"], nil, true
     elseif entry.quest == "item" then
-        return "keep", L["Quest item"], nil, true
+        -- Kept while an open quest wants it or it can't be traded. A quest
+        -- item that can go on the auction house and that no open quest
+        -- needs (2026-11-10, a player's report) follows the usual rules:
+        -- their lists, the bank alt, mail, auction or sell.
+        local forQuest = ns.Quests and ns.Quests:Reason(c.itemID)
+        if forQuest then
+            return "keep", forQuest, nil, true
+        end
+        if entry.bound or not Verdicts.QuestItemTrades(c.itemID) then
+            return "keep", L["Quest item"], nil, true
+        end
+        return
     end
     -- An item an open quest collects, Murloc Eyes and the like, which the
     -- game does not mark as a quest item (Logic/Quests.lua).

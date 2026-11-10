@@ -243,6 +243,19 @@ each kept; soulbound copies are kept first. Tradeskills' Sell list holds
 the same number (its `SisterKeeps`). Tested in
 `tools/test_upgradecopies.lua`.
 
+## Quest items that trade
+
+A player's report (2026-11-10, the owner said build it): a quest item that
+can go on the auction house was kept as "Quest item" and never followed
+Always mail or Auction. Now `STEPS.quests` keeps a quest item only while an
+open quest needs it (`Quests:Reason`), it is bound (`entry.bound`), or it
+binds on pickup or as a quest item (`Verdicts.QuestItemTrades`, bind type
+1 or 4; nil until the client loads it, which keeps it). Anything else
+falls through to the usual rules: the lists, the bank alt, mail, auction,
+sell or Look at it. An item that starts a quest is always kept. The trash
+can, Swap When Full and selling still guard quest items as before. Tested
+in `tools/test_tradequestitems.lua`.
+
 ## Always sell and upgrades
 
 The owner asked (2026-10-13) that an item on the Always sell list that is

@@ -32,7 +32,7 @@ env.FakeBags({
     { bag = 0, slot = 7, id = 3001, name = "Bound Helm", quality = 2, price = 500, class = 4, bind = 1 },
     { bag = 0, slot = 8, id = 3002, name = "Soulbound Cloth", quality = 1, price = 13, class = 7, subclass = 5, bound = true },
     { bag = 0, slot = 9, id = 3003, name = "Grey Scrap", quality = 0, price = 3, class = 7, subclass = 6 },
-    { bag = 0, slot = 10, id = 3004, name = "Quest Hide", quality = 1, price = 4, class = 7, subclass = 6, quest = "item" },
+    { bag = 0, slot = 10, id = 3004, name = "Quest Hide", quality = 1, price = 4, class = 7, subclass = 6, quest = "item", bind = 4 },
     { bag = 0, slot = 11, id = 3005, name = "Wool Cloth", quality = 1, price = 30, count = 10, class = 7, subclass = 5 },
     { bag = 0, slot = 12, id = 3006, name = "Shiny Pebble", quality = 1, price = 7, class = 15 },
     { bag = 0, slot = 13, id = 2589, name = "Linen Cloth", quality = 1, price = 13, count = 7, class = 7, subclass = 5 },
