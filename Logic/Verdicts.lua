@@ -1281,6 +1281,17 @@ function Verdicts:SetDisenchantGreens(on)
     self:Changed(true)
 end
 
+--- One sold at auction, after the cut: Tradeskills' usual price, or
+--- today's cheapest listing by someone else when that is higher and the
+--- scan is fresh (`auctionNow`; a player saw a number well under the AH's
+--- lowest while prices were rising, 2026-11-11). Nil when not priced.
+function Verdicts.AuctionPrice(ts)
+    local usual = Sisters.Number(ts, "auction")
+    local now = Sisters.Number(ts, "auctionNow")
+    if usual and now and now > usual then return now end
+    return usual
+end
+
 --- Does a vendor or the auction house pay more for the item than what
 --- breaking it gives? Asked before Tradeskills' disenchanter (a player asked, the owner said yes, 2026-10-16), so a
 --- green that sells for more is sold instead. The auction house counts as
@@ -1294,7 +1305,7 @@ function Verdicts:SellsForMore(entry, said, unit)
     local disenchant = Number(ts, "disenchant")
     if not disenchant then return false end
     local most = unit or 0
-    local auction = not entry.bound and Number(ts, "auction") or nil
+    local auction = not entry.bound and Verdicts.AuctionPrice(ts) or nil
     if auction then
         if ts.fast == false then auction = math.floor(auction * Verdicts.SLOW) end
         most = math.max(most, auction)
@@ -1385,7 +1396,7 @@ function Verdicts:BelowAmount(entry, unit, said)
     local bound = entry.bound == true
     if not below or not ts or (bound and (entry.quality or 0) >= 2) then return nil end
     local Number, String, True = Sisters.Number, Sisters.String, Sisters.True
-    local auction = not bound and Number(ts, "auction") or nil
+    local auction = not bound and Verdicts.AuctionPrice(ts) or nil
     local disenchant = Number(ts, "disenchant")
     local enchanter = not bound and String(ts, "enchanter") or nil
     if enchanter and self:IsMe(enchanter) then enchanter = nil end
@@ -1409,7 +1420,12 @@ function Verdicts:Best(entry, unit, said, noBelow)
     -- is never sold for the player (the plan: it needs a second look).
     local bound = entry.bound == true
 
-    local auction = not bound and Number(ts, "auction") or nil
+    -- `auction` is what one brings after the cut, and what the row shows.
+    -- A slow seller is weighed at less (`auctionWorth`) only to choose
+    -- between the auction house and a vendor (2026-11-11: the lowered
+    -- number used to show as the price).
+    local usual = not bound and Number(ts, "auction") or nil
+    local auction = not bound and Verdicts.AuctionPrice(ts) or nil
     local slow = auction and ts.fast == false
     local auctionWorth = auction and math.floor(auction * (slow and Verdicts.SLOW or 1)) or nil
 
@@ -1446,18 +1462,18 @@ function Verdicts:Best(entry, unit, said, noBelow)
         local cost = Number(ts, "belowCost")
         if cost then
             return "wait", L.Format("Costs about %s to make, more than it sells for now",
-                Items.FormatMoney(cost)), auctionWorth
+                Items.FormatMoney(cost)), auction
         end
         -- Today's price is well under the usual one: hold it back, folded
         -- away under Wait for a better price (the owner asked 2026-10-13).
         local now = Number(ts, "auctionNow")
-        if now and now < auction * Verdicts.LOW_NOW then
+        if now and usual and now < usual * Verdicts.LOW_NOW then
             return "wait", L.Format("Selling for about %s right now, usually about %s",
-                Items.FormatMoney(now), Items.FormatMoney(auction)), auctionWorth
+                Items.FormatMoney(now), Items.FormatMoney(usual)), usual
         end
         local text = slow and L.Format("Auction about %s each, sells slowly", Items.FormatMoney(auction))
             or L.Format("Auction about %s each", Items.FormatMoney(auction))
-        return "auction", text, auctionWorth
+        return "auction", text, auction
     end
 
     -- A vendor pays the most. Sold only when something says so: the auction
