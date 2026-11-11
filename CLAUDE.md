@@ -752,8 +752,8 @@ Nothing in the queue changes. No setting. Tested in `tools/test_jobs.lua`.
 Clear Items (a player's report, the owner said build it from a mockup,
 2026-11-10: Jobs asked for mail of items alts had long since got rid of):
 the same right-click menu has "Clear Items" under Ignore Until Next Login,
-never for the character playing. The first click arms it (red "Click
-Again" for `UI.CLEAR_ARMED` seconds, `UI.ArmClear`), the second calls
+never for the character playing. The first click arms it (red "Confirm"
+for `UI.CLEAR_ARMED` seconds, `UI.ArmClear`), the second calls
 `Jobs:ClearItems(name)`, which asks Tradeskills, inside a pcall,
 `_G.BlackthornesTS.Butler:ClearHoldings(name)` (`Sisters:ClearHoldings`;
 true and the full name, or false and why) to forget that character's

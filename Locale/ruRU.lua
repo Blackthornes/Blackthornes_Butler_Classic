@@ -1182,4 +1182,4 @@ L["Your characters need %d more."] = "Твоим персонажам не хв�
 L["Clear Items"] = "Забыть предметы"
 L["Forget this character's saved bags, bank, mail and gold. Log in on them to read it again."] = "Забывает сохранённые сумки, банк, почту и золото этого персонажа. Зайди за него, чтобы прочитать всё снова."
 L["Cleared saved items for %s."] = "Сохранённые предметы %s забыты."
-L["Click Again"] = "Нажми ещё раз"
+L["Confirm"] = "Подтвердить"

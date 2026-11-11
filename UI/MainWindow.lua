@@ -1441,7 +1441,7 @@ function UI:BuildMenu()
     menu.ignoreJobs:Hide()
     -- Clear Items (the owner said build it, 2026-11-10): forget that
     -- character's saved bags, bank, mail and gold. The first click arms it,
-    -- red "Click Again" for UI.CLEAR_ARMED seconds; the second clears.
+    -- red "Confirm" for UI.CLEAR_ARMED seconds; the second clears.
     menu.clearItems = UI.MenuRow(menu, L["Clear Items"], function(self)
         local data = UI.menu.data
         if type(data) ~= "table" or type(data.job) ~= "table" or not ns.Jobs then return UI:HideMenu() end
@@ -1664,7 +1664,7 @@ UI.CLEAR_ARMED = 4
 function UI.ArmClear(row, on)
     row.armed = on and true or false
     row.armedAt = on and (type(GetTime) == "function" and GetTime() or 0) or nil
-    row:SetText(on and L["Click Again"] or L["Clear Items"])
+    row:SetText(on and L["Confirm"] or L["Clear Items"])
     if on then
         row.label:SetTextColor(Theme.Unpack("loss"))
         local at = row.armedAt
