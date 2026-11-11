@@ -220,17 +220,32 @@ for _, recipient in ipairs(ns.Errands:Recipients()) do
     end
 end
 suite.check("Fill mail asks for the full stack only", mailed == 20, tostring(mailed))
--- Always mail to the bank alt waits for a full stack too; to anyone else
--- it still goes as it is.
+-- Always mail waits for a full stack too, whoever it goes to.
 Verdicts:SetChoice(2318, "mail", "Banky Vault")
 suite.check("an Always mail short stack for the bank alt stays", Row("Light Leather").verdict == "keep"
     and Row("Light Leather").reason == "On your Always mail list, waiting for a full stack",
     Row("Light Leather").verdict)
 Verdicts:SetChoice(2318, "mail", "Cara Reed")
-suite.check("an Always mail short stack for another character still goes",
-    Row("Light Leather").verdict == "mail" and Row("Light Leather").mailTo == "Cara Reed",
+suite.check("an Always mail short stack for another character stays too",
+    Row("Light Leather").verdict == "keep"
+    and Row("Light Leather").reason == "On your Always mail list, waiting for a full stack",
     Row("Light Leather").verdict)
 Verdicts:SetChoice(2318, nil)
+-- A habit of mailing it waits the same way (a player's report, 2026-11-11).
+ns.db.learned = ns.db.learned or {}
+ns.db.learned[2318] = { verdict = "mail", to = "Cara Reed", at = 1 }
+Verdicts:Changed(true)
+suite.check("a short stack Butler learned to mail stays",
+    Row("Light Leather").verdict == "keep"
+    and Row("Light Leather").reason == "You usually mail this to Cara Reed, waiting for a full stack",
+    Row("Light Leather").verdict .. " " .. tostring(Row("Light Leather").reason))
+BankAlt:SetFullStacks(false)
+suite.check("unticked, the learned mail goes again",
+    Row("Light Leather").verdict == "mail" and Row("Light Leather").mailTo == "Cara Reed",
+    Row("Light Leather").verdict)
+BankAlt:SetFullStacks(true)
+ns.db.learned[2318] = nil
+Verdicts:Changed(true)
 BankAlt:SetFullStacks(false)
 suite.check("unticked, the smaller stack goes again", ToBank("Light Leather") and ns.db.bankAltFullStacks == nil)
 BankAlt:SetName(nil)

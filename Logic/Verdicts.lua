@@ -489,6 +489,14 @@ function STEPS.bankList(self, c)
     return "bank", L["On your Always bank list"], Unit(c), true
 end
 
+-- Full Stacks Only (the bank alt page) is ticked and this carried stack
+-- is not full yet, so it waits in the bags rather than go in the mail.
+local function Short(entry)
+    local bankAlt = ns.BankAlt
+    return bankAlt and bankAlt.FullStacksOn and bankAlt:FullStacksOn()
+        and not bankAlt:FullStack(entry) or false
+end
+
 function STEPS.mailList(self, c)
     local choice, mailTo = Choice(c)
     if choice ~= "mail" then return nil end
@@ -504,12 +512,11 @@ function STEPS.mailList(self, c)
     if eq and eq.upgrade == "now" then
         return "look", L["On your Always mail list, but it's an upgrade for you"], Unit(c), true
     end
-    -- With Full Stacks Only ticked, an Always mail item for the bank alt
-    -- waits in the bags until its stack is full, as the bank alt's own
-    -- picks do (a player's report, 2026-11-07).
-    local bankAlt = ns.BankAlt
-    if bankAlt and bankAlt:FullStacksOn() and not bankAlt:FullStack(entry)
-        and ns.Errands and ns.Errands.SameName(mailTo, bankAlt:Name()) then
+    -- With Full Stacks Only ticked, an Always mail item waits in the bags
+    -- until its stack is full, whoever it goes to, as the bank alt's own
+    -- picks do (players' reports, 2026-11-07 and 2026-11-11: herbs listed
+    -- for the Herbs character still went as small stacks).
+    if Short(entry) then
         return "keep", L["On your Always mail list, waiting for a full stack"], Unit(c), true
     end
     -- This character's own queued crafts come first (the owner,
@@ -707,6 +714,10 @@ function STEPS.mailHabit(self, c)
     local learned, learnedTo = Learned(c)
     if learned == "mail" and not c.entry.bound and not self:IsMe(learnedTo) then
         local unit = Unit(c)
+        if Short(c.entry) then
+            return "keep", L.Format("You usually mail this to %s, waiting for a full stack", learnedTo),
+                unit, true
+        end
         return "mail", ns.Learning.Reason("mail", learnedTo), unit, unit ~= nil, { to = learnedTo }
     end
 end

@@ -426,6 +426,7 @@ L["bought %s %s for %s. Your ammo pouch is full."] = "куплено %s %s за 
 L["You bought this back, so Butler keeps it"] = "Ты это выкупил, поэтому Butler это оставляет"
 L["You usually sell these"] = "Ты обычно это продаёшь"
 L["You usually mail this to %s"] = "Ты обычно отправляешь это персонажу %s"
+L["You usually mail this to %s, waiting for a full stack"] = "Ты обычно отправляешь это персонажу %s, ждёт полной стопки"
 L["%s: you bought it back, so Butler keeps it from now on. Right-click it in the Butler window to change that."] = "%s: ты это выкупил, поэтому Butler теперь это оставляет. Щёлкни правой кнопкой в окне Butler, чтобы это изменить."
 L["%s: you sell these, so Butler puts them under Sell from now on. Right-click it in the Butler window to change that."] = "%s: ты это продаёшь, поэтому Butler теперь кладёт это в «Продать». Щёлкни правой кнопкой в окне Butler, чтобы это изменить."
 L["%s: you mail these to %s, so Butler puts them under Mail from now on. Right-click it in the Butler window to change that."] = "%s: ты отправляешь это персонажу %s, поэтому Butler теперь кладёт это в «Почта». Щёлкни правой кнопкой в окне Butler, чтобы это изменить."

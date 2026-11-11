@@ -439,6 +439,7 @@ L["bought %s %s for %s. Your ammo pouch is full."] = "买了 %s %s，花了 %s�
 L["You bought this back, so Butler keeps it"] = "你把它买回来了，所以 Butler 会留着它"
 L["You usually sell these"] = "这些你通常会卖掉"
 L["You usually mail this to %s"] = "这个你通常会邮寄给 %s"
+L["You usually mail this to %s, waiting for a full stack"] = "这个你通常会邮寄给 %s，等待满一组"
 L["%s: you bought it back, so Butler keeps it from now on. Right-click it in the Butler window to change that."] = "%s：你把它买回来了，所以 Butler 从现在起会留着它。在 Butler 窗口里右键点击它可以改。"
 L["%s: you sell these, so Butler puts them under Sell from now on. Right-click it in the Butler window to change that."] = "%s：你会卖掉这些，所以 Butler 从现在起会把它们放到出售下面。在 Butler 窗口里右键点击它可以改。"
 L["%s: you mail these to %s, so Butler puts them under Mail from now on. Right-click it in the Butler window to change that."] = "%s：你会把这些邮寄给 %s，所以 Butler 从现在起会把它们放到邮寄下面。在 Butler 窗口里右键点击它可以改。"

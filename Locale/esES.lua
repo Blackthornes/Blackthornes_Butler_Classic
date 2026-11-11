@@ -440,6 +440,7 @@ L["bought %s %s for %s. Your ammo pouch is full."] = "compraste %s %s por %s. Tu
 L["You bought this back, so Butler keeps it"] = "Lo recompraste, así que Butler lo guarda"
 L["You usually sell these"] = "Sueles vender esto"
 L["You usually mail this to %s"] = "Sueles enviar esto a %s"
+L["You usually mail this to %s, waiting for a full stack"] = "Sueles enviar esto a %s, esperando a una pila completa"
 L["%s: you bought it back, so Butler keeps it from now on. Right-click it in the Butler window to change that."] = "%s: lo recompraste, así que desde ahora Butler lo guarda. Haz clic derecho en él en la ventana de Butler para cambiarlo."
 L["%s: you sell these, so Butler puts them under Sell from now on. Right-click it in the Butler window to change that."] = "%s: sueles venderlo, así que desde ahora Butler lo pone en Vender. Haz clic derecho en él en la ventana de Butler para cambiarlo."
 L["%s: you mail these to %s, so Butler puts them under Mail from now on. Right-click it in the Butler window to change that."] = "%s: sueles enviarlo a %s, así que desde ahora Butler lo pone en Correo. Haz clic derecho en él en la ventana de Butler para cambiarlo."
