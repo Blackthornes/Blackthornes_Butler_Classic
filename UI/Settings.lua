@@ -650,6 +650,237 @@ function SettingsUI:SyncKeepAcross()
     end
 end
 
+--------------------------------------------------------------------------------
+-- Mail rules: one list of every mail rule (a player asked for several, the
+-- owner said build it from a mockup, 2026-11-12). Logic/MailRules.lua.
+--------------------------------------------------------------------------------
+
+local RULE_NAME_WIDTH = 132
+local RULE_TO_LEFT = 146
+local RULE_TO_WIDTH = 112
+local RULE_ROW = 22
+local RULE_HEADER = 18
+
+-- The sort a heading picked and whether kinds show, for this session only.
+SettingsUI.ruleSort = nil
+SettingsUI.ruleSortDown = false
+SettingsUI.ruleKinds = false
+
+--- What a rule's first column says: the item (in its colour) or the name.
+function SettingsUI.RuleName(row)
+    if row.kind == "item" or row.kind == "learned" then
+        local name = ns.KeepAcrossUI and ns.KeepAcrossUI.ItemName(row.itemID) or tostring(row.itemID)
+        return name, ns.Items:ColorName(name, row.itemID) or name
+    end
+    local name = row.name or ""
+    return name, name
+end
+
+--- The rules in the order the headings ask: as Butler gathers them, or by
+--- item, name or where it came from. A third click goes back.
+function SettingsUI.SortedRules(rows)
+    local by = SettingsUI.ruleSort
+    if not by then return rows end
+    local down = SettingsUI.ruleSortDown
+    local function Key(row)
+        if by == "to" then return (row.to or ""):lower() end
+        if by == "from" then return (row.from or ""):lower() end
+        return (SettingsUI.RuleName(row)):lower()
+    end
+    local keyed = {}
+    for index, row in ipairs(rows) do keyed[index] = { row = row, key = Key(row), at = index } end
+    table.sort(keyed, function(a, b)
+        if a.key == b.key then return a.at < b.at end
+        if down then return a.key > b.key end
+        return a.key < b.key
+    end)
+    local sorted = {}
+    for index, each in ipairs(keyed) do sorted[index] = each.row end
+    return sorted
+end
+
+--- A click on a heading: sort by it, again to turn it round, a third time
+--- back to the usual order.
+function SettingsUI:SortRules(by)
+    if SettingsUI.ruleSort ~= by then
+        SettingsUI.ruleSort, SettingsUI.ruleSortDown = by, false
+    elseif not SettingsUI.ruleSortDown then
+        SettingsUI.ruleSortDown = true
+    else
+        SettingsUI.ruleSort, SettingsUI.ruleSortDown = nil, false
+    end
+    self:SyncMailRules()
+end
+
+--- Change who a rule goes to: the item menu's mail page at the mouse.
+function SettingsUI.ChangeRule(row)
+    if not (row and ns.UI and ns.UI.ShowMailMenuFor) then return end
+    ns.UI:ShowMailMenuFor({ mailRule = row, itemID = row.itemID, name = (SettingsUI.RuleName(row)),
+        fromSettings = true })
+end
+
+--- Add Rule: the item on the cursor, else ask for one, then who it goes to.
+function SettingsUI.AddRule()
+    if not (ns.UI and ns.UI.ShowMailMenuFor) then return end
+    local itemID = ns.KeepAcrossUI and ns.KeepAcrossUI.Cursor()
+    if itemID then
+        if ClearCursor then pcall(ClearCursor) end
+        ns.UI:ShowMailMenuFor({ itemID = itemID, name = ns.KeepAcrossUI.ItemName(itemID), fromSettings = true })
+    else
+        ns.UI:ShowMailMenuFor({ askItem = true, fromSettings = true })
+    end
+end
+
+--- The ITEM OR KIND, GOES TO and FROM headings, each a sort button.
+function SettingsUI.BuildRuleHeader(list)
+    list.heads = {}
+    local function Heading(by, text, left, width, justify)
+        local head = CreateFrame("Button", nil, list)
+        head:SetHeight(RULE_HEADER)
+        head.label = Theme.CreateLabel(head, "tiny", "muted", justify)
+        head.label:SetAllPoints()
+        head.text = text
+        head.label:SetText(text)
+        if justify == "RIGHT" then
+            head:SetPoint("TOPRIGHT", list, "TOPRIGHT", -8, 0)
+        else
+            head:SetPoint("TOPLEFT", list, "TOPLEFT", left, 0)
+        end
+        head:SetWidth(width)
+        head:SetScript("OnClick", function() SettingsUI:SortRules(by) end)
+        head:SetScript("OnEnter", function(self) self.label:SetTextColor(Theme.Unpack("accentHi")) end)
+        head:SetScript("OnLeave", function(self) self.label:SetTextColor(Theme.Unpack("muted")) end)
+        list.heads[by] = head
+    end
+    Heading("item", L["ITEM OR KIND"], 8, RULE_NAME_WIDTH)
+    Heading("to", L["GOES TO"], RULE_TO_LEFT, RULE_TO_WIDTH)
+    Heading("from", L["FROM"], 0, 60, "RIGHT")
+    list.rows = {}
+    list.empty = Theme.CreateLabel(list, "small", "dim")
+    list.empty:SetPoint("TOPLEFT", 8, -(RULE_HEADER + 4))
+    list.empty:SetText(L["No mail rules yet"])
+end
+
+--- A rule's row: dark glass, the item or kind, who it goes to and where the
+--- rule lives.
+local function RuleRow(list, index)
+    local row = list.rows[index]
+    if row then return row end
+    row = CreateFrame("Button", nil, list)
+    row:SetWidth(COLUMN_WIDTH)
+    row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    row.fill = Theme.Fill(row, "glass")
+    row.line = row:CreateTexture(nil, "BORDER")
+    row.line:SetPoint("BOTTOMLEFT")
+    row.line:SetPoint("BOTTOMRIGHT")
+    row.line:SetHeight(1)
+    row.line:SetColorTexture(Theme.Unpack("border", 0.6))
+    row.edge = row:CreateTexture(nil, "ARTWORK")
+    row.edge:SetPoint("TOPLEFT")
+    row.edge:SetPoint("BOTTOMLEFT")
+    row.edge:SetWidth(2)
+    row.edge:SetColorTexture(Theme.Unpack("accentHi"))
+    row.edge:Hide()
+    row.name = Theme.CreateLabel(row, "normal", "text")
+    row.name:SetPoint("LEFT", 8, 0)
+    row.name:SetWidth(RULE_NAME_WIDTH)
+    row.name:SetWordWrap(true)
+    row.to = Theme.CreateLabel(row, "normal", "text")
+    row.to:SetPoint("LEFT", RULE_TO_LEFT, 0)
+    row.to:SetWidth(RULE_TO_WIDTH)
+    row.to:SetWordWrap(true)
+    row.from = Theme.CreateLabel(row, "small", "muted", "RIGHT")
+    row.from:SetPoint("RIGHT", -8, 0)
+    row:SetScript("OnClick", function(self, button)
+        local rule = self.rule
+        if not rule then return end
+        if button == "RightButton" and ns.RowMenu then
+            ns.RowMenu:Open({
+                { text = L["Change"], run = function() SettingsUI.ChangeRule(rule) end },
+                { text = L["Remove"], run = function()
+                    ns.MailRules:Remove(rule)
+                    SettingsUI:SyncMailRules()
+                end },
+            }, { title = self.shown })
+            return
+        end
+        SettingsUI.ChangeRule(rule)
+    end)
+    row:SetScript("OnEnter", function(self)
+        self.fill:SetColorTexture(Theme.Unpack("glassHover"))
+        self.edge:Show()
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(self.shown or "", Theme.Unpack("accentHi"))
+        if self.notOwn then
+            GameTooltip:AddLine(L["This isn't one of your characters."], Theme.Unpack("warn"))
+        end
+        GameTooltip:AddLine(L["Click to change who gets it. Right-click for more."], Theme.Unpack("dim"))
+        GameTooltip:Show()
+    end)
+    row:SetScript("OnLeave", function(self)
+        self.fill:SetColorTexture(Theme.Unpack(self.band))
+        self.edge:Hide()
+        GameTooltip:Hide()
+    end)
+    list.rows[index] = row
+    return row
+end
+
+--- Mail rules: a row a rule, the headings' sort and the count. Only drawn
+--- while Settings shows.
+function SettingsUI:SyncMailRules()
+    local controls = self.controls
+    local list = controls and controls.ruleList
+    if not (list and ns.MailRules) then return end
+    if controls.ruleKinds and controls.ruleKinds.SetText then
+        controls.ruleKinds:SetText(SettingsUI.ruleKinds and L["Hide Kinds"] or L["Show Kinds"])
+    end
+    local rows = SettingsUI.SortedRules(ns.MailRules:All(SettingsUI.ruleKinds))
+    local n = #rows
+    controls.ruleCount:SetText(n == 1 and L.Format("%d rule", n) or L.Format("%d rules", n))
+    for by, head in pairs(list.heads) do
+        local arrow = ""
+        if SettingsUI.ruleSort == by then arrow = SettingsUI.ruleSortDown and " v" or " ^" end
+        head.label:SetText(head.text .. arrow)
+    end
+    if self.frame and self.frame.IsShown and not self.frame:IsShown() then
+        list.stale = true
+        return
+    end
+    list.stale = nil
+
+    local y = RULE_HEADER
+    for index, rule in ipairs(rows) do
+        local row = RuleRow(list, index)
+        row.rule = rule
+        row.band = (index % 2 == 0) and "glassAlt" or "glass"
+        row.fill:SetColorTexture(Theme.Unpack(row.band))
+        local plain, colored = SettingsUI.RuleName(rule)
+        row.shown = plain
+        row.name:SetText(colored)
+        row.to:SetText(rule.to or "")
+        row.notOwn = not ns.MailRules.IsOwn(rule.to)
+        row.to:SetTextColor(Theme.Unpack(row.notOwn and "warn" or "text"))
+        row.from:SetText(rule.from or "")
+        local height = math.max(TextHeight(row.name, RULE_ROW), TextHeight(row.to, RULE_ROW))
+        row:SetHeight(height)
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", list, "TOPLEFT", 0, -y)
+        row:Show()
+        y = y + height
+    end
+    for i = n + 1, #list.rows do list.rows[i]:Hide() end
+    list.empty:SetShown(n == 0)
+    if n == 0 then y = y + RULE_ROW end
+
+    local height = math.ceil(y + 2)
+    if list.fixedHeight ~= height then
+        list.fixedHeight = height
+        list:SetHeight(height)
+        if self.pages and self.pages.fitted then self.pages:Fit() end
+    end
+end
+
 --- The bank alt page: who, when, which list and the kinds, as saved.
 function SettingsUI:SyncBankAlt()
     local controls = self.controls
@@ -1108,6 +1339,37 @@ function SettingsUI:BuildPages()
     keepNote:SetWordWrap(true)
     keepNote:SetText(L["of each, on every character"])
 
+    -- Mail rules (a player asked for several, the owner said build it from
+    -- a mockup, 2026-11-12): every mail rule in one list, wherever it lives.
+    local ruleHead = pages:Section("bankalt", 1, L["MAIL RULES"])
+    controls.ruleAdd = Widgets.CreateButton(ruleHead, L["Add Rule"], function()
+        SettingsUI.AddRule()
+    end, { height = 18, primary = true })
+    controls.ruleAdd:SetPoint("BOTTOMRIGHT", ruleHead, "TOPRIGHT", 0, -12)
+    controls.ruleKinds = Widgets.CreateButton(ruleHead, L["Show Kinds"], function()
+        SettingsUI.ruleKinds = not SettingsUI.ruleKinds
+        SettingsUI:SyncMailRules()
+    end, { height = 18 })
+    controls.ruleKinds:SetPoint("RIGHT", controls.ruleAdd, "LEFT", -4, 0)
+
+    local ruleList = CreateFrame("Frame", nil, pages.pages.bankalt.content)
+    ruleList:SetWidth(COLUMN_WIDTH)
+    ruleList.fixedHeight = 40
+    ruleList:SetHeight(40)
+    pages:Place("bankalt", 1, ruleList, 4)
+    controls.ruleList = ruleList
+    SettingsUI.BuildRuleHeader(ruleList)
+
+    local ruleFoot = CreateFrame("Frame", nil, pages.pages.bankalt.content)
+    ruleFoot:SetSize(COLUMN_WIDTH, 16)
+    ruleFoot.fixedHeight = 16
+    pages:Place("bankalt", 1, ruleFoot, 6)
+    controls.ruleCount = Theme.CreateLabel(ruleFoot, "small", "muted")
+    controls.ruleCount:SetPoint("LEFT", 0, 0)
+    local ruleSaves = Theme.CreateLabel(ruleFoot, "small", "dim", "RIGHT")
+    ruleSaves:SetPoint("RIGHT", 0, 0)
+    ruleSaves:SetText(L["Changes save as you make them."])
+
     pages:Section("bankalt", 2, L["WHAT GOES THERE"])
     controls.bankAltKinds, controls.bankAltKindTo, controls.bankAltKindTyped = {}, {}, {}
     -- The kinds' names as the Settings rows show them; chat keeps kind.label.
@@ -1514,6 +1776,7 @@ function SettingsUI:Refresh()
     self:SyncKeepHere()
     self:SyncKeepAcross()
     self:SyncBankAlt()
+    self:SyncMailRules()
     self:SyncLists()
     controls.textSize:Sync()
     controls.windowStyle:Sync()

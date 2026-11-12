@@ -1457,6 +1457,19 @@ function UI:BuildMenu()
         local data = UI.menu.data
         local text = menu.mailBox.editBox:GetText()
         if not data then return UI:HideMenu() end
+        -- Settings' Add Rule with nothing on the cursor: which item first.
+        if menu.askingItem then
+            local itemID = ns.KeepAcrossUI and ns.KeepAcrossUI.Find(text)
+            if not itemID then
+                menu.mailNote:SetText(L["Butler can't find that item. Try its name or ID."])
+                menu.mailNote:SetTextColor(Theme.Unpack("warn"))
+                return
+            end
+            menu.askingItem = nil
+            data.itemID = itemID
+            data.name = ns.KeepAcrossUI.ItemName(itemID)
+            return UI:ShowMailMenu()
+        end
         local name, why = ns.MailRules:TypeName(text)
         if not name then
             if why then menu.mailNote:SetText(why) end
@@ -1544,6 +1557,8 @@ function UI:ShowMailMenuFor(data)
     menu:ClearAllPoints()
     menu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x - 10, y + 10)
     menu:Show()
+    if data.askItem then return self:ShowMailBox(true) end
+    menu.askingItem = nil
     self:ShowMailMenu()
 end
 
@@ -1807,15 +1822,16 @@ function UI:ShowMailMenu()
 end
 
 --- The Type a Name... page: a box for any whole name, first and last.
-function UI:ShowMailBox()
+function UI:ShowMailBox(askItem)
     local menu = self.menu
     local data = menu and menu.data
     if not data then return end
     menu.away = 0
+    menu.askingItem = askItem and true or nil
     for _, button in ipairs(menu.characters) do button:Hide() end
     UI.HideMailPage(menu)
     menu.back:Hide()
-    menu.title:SetText(L["MAIL TO"])
+    menu.title:SetText(askItem and L["ADD RULE"] or L["MAIL TO"])
 
     menu.mailBox:ClearAllPoints()
     menu.mailBox:SetPoint("TOPLEFT", 8, -26)
@@ -1824,7 +1840,8 @@ function UI:ShowMailBox()
     menu.mailNote:ClearAllPoints()
     menu.mailNote:SetPoint("TOPLEFT", menu.mailBox, "BOTTOMLEFT", 0, -4)
     menu.mailNote:SetPoint("RIGHT", menu, "RIGHT", -8, 0)
-    menu.mailNote:SetText(L["Type the whole name, first and last."])
+    menu.mailNote:SetText(askItem and L["Type an item's name or ID."]
+        or L["Type the whole name, first and last."])
     menu.mailNote:SetTextColor(Theme.Unpack("muted"))
     menu.mailNote:Show()
     menu.mailSave:ClearAllPoints()
