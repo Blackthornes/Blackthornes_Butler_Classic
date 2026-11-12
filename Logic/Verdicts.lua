@@ -73,7 +73,7 @@
 --
 -- The Always keep, Always sell and Always bank lists are the player's own
 -- choices, account wide, by item ID: BlackthornesButlerDB.alwaysKeep,
--- .alwaysSell, .alwaysBank and .alwaysDisenchant ([itemID] = true), and
+-- .alwaysSell, .alwaysBank, .alwaysDisenchant and .alwaysAuction ([itemID] = true), and
 -- .alwaysMail ([itemID] = the character's short name). Never rename them.
 --
 -- Sell below (a player asked, the owner agreed 2026-10-11) is
@@ -143,12 +143,13 @@ local function List(name)
     return ns.db[name]
 end
 
---- "keep", "sell", "bank", "disenchant", "mail" or nil: what the player
+--- "keep", "sell", "auction", "bank", "disenchant", "mail" or nil: what the player
 --- said about this item. For "mail", the second return is who it goes to.
 function Verdicts:Choice(itemID)
     if not itemID then return nil end
     if List("alwaysKeep")[itemID] then return "keep" end
     if List("alwaysSell")[itemID] then return "sell" end
+    if List("alwaysAuction")[itemID] then return "auction" end
     if List("alwaysBank")[itemID] then return "bank" end
     if List("alwaysDisenchant")[itemID] then return "disenchant" end
     local to = List("alwaysMail")[itemID]
@@ -168,6 +169,7 @@ function Verdicts:SetChoice(itemID, choice, to)
     if choice == "mail" and not (type(to) == "string" and to ~= "") then return end
     List("alwaysKeep")[itemID] = (choice == "keep") or nil
     List("alwaysSell")[itemID] = (choice == "sell") or nil
+    List("alwaysAuction")[itemID] = (choice == "auction") or nil
     List("alwaysBank")[itemID] = (choice == "bank") or nil
     List("alwaysDisenchant")[itemID] = (choice == "disenchant") or nil
     List("alwaysMail")[itemID] = (choice == "mail") and to or nil
@@ -239,7 +241,7 @@ end
 -- judges exactly as it always has.
 Verdicts.FIRST = { "sets", "quests" }
 Verdicts.DEFAULT_ORDER = {
-    "keepHere", "keepList", "bankList", "mailList", "lists", "buyback", "noValue", "sellList", "disenchantList", "ammo",
+    "keepHere", "keepList", "bankList", "mailList", "lists", "buyback", "noValue", "sellList", "auctionList", "disenchantList", "ammo",
     "upgrades", "altCrafts", "goals", "queue", "altUpgrades", "petFood",
     "bought", "levelEnch", "greensHere", "disenchanter", "mailHabit",
     "sellHabit", "greys", "bankAlt", "sellBelow",
@@ -609,6 +611,41 @@ function STEPS.sellList(self, c)
             unit, unit ~= nil
     end
     return "sell", L["On your Always sell list"], unit, unit ~= nil
+end
+
+-- The player's Always auction list (a player asked, the owner said build
+-- it 2026-11-12): it goes under Auction whatever a vendor pays. It gives way
+-- as Always sell does: to an upgrade to wear now, another character's
+-- queued craft, a Farmer goal and this character's craft queue. Soulbound
+-- can't be listed, so it is Look at it.
+function STEPS.auctionList(self, c)
+    if Choice(c) ~= "auction" then return nil end
+    local entry, unit = c.entry, Unit(c)
+    local eq = Eq(c)
+    if eq and eq.upgrade == "now" then
+        return "look", L["On your Always auction list, but it's an upgrade for you"], unit, unit ~= nil
+    end
+    if entry.bound then
+        return "look", L["On your Always auction list, but it's soulbound"], unit, unit ~= nil
+    end
+    local share = self:AltCraftShare(entry)
+    if share then
+        return "mail", L.Format("Mail %d to %s for their crafts", share.count, share.to),
+            unit, unit ~= nil, share
+    end
+    local goalNeed = Sisters.Number(Sisters:Ask("farmer", entry), "need")
+    if goalNeed and goalNeed > 0 then
+        return "keep", L.Format("On your Always auction list, but your goal needs %d more", goalNeed),
+            unit, unit ~= nil
+    end
+    local ts = Said(c).ts
+    local queued = Sisters.Number(ts, "need")
+    if queued and queued > 0 then
+        return "keep", L.Format("On your Always auction list, but your craft queue needs %d", queued),
+            unit, unit ~= nil
+    end
+    local worth = Verdicts.AuctionPrice(ts) or unit
+    return "auction", L["On your Always auction list"], worth, true
 end
 
 -- The player's Always disenchant list (the owner, 2026-10-17: a green that
@@ -1849,6 +1886,7 @@ ns.RegisterCommand("lists", L["show your Always keep, Always sell, Always bank a
     ns.Print(L["your lists (right-click a row in the Butler window to change them)"])
     PrintList("alwaysKeep", L["Always keep"])
     PrintList("alwaysSell", L["Always sell"])
+    PrintList("alwaysAuction", L["Always auction"])
     PrintList("alwaysBank", L["Always bank"])
     PrintList("alwaysDisenchant", L["Always disenchant"])
     PrintList("alwaysMail", L["Always mail"])
