@@ -1224,3 +1224,8 @@ L["Short %d"] = "Il manque %d"
 L["Your characters have enough."] = "Tes personnages en ont assez."
 L["Your characters keep every one."] = "Tes personnages les gardent tous."
 L["Your characters need %d more."] = "Il manque encore %d à tes personnages."
+-- Mute All Sounds (2026-11-12)
+L["Mute All Sounds:"] = "Couper tous les sons :"
+L["turn every Blackthornes sound off or back on (on/off)"] = "couper ou remettre tous les sons Blackthornes (on/off)"
+L["All Blackthornes sounds are off. /bbutler mute off turns them back on."] = "Tous les sons Blackthornes sont coupés. /bbutler mute off les remet."
+L["Blackthornes sounds are back on."] = "Les sons Blackthornes sont de retour."

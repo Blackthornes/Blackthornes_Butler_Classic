@@ -2576,6 +2576,7 @@ function UI:Say(which)
     local id = self.VOICE[which]
     if not id or not (ns.db and ns.db.voice ~= false) then return false end
     if self.AtAnNPC() then return false end
+    if ns.Muted and ns.Muted() then return false end
     local ok, now = pcall(GetTime)
     if not (ok and type(now) == "number") then return false end
     local last = self.voiceAt[which]
