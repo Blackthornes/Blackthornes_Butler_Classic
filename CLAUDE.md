@@ -1439,6 +1439,16 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   and red as Free bag space does (`BagWindow.FREE_SIZE_UP`,
   `FreeSpace.Level`).
 
+- **Alt + right-click** (a player asked, the owner said build it from a
+  mockup, 2026-11-12): on a square on the Bags tab it opens Butler's item
+  menu, the one a row's right-click opens in the Butler window
+  (`BagWindow:AltClick`, a HookScript on OnClick, so the game's own click
+  runs as before; `BagWindow.MenuData` finds the row, else makes one from
+  the slot). Not in a fight. A small dim line at the foot says how, Bags
+  tab only (`BagWindow:PlaceHint`: beside the gold when it fits, else on
+  its own line under it). No tooltip line and no drag and drop (the
+  owner). Tested in `tools/test_bagaltmenu.lua`.
+
 Saved, account wide, never rename them: `bagWindow` (off unless ticked),
 `bagGroupBy`, `bagItemSize`, `bagItemLevel`, `bagNewGlow`, `bagEmptySlots` (unread), `bagScale`,
 `bagPoint`, `bagRelPoint`, `bagX`, `bagY`. Tested in
