@@ -41,6 +41,7 @@ Logic\BankAlt.lua
 Logic\KeepHere.lua
 Logic\KeepAcross.lua
 Logic\ListRules.lua
+Logic\MailRules.lua
 Logic\VendorPrices.lua
 
 UI\Theme.lua
