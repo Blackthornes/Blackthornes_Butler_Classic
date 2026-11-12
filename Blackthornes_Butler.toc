@@ -1,6 +1,12 @@
 ## Interface: 11509
 ## Title: Blackthornes Butler
 ## Notes: Tells you what to do with every item in your bags: keep it, sell it, post it, disenchant it or mail it to the alt who needs it.
+## Notes-deDE: Sagt dir, was du mit jedem Gegenstand in deinen Taschen tun sollst: behalten, verkaufen, ins Auktionshaus stellen, entzaubern oder dem Twink schicken, der ihn braucht.
+## Notes-frFR: Te dit quoi faire de chaque objet de tes sacs : le garder, le vendre, le mettre aux enchères, le désenchanter ou l'envoyer au reroll qui en a besoin.
+## Notes-esES: Te dice qué hacer con cada objeto de tus bolsas: guardarlo, venderlo, subastarlo, desencantarlo o enviarlo al personaje alternativo que lo necesite.
+## Notes-esMX: Te dice qué hacer con cada objeto de tus bolsas: guardarlo, venderlo, subastarlo, desencantarlo o enviarlo al personaje alternativo que lo necesite.
+## Notes-ruRU: Подсказывает, что делать с каждым предметом в сумках: оставить, продать, выставить на аукцион, распылить или отправить персонажу, которому он нужен.
+## Notes-zhCN: 告诉你背包里每件物品该怎么处理：保留、出售、拍卖、分解，或邮寄给需要它的小号。
 ## Author: Blackthornes
 ## Version: @project-version@
 ## X-License: All Rights Reserved
