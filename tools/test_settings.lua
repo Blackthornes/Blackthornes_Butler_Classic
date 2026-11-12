@@ -221,7 +221,7 @@ suite.check("the command buttons run their commands",
 local covered = { tooltip = true, sisters = true, whatsnew = true, window = true, all = true,
     vendor = true, mailbox = true, bank = true, settings = true, reset = true,
     sellbelow = true, freespace = true, whohas = true, goldmin = true, fillnext = true, altupgrades = true,
-    joblogin = true, trash = true, quests = true, bankalt = true, greens = true, buy = true, order = true, skillup = true, bags = true }
+    joblogin = true, trash = true, quests = true, bankalt = true, greens = true, buy = true, order = true, skillup = true, bags = true, windows = true }
 -- Chat-only commands are typed only (the owner, 2026-10-15): they print a
 -- list in chat, so they have no button here. Their settings parts (training
 -- on|off, goals on|off, upgrademail undo) still have controls.
@@ -237,6 +237,9 @@ ns.db.x = 200
 SettingsUI:ResetPositions()
 suite.check("putting it back forgets where it was dragged", ns.db.settingsX == nil)
 suite.check("and where the Butler window was", ns.db.x == nil)
+ns.db.x = 200
+ns.commands.windows.fn("reset")
+suite.check("/bbutler windows reset puts it back too", ns.db.x == nil)
 
 -- A client with neither options API still loads.
 local ns2 = env.Load()
