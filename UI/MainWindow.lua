@@ -1581,7 +1581,7 @@ function UI:ShowMenu(data, stay)
     menu.decide:SetShown(decides)
     menu.decide:SetText(learned and L["Forget what Butler learned"] or L["Let Butler Decide"])
 
-    local rows = 3 + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
+    local rows = 3 + (canList and 1 or 0) + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
         + (craft and 1 or 0) + (ns.KeepHere and 1 or 0) + (ns.KeepAcross and 1 or 0) + (decides and 1 or 0)
     menu:SetHeight(30 + rows * MENU_ROW)
     UI.FitMenu(menu, { menu.keep, menu.sell, menu.auction, menu.bank, menu.disenchant, menu.bought, menu.mail,
