@@ -924,6 +924,15 @@ or when a higher rank of the same name is known (the data skips a rank now
 and then; a player was told to train spells known a long time,
 2026-10-19). A trainer line in another language matches by name and the
 rank's number.
+Starter trainers stop early (a level 8 warlock was sent to Northshire's,
+which teaches nothing past 6, 2026-11-14): a trainer's window keeps
+`teaches`, the highest level it lists, and `CT:Nearest` passes by one
+that can't teach the highest level ready (`CT:NeedLevel`); an old record
+without it in a starting valley (`CT.STARTER_AREAS`) counts as teaching
+to `STARTER_TEACHES` (6). With none far enough, Show the way says the
+ones seen teach only up to level N. A trainer that stops early no longer
+marks later spells as taught by no trainer. Tested in
+`tools/test_classtraining.lua`.
 Skipping a spell (a player asked, the owner said build it,
 2026-10-22): right-click a spell in Equipment's Training drawer to skip
 it, and again to bring it back. Kept account wide in
