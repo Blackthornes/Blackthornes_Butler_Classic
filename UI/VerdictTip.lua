@@ -124,25 +124,70 @@ function VerdictTip:Line(itemID, tooltip)
     local entry = itemID and self:Entry(itemID, tooltip)
     if not entry then return nil end
     ns.Verdicts:ForgetIfOld()
-    local verdict, unit, to
+    local verdict, unit, to, craft
     local row = KeptRow(entry)
     if row then
-        verdict, unit, to = row.verdict, row.unit, row.mailTo
+        verdict, unit, to, craft = row.verdict, row.unit, row.mailTo, row.craft
     else
         local extra
         verdict, _, unit, extra = ns.Verdicts:Judge(entry)
         to = type(extra) == "table" and extra.to or nil
+        craft = type(extra) == "table" and extra.craft or nil
     end
     local label = verdict and ns.Verdicts.LABELS[verdict]
     if not label then return nil end
     local left
+    local details = verdict == "craft" and type(craft) == "table" and type(craft.name) == "string"
+        and self:DetailsOn()
     if verdict == "mail" and type(to) == "string" and to ~= "" then
         left = L.Format("Butler: Mail to %s", to)
+    elseif details then
+        left = L.Format("Butler: Craft %s", craft.name)
     else
         left = L.Format("Butler: %s", label)
     end
     local right = (type(unit) == "number" and unit > 0) and L.Format("%s each", ns.Items.FormatMoney(unit)) or nil
-    return left, right
+    -- Craft Details: the product and materials go under it.
+    local why = nil
+    if details then why = VerdictTip.CraftWhy(craft) end
+    return left, right, why
+end
+
+--- Whether "Craft Details:" is ticked: off unless the player ticks it
+--- (the owner said build it as an optional thing, 2026-11-14).
+function VerdictTip:DetailsOn()
+    return ns.db ~= nil and ns.db.craftDetails == true
+end
+
+function VerdictTip:SetDetails(on)
+    if not ns.db then return end
+    ns.db.craftDetails = on and true or false
+end
+
+--- The grey line under "Butler: Craft NAME": "With Tin Bar." for the other
+--- materials carried, "Needs 4 Tin Bar." for what is missing, then what it
+--- earns. Only from what Tradeskills already said; nothing is read again.
+function VerdictTip.CraftWhy(craft)
+    local parts, missing = {}, {}
+    local needs = type(craft.needs) == "table" and craft.needs or {}
+    for _, need in ipairs(needs) do missing[need.itemID] = true end
+    local with = {}
+    for _, other in ipairs(type(craft.others) == "table" and craft.others or {}) do
+        if other.itemID and not missing[other.itemID] then
+            with[#with + 1] = ns.Verdicts.NeedName(other.itemID)
+        end
+    end
+    if #with > 0 then parts[#parts + 1] = L.Format("With %s.", table.concat(with, ", ")) end
+    local short = {}
+    for _, need in ipairs(needs) do
+        short[#short + 1] = ("%d %s"):format(need.count, ns.Verdicts.NeedName(need.itemID))
+    end
+    if #short > 0 then parts[#parts + 1] = L.Format("Needs %s.", table.concat(short, ", ")) end
+    if type(craft.gain) == "number" and craft.gain > 0 then
+        parts[#parts + 1] = L.Format("About %s more than selling it.", ns.Items.FormatMoney(craft.gain))
+    end
+    if #parts == 0 then return nil end
+    return table.concat(parts, " ")
 end
 
 local function Decorates(tooltip)
@@ -172,7 +217,7 @@ function VerdictTip:AddLine(tooltip, data)
     if not itemID then return false end
     local held = false
     local ok = pcall(function()
-        local left, right = self:Line(itemID, tooltip)
+        local left, right, why = self:Line(itemID, tooltip)
         if not left then return end
         -- On Shift and Shift is up: only the hint, asked each build.
         if not ns.TooltipShift:Shows(self.SHIFT_KEY) then
@@ -186,6 +231,7 @@ function VerdictTip:AddLine(tooltip, data)
         else
             tooltip:AddLine(left, r, g, b)
         end
+        if why then tooltip:AddLine(why, 0.7, 0.7, 0.7, true) end
         if not data and tooltip.Show then tooltip:Show() end
     end)
     if not ok then ns.Debug("verdict tooltip failed") end
@@ -244,3 +290,13 @@ ns.RegisterCommand("tooltip", L["show or hide Butler's advice on the tooltips of
     ns.Print(VerdictTip:Enabled() and L["item tooltips show what Butler would do with them."]
         or L["item tooltips no longer show what Butler would do with them."])
 end)
+
+-- Craft Details: typed only, so it stays out of the help line.
+ns.commands.craftdetails = { fn = function(arg)
+    arg = (arg or ""):lower():match("^%s*(.-)%s*$")
+    local on
+    if arg == "on" then on = true elseif arg == "off" then on = false
+    else on = not VerdictTip:DetailsOn() end
+    VerdictTip:SetDetails(on)
+    ns.Print(L["Craft Details:"] .. " " .. (on and L["On"] or L["Off"]))
+end }

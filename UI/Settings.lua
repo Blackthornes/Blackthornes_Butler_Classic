@@ -1386,6 +1386,13 @@ function SettingsUI:BuildPages()
         function() return ns.db.verdictTip ~= false end,
         function(on) if ns.VerdictTip then ns.VerdictTip:SetEnabled(on) end end)
 
+    -- Craft Details (2026-11-14): off unless ticked; the tooltip names the craft.
+    local detailsRow = pages:Row("general", 2, L["Craft Details:"], nil)
+    controls.craftDetails = Widgets.CreateCheckbox(detailsRow, L["On"], function(checked)
+        if ns.VerdictTip then ns.VerdictTip:SetDetails(checked) end
+    end, false)
+    controls.craftDetails:SetPoint("TOPLEFT", CONTROL_X, -2)
+
     local vendorRow = pages:Row("general", 2, L["Vendor Price:"], nil)
     controls.vendorPrice = SettingsUI.TooltipShiftControl(vendorRow, "vendorPrice",
         function() return ns.db.vendorPrice ~= false end,
@@ -1429,6 +1436,7 @@ function SettingsUI:Refresh()
     controls.buyMany:SetChecked(ns.BuyMany:IsOn())
     controls.whoHas:Sync()
     controls.verdictTip:Sync()
+    controls.craftDetails:SetChecked(ns.VerdictTip ~= nil and ns.VerdictTip:DetailsOn())
     controls.vendorPrice:Sync()
     controls.voice:SetChecked(ns.db.voice ~= false)
     controls.learn:SetChecked(ns.db.learn ~= false)

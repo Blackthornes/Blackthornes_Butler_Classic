@@ -353,6 +353,18 @@ list as a third argument so Tradeskills passes over those recipes and
 offers the next best; Butler still drops a skipped answer from an older
 Tradeskills. Tested in `tools/test_craftpays.lua`.
 
+Craft Details (Trent said build it from a mockup, 2026-11-14): with
+"Craft Details:" ticked under TOOLTIPS on the General page
+(`craftDetails`, account wide, off unless ticked, never rename it;
+`/bbutler craftdetails [on|off]`, typed only), Butler's tooltip line for a
+Craft row reads "Butler: Craft PRODUCT" and a grey line under it says
+"With NAME." (the craft's other materials carried, from Tradeskills'
+`others`), "Needs N NAME." (its `needs`) and "About X more than selling
+it." (`VerdictTip.CraftWhy`). Direct crafts only. `CraftFor` gives
+`others = { { itemID, count } }` since that day; without it the "With"
+part is left out. Tested in `tools/test_craftdetails.lua`. Not yet seen
+in game.
+
 ## Disenchant greens here
 
 The owner asked (2026-10-14) for an option, off unless ticked, that on the

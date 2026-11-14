@@ -1578,7 +1578,7 @@ function Verdicts:SetCraftPays(on)
     self:Changed(true)
 end
 
-local function NeedName(itemID)
+function Verdicts.NeedName(itemID)
     local name = Items.Call({ "C_Item.GetItemNameByID", "C_Item.GetItemInfo", "GetItemInfo" }, itemID)
     if type(name) == "string" and name ~= "" then return name end
     Items:RequestLoad(itemID)
@@ -1587,7 +1587,7 @@ end
 
 --- A craft the character knows that makes the item worth more than `value`
 --- (Butler's best price for one), from Tradeskills, while the setting is on.
---- { recipeID, crafts, perItem, gain, reason }, or nil.
+--- { recipeID, crafts, perItem, gain, reason, name, needs, others }, or nil.
 function Verdicts:CraftPays(entry, value)
     if not self:CraftPaysOn() or not entry.itemID then return nil end
     local carried = ns.Bags.Carried and ns.Bags:Carried(entry.itemID) or entry.count
@@ -1602,7 +1602,7 @@ function Verdicts:CraftPays(entry, value)
     if #craft.needs > 0 then
         local parts = {}
         for i, need in ipairs(craft.needs) do
-            parts[i] = ("%d %s"):format(need.count, NeedName(need.itemID))
+            parts[i] = ("%d %s"):format(need.count, Verdicts.NeedName(need.itemID))
         end
         reason = L.Format("Make %s (needs %s), about %s more than selling it",
             craft.name, table.concat(parts, ", "), Items.FormatMoney(gain))
@@ -1610,7 +1610,7 @@ function Verdicts:CraftPays(entry, value)
         reason = L.Format("Make %s, about %s more than selling it", craft.name, Items.FormatMoney(gain))
     end
     return { recipeID = craft.recipeID, name = craft.name, crafts = craft.crafts, perItem = craft.perItem,
-        gain = gain, reason = reason }
+        gain = gain, reason = reason, needs = craft.needs, others = craft.others or {} }
 end
 
 -- Crafts the player said no to (the owner, 2026-10-26: Butler kept saying
