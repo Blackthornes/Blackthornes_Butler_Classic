@@ -867,6 +867,59 @@ end
 
 function Verdicts:OnEnable()
     ns.RegisterEvent(self, "EQUIPMENT_SETS_CHANGED", function() Verdicts:SetsChanged() end)
+    ns.RegisterEvent(self, "AUCTION_HOUSE_CLOSED", function() Verdicts:ClearSellAnyway() end)
+end
+
+--------------------------------------------------------------------------------
+-- Sell Anyway (the owner, 2026-11-14)
+--------------------------------------------------------------------------------
+
+-- Items the player said to sell anyway: [itemID] = true, for this visit
+-- to the auction house only. Nothing is saved.
+Verdicts.sellAnyway = {}
+
+--- Move a waiting item to Auction until the auction house closes.
+function Verdicts:SellAnyway(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return false end
+    self.sellAnyway[itemID] = true
+    self:Changed(true)
+    return true
+end
+
+--- True while the player said to sell this item anyway.
+function Verdicts:SoldAnyway(itemID)
+    return itemID ~= nil and self.sellAnyway[itemID] == true
+end
+
+--- The auction house closed: every waiting item waits again.
+function Verdicts:ClearSellAnyway()
+    if next(self.sellAnyway) == nil then return end
+    self.sellAnyway = {}
+    self:Changed()
+end
+
+--- For Tradeskills' auction house drawer (read in a pcall): what Butler
+--- says about the item in this bag slot when it says wait, else nil.
+--- { short, reason, cost, now, usual } (copper; any may be nil but short
+--- and reason). Never raises.
+function Verdicts:Waiting(itemID, bag, slot)
+    local ok, answer = pcall(function()
+        itemID = tonumber(itemID)
+        if not itemID or not bag or not slot or not ns.Bags or not ns.Bags.ReadSlot then return nil end
+        local entry = ns.Bags.ReadSlot(bag, slot)
+        if not entry or entry.itemID ~= itemID then return nil end
+        local cache = self.groupCache
+        local known = cache and cache.slots and cache.slots[bag .. ":" .. slot]
+        if known and known.key == entry.key and known.verdict ~= "wait" then return nil end
+        local verdict, reason, _, extra = self:Judge(entry)
+        if verdict ~= "wait" then return nil end
+        local wait = type(extra) == "table" and extra.wait or {}
+        return { short = wait.short or reason, reason = reason, cost = wait.cost,
+            now = wait.now, usual = wait.usual }
+    end)
+    if ok then return answer end
+    return nil
 end
 
 --- "mail", why and { to, count } when Tradeskills says an alt's queued
@@ -1459,17 +1512,25 @@ function Verdicts:Best(entry, unit, said, noBelow)
         -- Tradeskills won't list it: the price it would list at is under
         -- what one costs to make, and selling at a loss is off there.
         -- Wait, as its Sell list does, rather than say Auction.
+        -- Sell Anyway (the owner, 2026-11-14) lets one go to Auction for
+        -- this visit to the auction house.
+        local anyway = self:SoldAnyway(entry.itemID)
         local cost = Number(ts, "belowCost")
-        if cost then
+        local now = Number(ts, "auctionNow")
+        if cost and not anyway then
             return "wait", L.Format("Costs about %s to make, more than it sells for now",
-                Items.FormatMoney(cost)), auction
+                Items.FormatMoney(cost)), auction,
+                { wait = { short = L["Costs more to make"], cost = cost, now = now,
+                    usual = usual, auction = auction } }
         end
         -- Today's price is well under the usual one: hold it back, folded
         -- away under Wait for a better price (the owner asked 2026-10-13).
-        local now = Number(ts, "auctionNow")
-        if now and usual and now < usual * Verdicts.LOW_NOW then
+        if now and usual and now < usual * Verdicts.LOW_NOW and not anyway then
             return "wait", L.Format("Selling for about %s right now, usually about %s",
-                Items.FormatMoney(now), Items.FormatMoney(usual)), usual
+                Items.FormatMoney(now), Items.FormatMoney(usual)), usual,
+                { wait = { short = L.Format("Usually %s, now %s", Items.FormatMoney(usual),
+                    Items.FormatMoney(now)), cost = cost, now = now, usual = usual,
+                    auction = auction } }
         end
         local text = slow and L.Format("Auction about %s each, sells slowly", Items.FormatMoney(auction))
             or L.Format("Auction about %s each", Items.FormatMoney(auction))
@@ -1712,7 +1773,7 @@ function Verdicts:Groups()
                 upgrade = extra and extra.upgrade or nil,
                 keptUpgrade = verdict == "keep" and extra and extra.wear ~= nil or nil,
                 bought = extra and extra.bought,
-                craft = extra and extra.craft,
+                craft = extra and extra.craft, wait = extra and extra.wait,
                 name = Items.NameFromLink(entry.link) or L.Format("item %s", tostring(entry.itemID)),
                 count = 0, slots = {},
             }

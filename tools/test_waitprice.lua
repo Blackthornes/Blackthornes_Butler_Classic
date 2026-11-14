@@ -98,5 +98,47 @@ suite.check("and opens back to nothing saved", ns.charDB.folded.auction == nil)
 -- The Sell button never takes them.
 suite.check("nothing waiting is under Sell", Find("Silk Cloth").verdict ~= "sell")
 
+-- Why it waits, short, and Sell Anyway (the owner, 2026-11-14).
+suite.check("the row says why in a few words", silk.wait and silk.wait.short:find("now", 1, true) ~= nil,
+    silk.wait and silk.wait.short)
+suite.check("it carries the prices for the hover", silk.wait.now == 600 and silk.wait.usual == 1000)
+suite.check("a loss says it costs more to make", gloves.wait and gloves.wait.short == "Costs more to make")
+suite.check("and carries what it costs", gloves.wait.cost == 21706)
+
+local told = ns.Verdicts:Waiting(601, 0, 1)
+suite.check("Tradeskills hears Butler says wait", told ~= nil and told.short ~= nil and told.reason == silk.reason)
+suite.check("with the prices", told and told.now == 600 and told.usual == 1000)
+suite.check("nothing for an item that does not wait", ns.Verdicts:Waiting(602, 0, 2) == nil)
+suite.check("nothing for the wrong slot", ns.Verdicts:Waiting(601, 0, 2) == nil)
+suite.check("nothing without a slot", ns.Verdicts:Waiting(601) == nil)
+
+UI.RowAction(silk)
+suite.check("Sell Anyway moves it to Auction", Find("Silk Cloth").verdict == "auction", Find("Silk Cloth").verdict)
+suite.check("only that item", Find("Phoenix Gloves").verdict == "wait")
+suite.check("Tradeskills hears it no longer waits", ns.Verdicts:Waiting(601, 0, 1) == nil)
+ns.Verdicts:SellAnyway(605)
+suite.check("a loss can be sold anyway too", Find("Phoenix Gloves").verdict == "auction")
+ns.Verdicts:ClearSellAnyway()
+suite.check("leaving the auction house makes them wait again",
+    Find("Silk Cloth").verdict == "wait" and Find("Phoenix Gloves").verdict == "wait")
+suite.check("nothing is saved", ns.db.sellAnyway == nil and ns.charDB.sellAnyway == nil)
+
+-- The right-click menu leads with Sell Anyway on a waiting row only.
+silk = Find("Silk Cloth")
+UI:ShowMenu(silk)
+suite.check("the menu leads with Sell Anyway", UI.menu.sellAnyway:IsShown())
+UI.menu.sellAnyway:GetScript("OnClick")(UI.menu.sellAnyway)
+suite.check("and it sells it anyway", Find("Silk Cloth").verdict == "auction")
+UI:ShowMenu(Find("Iron Ore"))
+suite.check("no Sell Anyway on other rows", not UI.menu.sellAnyway:IsShown())
+ns.Verdicts:ClearSellAnyway()
+local tip = { lines = {} }
+function tip:AddLine(t) self.lines[#self.lines + 1] = t end
+function tip:AddDoubleLine(a, b) self.lines[#self.lines + 1] = a .. " " .. b end
+UI.WaitLines(tip, Find("Phoenix Gloves").wait)
+local joined = table.concat(tip.lines, "|")
+suite.check("the hover shows the numbers", joined:find("Costs to Make:", 1, true) ~= nil
+    and joined:find("Sell Anyway moves it", 1, true) ~= nil, joined)
+
 _G.BlackthornesTS = nil
 suite.done()

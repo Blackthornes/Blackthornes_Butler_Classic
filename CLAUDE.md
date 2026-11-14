@@ -274,6 +274,19 @@ a loss" is off there; a player saw Butler say Auction for a craft
 Tradeskills called a loss, 2026-10-13). A better way (disenchant) still
 wins. Tested in `tools/test_waitprice.lua`. Not yet seen in game.
 
+Why it waits and Sell Anyway (the owner said build it from a mockup,
+2026-11-14): the wait verdict's extra carries `wait = { short, cost, now,
+usual, auction }`. The row shows `short` ("Costs more to make" or
+"Usually X, now Y") in amber with a Sell Anyway button, its hover lists
+Costs to Make:, Sells for Now: and Usual Price: (`UI.WaitLines`), and
+Sell Anyway leads the right-click menu. `Verdicts:SellAnyway(itemID)` moves
+it to Auction until `AUCTION_HOUSE_CLOSED` (`Verdicts.sellAnyway`, memory
+only, `SoldAnyway`, `ClearSellAnyway`). Tradeskills' auction house drawer
+reads, in a pcall, read only, `_G.BlackthornesButler.Verdicts:Waiting(itemID,
+bag, slot)` (`{ short, reason, cost, now, usual }` or nil) and calls
+`SellAnyway` and `SoldAnyway`; keep them stable, or change Tradeskills'
+`UI/PostPanel.lua` too.
+
 ## Levelling Enchanting with your own greens
 
 The owner asked (2026-10-13): a green that isn't crafted and breaks into a
