@@ -118,19 +118,20 @@ local function KeptRow(entry)
     return nil
 end
 
---- The line for a carried item: left ("Butler: Mail to Bob Stone") and
---- right (what one is worth, or nil). Nil when not carried.
+--- The line for a carried item: left ("Butler: Mail to Bob Stone"),
+--- right (what one is worth, or nil) and, for a mail, the reason it goes.
+--- Nil when not carried.
 function VerdictTip:Line(itemID, tooltip)
     local entry = itemID and self:Entry(itemID, tooltip)
     if not entry then return nil end
     ns.Verdicts:ForgetIfOld()
-    local verdict, unit, to
+    local verdict, unit, to, reason
     local row = KeptRow(entry)
     if row then
-        verdict, unit, to = row.verdict, row.unit, row.mailTo
+        verdict, unit, to, reason = row.verdict, row.unit, row.mailTo, row.reason
     else
         local extra
-        verdict, _, unit, extra = ns.Verdicts:Judge(entry)
+        verdict, reason, unit, extra = ns.Verdicts:Judge(entry)
         to = type(extra) == "table" and extra.to or nil
     end
     local label = verdict and ns.Verdicts.LABELS[verdict]
@@ -142,7 +143,12 @@ function VerdictTip:Line(itemID, tooltip)
         left = L.Format("Butler: %s", label)
     end
     local right = (type(unit) == "number" and unit > 0) and L.Format("%s each", ns.Items.FormatMoney(unit)) or nil
-    return left, right
+    -- A mail says why under it (to disenchant, an upgrade, your list), so
+    -- "Mail to NAME" is never read as "NAME can wear it". The words are
+    -- the window's own reason, already in every language.
+    local why = nil
+    if verdict == "mail" and type(reason) == "string" and reason ~= "" then why = reason end
+    return left, right, why
 end
 
 local function Decorates(tooltip)
@@ -172,7 +178,7 @@ function VerdictTip:AddLine(tooltip, data)
     if not itemID then return false end
     local held = false
     local ok = pcall(function()
-        local left, right = self:Line(itemID, tooltip)
+        local left, right, why = self:Line(itemID, tooltip)
         if not left then return end
         -- On Shift and Shift is up: only the hint, asked each build.
         if not ns.TooltipShift:Shows(self.SHIFT_KEY) then
@@ -186,6 +192,7 @@ function VerdictTip:AddLine(tooltip, data)
         else
             tooltip:AddLine(left, r, g, b)
         end
+        if why then tooltip:AddLine(why, 0.7, 0.7, 0.7, true) end
         if not data and tooltip.Show then tooltip:Show() end
     end)
     if not ok then ns.Debug("verdict tooltip failed") end
