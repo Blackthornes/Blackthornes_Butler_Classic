@@ -433,8 +433,9 @@ when it is not). Auction Items (a player asked, the owner said build
 it, 2026-10-22): with "Auction Items:" ticked under WHAT GOES THERE
 (`bankAltAuctions`, off unless ticked), whatever Butler's final word is
 Auction goes to the bank alt too, whatever its kind and in any When;
-Wait, Sell and the rest stay, and a stack worth less than a mail's
-postage (`Funds.POSTAGE`) stays (`BankAlt:Verdict`'s `worth`,
+Wait, Sell and the rest stay, and a stack worth less than its share
+of a mail's postage (`BankAlt.StackPostage`: `Funds.POSTAGE` over the 12
+stacks a mail holds; 2026-11-09, from Forever) stays (`BankAlt:Verdict`'s `worth`,
 `MayTake`). A typed bank alt is also offered in the right-click
 Always mail menu (`Errands:MailNames`: `Characters()` plus the bank alt
 when it isn't one of them or the one playing; `Characters()` itself is
@@ -443,7 +444,13 @@ unchanged, so `IsKnown` still tells a typed name apart). Full Stacks Only
 Only:" ticked under WHAT GOES THERE (`bankAltFullStacks`, off unless
 ticked), `MayTake` lets only full stacks go (`BankAlt:FullStack`: the
 count reaches the item's stack size; an item that doesn't stack, or one
-the client can't size yet, goes), so smaller stacks stay in the bags. With it ticked a full
+the client can't size yet, goes), so smaller stacks stay in the bags. It covers every Always mail item too,
+whoever it goes to (2026-11-07 and 11-11, from Forever): a short stack is
+Keep, "On your Always mail list, waiting for a full stack"
+(`STEPS.mailList`), and so is a mail Butler learned, "You usually mail
+this to NAME, waiting for a full stack" (`STEPS.mailHabit`; both ask
+`Short` in `Logic/Verdicts.lua`). Queued crafts' shares, upgrades and the
+disenchanter still go as they are. With it ticked a full
 and a short stack of one item are judged apart (`Verdicts` keeps each by
 `|full` or `|short`), so a short stack is never mailed along with a full
 one. All account
