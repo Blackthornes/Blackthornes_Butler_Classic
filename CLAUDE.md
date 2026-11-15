@@ -334,6 +334,26 @@ character can break it, else Mail to the enchanter Tradeskills names,
 else Look at it; an upgrade to wear now is Look at it. Tested in
 `tools/test_alwaysdisenchant.lua`.
 
+## Always auction
+
+A player asked for an auction choice, the owner said build it
+(2026-11-12): the right-click menu's "Always Auction" (under Always Sell,
+hidden for a soulbound item not on the list) puts an item on the
+player's Always auction list (`alwaysAuction`, `[itemID] = true`,
+account wide, never rename it; `Verdicts:Choice` "auction"). Rule
+`auctionList`, after the Always sell list ("Always Auction List:" on the
+Order page): Auction, at Tradeskills' auction price when it has one,
+even when a vendor pays more. An upgrade to wear now and a soulbound
+copy are Look at it; another character's queued craft takes its share
+first; a Farmer goal or this character's craft queue keeps it. Posting
+is still done by hand or with Tradeskills; there is no post button yet.
+Tested in `tools/test_alwaysauction.lua`.
+The auction price everywhere is `Verdicts.AuctionPrice`: Tradeskills'
+usual price, or today's cheapest listing by someone else when that is
+higher and the scan is fresh (2026-11-11); a slow seller is weighed at
+less only to choose between the auction house and a vendor. Tested in
+`tools/test_auctionprice.lua`.
+
 ## Craft When It Pays More
 
 A player asked, the owner said build it (2026-10-19, from a mockup, words

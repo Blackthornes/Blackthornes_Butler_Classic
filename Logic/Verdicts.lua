@@ -73,7 +73,7 @@
 --
 -- The Always keep, Always sell and Always bank lists are the player's own
 -- choices, account wide, by item ID: BlackthornesButlerDB.alwaysKeep,
--- .alwaysSell, .alwaysBank and .alwaysDisenchant ([itemID] = true), and
+-- .alwaysSell, .alwaysBank, .alwaysDisenchant and .alwaysAuction ([itemID] = true), and
 -- .alwaysMail ([itemID] = the character's short name). Never rename them.
 --
 -- Sell below (a player asked, the owner agreed 2026-10-11) is
@@ -149,12 +149,13 @@ local function List(name)
     return ns.db[name]
 end
 
---- "keep", "sell", "bank", "disenchant", "mail" or nil: what the player
+--- "keep", "sell", "auction", "bank", "disenchant", "mail" or nil: what the player
 --- said about this item. For "mail", the second return is who it goes to.
 function Verdicts:Choice(itemID)
     if not itemID then return nil end
     if List("alwaysKeep")[itemID] then return "keep" end
     if List("alwaysSell")[itemID] then return "sell" end
+    if List("alwaysAuction")[itemID] then return "auction" end
     if List("alwaysBank")[itemID] then return "bank" end
     if List("alwaysDisenchant")[itemID] then return "disenchant" end
     local to = List("alwaysMail")[itemID]
@@ -174,6 +175,7 @@ function Verdicts:SetChoice(itemID, choice, to)
     if choice == "mail" and not (type(to) == "string" and to ~= "") then return end
     List("alwaysKeep")[itemID] = (choice == "keep") or nil
     List("alwaysSell")[itemID] = (choice == "sell") or nil
+    List("alwaysAuction")[itemID] = (choice == "auction") or nil
     List("alwaysBank")[itemID] = (choice == "bank") or nil
     List("alwaysDisenchant")[itemID] = (choice == "disenchant") or nil
     List("alwaysMail")[itemID] = (choice == "mail") and to or nil
@@ -245,7 +247,7 @@ end
 -- judges exactly as it always has.
 Verdicts.FIRST = { "sets", "quests" }
 Verdicts.DEFAULT_ORDER = {
-    "keepHere", "keepList", "bankList", "mailList", "lists", "buyback", "noValue", "sellList", "disenchantList", "ammo",
+    "keepHere", "keepList", "bankList", "mailList", "lists", "buyback", "noValue", "sellList", "auctionList", "disenchantList", "ammo",
     "upgrades", "altCrafts", "goals", "queue", "altUpgrades", "petFood",
     "bought", "levelEnch", "greensHere", "disenchanter", "mailHabit",
     "sellHabit", "greys", "bankAlt", "sellBelow",
@@ -658,6 +660,41 @@ function STEPS.sellList(self, c)
             unit, unit ~= nil
     end
     return "sell", L["On your Always sell list"], unit, unit ~= nil
+end
+
+-- The player's Always auction list (a player asked, the owner said build
+-- it 2026-11-12): it goes under Auction whatever a vendor pays. It gives way
+-- as Always sell does: to an upgrade to wear now, another character's
+-- queued craft, a Farmer goal and this character's craft queue. Soulbound
+-- can't be listed, so it is Look at it.
+function STEPS.auctionList(self, c)
+    if Choice(c) ~= "auction" then return nil end
+    local entry, unit = c.entry, Unit(c)
+    local eq = Eq(c)
+    if eq and eq.upgrade == "now" then
+        return "look", L["On your Always auction list, but it's an upgrade for you"], unit, unit ~= nil
+    end
+    if entry.bound then
+        return "look", L["On your Always auction list, but it's soulbound"], unit, unit ~= nil
+    end
+    local share = self:AltCraftShare(entry)
+    if share then
+        return "mail", L.Format("Mail %d to %s for their crafts", share.count, share.to),
+            unit, unit ~= nil, share
+    end
+    local goalNeed = Sisters.Number(Sisters:Ask("farmer", entry), "need")
+    if goalNeed and goalNeed > 0 then
+        return "keep", L.Format("On your Always auction list, but your goal needs %d more", goalNeed),
+            unit, unit ~= nil
+    end
+    local ts = Said(c).ts
+    local queued = Sisters.Number(ts, "need")
+    if queued and queued > 0 then
+        return "keep", L.Format("On your Always auction list, but your craft queue needs %d", queued),
+            unit, unit ~= nil
+    end
+    local worth = Verdicts.AuctionPrice(ts) or unit
+    return "auction", L["On your Always auction list"], worth, true
 end
 
 -- The player's Always disenchant list (the owner, 2026-10-17: a green that
@@ -1336,6 +1373,17 @@ function Verdicts:SetDisenchantGreens(on)
     self:Changed(true)
 end
 
+--- One sold at auction, after the cut: Tradeskills' usual price, or
+--- today's cheapest listing by someone else when that is higher and the
+--- scan is fresh (`auctionNow`; a player saw a number well under the AH's
+--- lowest while prices were rising, 2026-11-11). Nil when not priced.
+function Verdicts.AuctionPrice(ts)
+    local usual = Sisters.Number(ts, "auction")
+    local now = Sisters.Number(ts, "auctionNow")
+    if usual and now and now > usual then return now end
+    return usual
+end
+
 --- Does a vendor or the auction house pay more for the item than what
 --- breaking it gives? Asked before Tradeskills' disenchanter (a player asked, the owner said yes, 2026-10-16), so a
 --- green that sells for more is sold instead. The auction house counts as
@@ -1350,7 +1398,7 @@ function Verdicts:SellsForMore(entry, said, unit, times)
     local disenchant = Number(ts, "disenchant")
     if not disenchant then return false end
     local most = unit or 0
-    local auction = not entry.bound and Number(ts, "auction") or nil
+    local auction = not entry.bound and Verdicts.AuctionPrice(ts) or nil
     if auction then
         if ts.fast == false then auction = math.floor(auction * Verdicts.SLOW) end
         most = math.max(most, auction)
@@ -1441,7 +1489,7 @@ function Verdicts:BelowAmount(entry, unit, said)
     local bound = entry.bound == true
     if not below or not ts or (bound and (entry.quality or 0) >= 2) then return nil end
     local Number, String, True = Sisters.Number, Sisters.String, Sisters.True
-    local auction = not bound and Number(ts, "auction") or nil
+    local auction = not bound and Verdicts.AuctionPrice(ts) or nil
     local disenchant = Number(ts, "disenchant")
     local enchanter = not bound and String(ts, "enchanter") or nil
     if enchanter and self:IsMe(enchanter) then enchanter = nil end
@@ -1465,7 +1513,12 @@ function Verdicts:Best(entry, unit, said, noBelow)
     -- is never sold for the player (the plan: it needs a second look).
     local bound = entry.bound == true
 
-    local auction = not bound and Number(ts, "auction") or nil
+    -- `auction` is what one brings after the cut, and what the row shows.
+    -- A slow seller is weighed at less (`auctionWorth`) only to choose
+    -- between the auction house and a vendor (2026-11-11: the lowered
+    -- number used to show as the price).
+    local usual = not bound and Number(ts, "auction") or nil
+    local auction = not bound and Verdicts.AuctionPrice(ts) or nil
     local slow = auction and ts.fast == false
     local auctionWorth = auction and math.floor(auction * (slow and Verdicts.SLOW or 1)) or nil
 
@@ -1502,18 +1555,18 @@ function Verdicts:Best(entry, unit, said, noBelow)
         local cost = Number(ts, "belowCost")
         if cost then
             return "wait", L.Format("Costs about %s to make, more than it sells for now",
-                Items.FormatMoney(cost)), auctionWorth
+                Items.FormatMoney(cost)), auction
         end
         -- Today's price is well under the usual one: hold it back, folded
         -- away under Wait for a better price (the owner asked 2026-10-13).
         local now = Number(ts, "auctionNow")
-        if now and now < auction * Verdicts.LOW_NOW then
+        if now and usual and now < usual * Verdicts.LOW_NOW then
             return "wait", L.Format("Selling for about %s right now, usually about %s",
-                Items.FormatMoney(now), Items.FormatMoney(auction)), auctionWorth
+                Items.FormatMoney(now), Items.FormatMoney(usual)), usual
         end
         local text = slow and L.Format("Auction about %s each, sells slowly", Items.FormatMoney(auction))
             or L.Format("Auction about %s each", Items.FormatMoney(auction))
-        return "auction", text, auctionWorth
+        return "auction", text, auction
     end
 
     -- A vendor pays the most. Sold only when something says so: the auction
@@ -1902,6 +1955,7 @@ ns.RegisterCommand("lists", L["show your Always keep, Always sell, Always bank a
     ns.Print(L["your lists (right-click a row in the Butler window to change them)"])
     PrintList("alwaysKeep", L["Always keep"])
     PrintList("alwaysSell", L["Always sell"])
+    PrintList("alwaysAuction", L["Always auction"])
     PrintList("alwaysBank", L["Always bank"])
     PrintList("alwaysDisenchant", L["Always disenchant"])
     PrintList("alwaysMail", L["Always mail"])

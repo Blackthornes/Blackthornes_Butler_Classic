@@ -81,6 +81,12 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- Always Auction (copied 2026-11-15): `a47ae72` (the real auction
+  price, and today's cheapest when it is higher, `Verdicts.AuctionPrice`;
+  Classic's `SellsForMore` keeps its three arguments), `a1c2b6b` and
+  `1b2346b` (the right-click menu's "Always Auction", `alwaysAuction`,
+  nothing changes until an item is put on it). Classic's "Don't Suggest
+  This Craft" row stays in the menu and its row count.
 - `670e463` Windows remember where they were dragged, and Window Spots: Set
   Default (copied 2026-11-15). `UI/SharedWindow.lua` (FILE_VERSION 9),
   `UI/WhatsNew.lua` (FILE_VERSION 7) and `tools/test_sharedwindow.lua` are
