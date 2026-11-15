@@ -95,9 +95,10 @@ local silk = Find("Silk Cloth")
 suite.check("auction beats vendor", silk.verdict == "auction" and silk.worth == 90 * 20)
 
 local linen = Find("Linen Cloth")
--- 20 marked down for a slow sale is 15, still over the vendor's 13.
-suite.check("a slow sale is marked down but can still win", linen.verdict == "auction"
-    and linen.unit == 15 and linen.reason:find("slowly", 1, true))
+-- 20 weighed down for a slow sale is 15, still over the vendor's 13, so it
+-- goes to auction and shows its real 20 (2026-11-11).
+suite.check("a slow sale is weighed down but can still win", linen.verdict == "auction"
+    and linen.unit == 20 and linen.reason:find("slowly", 1, true), linen.unit)
 
 local gauntlets = Find("Brutal Gauntlets")
 suite.check("soulbound gear is disenchanted when that pays most", gauntlets.verdict == "disenchant")
@@ -127,6 +128,23 @@ local bound = Find("Brutal Gauntlets")
 suite.check("soulbound green is never sold for the player", bound.verdict == "look"
     and bound.reason:find("Not an upgrade", 1, true))
 suite.check("white gear Equipment has no use for is sold", Find("Patched Cloak").verdict == "sell")
+
+-- Soulbound green this class can never wear, with nothing left to weigh: Sell.
+local soul = { quality = 2, bound = true }
+local v, why = Verdicts:Best(soul, 150, { ts = { disenchant = 40, canDisenchant = true },
+    equipment = { never = true, sell = false } })
+suite.check("never wearable, disenchant known and lower: sell", v == "sell"
+    and why:find("can't use", 1, true) and why:find("disenchanting", 1, true), why)
+v, why = Verdicts:Best(soul, 150, { ts = { canDisenchant = false }, equipment = { never = true, sell = true } })
+suite.check("never wearable, can't disenchant: sell", v == "sell" and why:find("can't use", 1, true), why)
+v = Verdicts:Best(soul, 150, { ts = { canDisenchant = true }, equipment = { never = true } })
+suite.check("disenchant value not known yet: still look", v == "look")
+v = Verdicts:Best(soul, 150, { equipment = { never = true } })
+suite.check("without Tradeskills: still look", v == "look")
+v = Verdicts:Best(soul, 150, { ts = { canDisenchant = false }, equipment = { sell = true } })
+suite.check("wearable but no upgrade: still look", v == "look")
+v = Verdicts:Best(soul, 150, { ts = { disenchant = 400, canDisenchant = true }, equipment = { never = true } })
+suite.check("disenchant pays more: still disenchant", v == "disenchant")
 
 -- Asked once per item per look, not once per redraw.
 local before = asked.ts

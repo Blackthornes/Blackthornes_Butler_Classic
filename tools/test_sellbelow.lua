@@ -10,7 +10,7 @@ local ns = env.Load()
 env.FakeBags({
     { bag = 0, slot = 1, id = 501, name = "Small Flame Sac", quality = 1, price = 30 },
     { bag = 0, slot = 2, id = 502, name = "Silk Cloth", quality = 1, price = 40, count = 20 },
-    { bag = 0, slot = 3, id = 503, name = "Gnoll Paw", quality = 1, price = 5, quest = "item" },
+    { bag = 0, slot = 3, id = 503, name = "Gnoll Paw", quality = 1, price = 5, quest = "item", bind = 4 },
     { bag = 0, slot = 4, id = 504, name = "Copper Ore", quality = 1, price = 5 },
     { bag = 0, slot = 5, id = 505, name = "Worn Gloves", quality = 2, price = 20, bound = true },
     { bag = 0, slot = 6, id = 506, name = "Ragged Shirt", quality = 1, price = 10 },
