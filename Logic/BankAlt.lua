@@ -42,7 +42,10 @@
 -- character sells everything at the auction house. Ticked, whatever
 -- Butler's final word is Auction goes to the bank alt, whatever its kind,
 -- in any When. Wait for a better price, Sell and the rest stay. A stack
--- worth less than a mail's postage stays too.
+-- worth less than its share of a mail's postage stays too: postage is paid
+-- once a mail and a mail holds 12 stacks, so the share is about 3c
+-- (BankAlt.StackPostage; the owner picked it, 2026-11-09, after a player's
+-- cheap stacks all stayed under Auction).
 
 local _, ns = ...
 local L = ns.L
@@ -307,6 +310,16 @@ function BankAlt:Takes(entry)
     return nil
 end
 
+--- One stack's share of a mail's postage: a mail costs the same however
+--- many stacks it carries, up to the game's attachment limit.
+function BankAlt.StackPostage()
+    local postage = ns.Funds and ns.Funds.POSTAGE or 30
+    local stacks = (ns.Errands and tonumber(ns.Errands.ATTACHMENTS))
+        or tonumber(rawget(_G, "ATTACHMENTS_MAX_SEND")) or 12
+    if stacks < 1 then stacks = 1 end
+    return math.ceil(postage / stacks)
+end
+
 --- What Butler would do with the item (`verdict` from Verdicts:Best),
 --- turned into Mail to the bank alt when the player's pick takes it over.
 --- `worth` is one's worth, for Auction Items' postage check.
@@ -320,9 +333,8 @@ function BankAlt:Verdict(entry, verdict, worth)
     end
     if verdict == "auction" and self:AuctionsOn() then
         local name = self:MayTake(entry)
-        local postage = ns.Funds and ns.Funds.POSTAGE or 30
         local stack = (tonumber(worth) or 0) * (tonumber(entry.count) or 1)
-        if name and stack >= postage then
+        if name and stack >= BankAlt.StackPostage() then
             return "mail", L.Format("To auction, for your bank alt %s", name), { to = name, bankAlt = true }
         end
     end

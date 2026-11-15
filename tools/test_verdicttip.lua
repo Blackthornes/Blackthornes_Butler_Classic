@@ -9,6 +9,7 @@
 --   3. An item not carried gets nothing; neither does the compare tooltip.
 --   4. The hovered bag slot is read even when Butler's own read is stale.
 --   5. Settings and /bbutler tooltip turn it off and on.
+--   6. A mail says why under the line.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("verdicttip")
@@ -73,6 +74,19 @@ suite.check("the compare tooltip gets nothing", #compare._lines == 0)
 fake.bags[0][1] = nil
 suite.check("an emptied slot gets nothing", #Hover(GameTooltip, 701, button) == 0)
 fake.Put({ bag = 0, slot = 1, id = 701, name = "Broken Fang", quality = 0, price = 125 })
+
+-- 6. A mail says why under it, so "Mail to NAME" is never read as "NAME
+-- can wear it" (a player read an enchanter's mail as an upgrade).
+fake.Put({ bag = 0, slot = 2, id = 702, name = "Heavy Mace", quality = 2, price = 900 })
+ns.db.alwaysMail = { [702] = "Bob Stone" }
+ns.Verdicts:Changed(true)
+local mailButton = env.Stub({ GetBagID = function() return 0 end, GetID = function() return 2 end })
+lines = Hover(GameTooltip, 702, mailButton)
+local mailLine, whyLine = lines[#lines - 1] or "", lines[#lines] or ""
+suite.check("a mail names who it goes to", mailLine:find("^Butler: Mail to Bob Stone") ~= nil, mailLine)
+suite.check("and says why under it", whyLine ~= "" and not whyLine:find("^Butler:"), whyLine)
+lines = Hover(GameTooltip, 701, button)
+suite.check("a sale has no reason line", #lines == 1, #lines)
 
 -- 5.
 ns.HandleSlash("tooltip")
