@@ -23,6 +23,22 @@ tell a friend: no hype, no questions to the reader, no exclamation marks
 outside the thanks line, no dashes as punctuation, no "now you can". The
 tool prints a note for a shipped line that reads like an advert.
 
+## 0.9.0
+
+- Always Auction puts an item on the auction list from the right-click menu.
+- A name picker sits beside the mail To box.
+- Hovering a letter in your inbox shows what is inside.
+- Jobs warns you when mail is about to run out.
+- Mail Rules send items to any player you pick, and each bank alt kind can go to its own character.
+- Waiting items say why they wait, with a Sell Anyway button.
+- The Bags window can group by bag, and its Bank tab remembers your bank.
+- Clear Items on the jobs menu forgets an alt's saved items.
+- Mute All Sounds quiets every Blackthornes sound at once.
+- Windows remember where you drag them.
+
+Fixes and changes:
+- Various bug fixes.
+
 ## 0.8.0
 
 - Keep Across Characters lets you keep a set number of an item across all your characters.
