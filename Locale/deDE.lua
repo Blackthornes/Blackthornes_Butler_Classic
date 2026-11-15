@@ -1294,7 +1294,6 @@ L["That's the character you're playing."] = "Das ist der Charakter, den du spiel
 L["This isn't one of your characters."] = "Das ist keiner deiner Charaktere."
 L["Type an item's name or ID."] = "Gib den Namen oder die ID eines Gegenstands ein."
 L["Your List"] = "Deine Liste"
-L["YOUR CHARACTERS"] = "DEINE CHARAKTERE"
 L["Type the character's name."] = "Gib den Namen des Charakters ein."
 
 -- Mail running out

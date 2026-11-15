@@ -1293,7 +1293,6 @@ L["That's the character you're playing."] = "这是你正在玩的角色。"
 L["This isn't one of your characters."] = "这不是你的角色。"
 L["Type an item's name or ID."] = "输入物品的名称或 ID。"
 L["Your List"] = "你的清单"
-L["YOUR CHARACTERS"] = "你的角色"
 L["Type the character's name."] = "输入角色的名字。"
 
 -- Mail running out
