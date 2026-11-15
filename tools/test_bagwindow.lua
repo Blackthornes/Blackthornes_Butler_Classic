@@ -9,6 +9,8 @@
 --   4. What To Do groups by Butler's verdicts; Item Type by kind; One Grid
 --      is every slot in bag order, empty ones too, with each bag that
 --      takes only some things on rows of its own.
+--   4b. By Bag gives each carried bag its own section, in bag bar order,
+--      its slots in order with empty ones, its name and free slots.
 --   5. Search and the chips dim what does not match.
 --   6. Settings and /bbutler bags set the same saved values.
 --   7. Turned off, the veil comes off and the window goes.
@@ -174,6 +176,29 @@ do
     suite.check("the mining bag's empty slot sits on its own row", extra and #extra.places == 1
         and extra.places[1].bag == 1 and extra.label == nil)
     ns.FreeSpace.Read, ns.BagView.AllSlots = read, slots
+end
+
+-- 4b. By Bag (the owner, 2026-11-08): each bag on its own.
+do
+    local slots = ns.BagView.AllSlots
+    ns.BagView.AllSlots = function()
+        return { { bag = 0, slot = 1, entry = { itemID = 801 } }, { bag = 0, slot = 2 },
+            { bag = 1, slot = 1 }, { bag = 1, slot = 2, entry = { itemID = 2901 } }, { bag = 1, slot = 3 } }
+    end
+    local bags = BagView:Sections("bag")
+    suite.check("By Bag makes a section a bag", #bags == 2 and bags[1].bag == 0 and bags[2].bag == 1)
+    suite.check("each bag has a name heading", type(bags[1].label) == "string" and bags[1].label ~= "")
+    suite.check("the backpack has its icon", bags[1].icon ~= nil)
+    suite.check("slots stay in the game's order, empty ones too", #bags[2].places == 3
+        and bags[2].places[1].entry == nil and bags[2].places[2].entry.itemID == 2901)
+    suite.check("free slots are counted per bag", bags[1].free == 1 and bags[2].free == 2)
+    suite.check("no EMPTY SLOTS group under By Bag", bags[#bags].key ~= "empty")
+    ns.BagView.AllSlots = slots
+    suite.check("By Bag is the fourth choice", BagView.GROUPS[4] == "bag" and BagView.GROUP_WORDS.bag == "By Bag")
+    local before = ns.db.bagGroupBy
+    BagView:SetGroupBy("bag")
+    suite.check("By Bag is saved", ns.db.bagGroupBy == "bag" and BagView:GroupBy() == "bag")
+    ns.db.bagGroupBy = before
 end
 
 -- 5. Search.

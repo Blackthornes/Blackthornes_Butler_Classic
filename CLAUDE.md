@@ -1587,7 +1587,11 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   WEAPONS, TRADE GOODS, FOOD AND DRINK, OTHER, greys under Sell) or One
   Grid (every slot in bag order, empty ones too; a bag that takes only
   some things, such as a mining bag, on rows of its own,
-  `BagView.GridSections`, so what Sort puts there is not mid-grid). Search by name or ID and
+  `BagView.GridSections`, so what Sort puts there is not mid-grid), or By Bag
+  (a player asked, the owner said build it from a mockup, 2026-11-08:
+  `bagGroupBy` "bag", `BagView.BagSections`, one section a bag in bag bar
+  order, its icon, name and "N free" on the heading, the game's bag tooltip
+  on its hover, every slot in order, empty ones too). Search by name or ID and
   the Upgrades, To Sell, For My Crafts and For My Goals chips dim what does
   not match. Marks come from `Verdicts` and the sisters' answers
   (`BagView:Marks`, kept per `Verdicts.version`); the gold coin is for
@@ -1610,8 +1614,14 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   move that never settles stops it; nothing is dropped or deleted. Tested in
   `tools/test_bagsort.lua`.
 - **Bank** and **Everyone** tabs are view only: the bank read live at a
-  banker, else as Tradeskills last saw it; Everyone is All characters'
-  list (needs Tradeskills).
+  banker, else the newer of Butler's own copy and Tradeskills' saved one;
+  Everyone is All characters' list (needs Tradeskills). Butler's copy (a
+  player's report, 2026-11-10: the tab forgot the bank once they left) is
+  kept by GUID in `bankCopies[guid] = { at, items = { [itemID] = count } }`
+  (account wide, never rename it), written at the bank's open, after
+  `PLAYERBANKSLOTS_CHANGED` and as it closes (`BagView:NoteBank`,
+  `KeepBank`), never from a read that saw no bank slots. Tested in
+  `tools/test_bankcopy.lua`.
 - While it is on, the trash can and its red glow go on this window's
   squares instead of the game's veiled ones (`Trash.BUTLER_BAGS`,
   `BagWindow:ButtonFor`, only on Your bags, 2026-10-20: the window had
@@ -1627,6 +1637,16 @@ Bags:" under BAGS on the General page, and `/bbutler bags [on|off]`
   rename it. The foot's "N free" is bigger and turns amber
   and red as Free bag space does (`BagWindow.FREE_SIZE_UP`,
   `FreeSpace.Level`).
+
+- **Alt + right-click** (a player asked, the owner said build it from a
+  mockup, 2026-11-12): on a square on the Bags tab it opens Butler's item
+  menu, the one a row's right-click opens in the Butler window
+  (`BagWindow:AltClick`, a HookScript on OnClick, so the game's own click
+  runs as before; `BagWindow.MenuData` finds the row, else makes one from
+  the slot). Not in a fight. A small dim line at the foot says how, Bags
+  tab only (`BagWindow:PlaceHint`: beside the gold when it fits, else on
+  its own line under it). No tooltip line and no drag and drop (the
+  owner). Tested in `tools/test_bagaltmenu.lua`.
 
 Saved, account wide, never rename them: `bagWindow` (off unless ticked),
 `bagGroupBy`, `bagItemSize`, `bagItemLevel`, `bagNewGlow`, `bagEmptySlots` (unread), `bagScale`,
