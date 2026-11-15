@@ -125,30 +125,74 @@ function VerdictTip:Line(itemID, tooltip)
     local entry = itemID and self:Entry(itemID, tooltip)
     if not entry then return nil end
     ns.Verdicts:ForgetIfOld()
-    local verdict, unit, to, reason
+    local verdict, unit, to, craft, reason
     local row = KeptRow(entry)
     if row then
-        verdict, unit, to, reason = row.verdict, row.unit, row.mailTo, row.reason
+        verdict, unit, to, craft, reason = row.verdict, row.unit, row.mailTo, row.craft, row.reason
     else
         local extra
         verdict, reason, unit, extra = ns.Verdicts:Judge(entry)
         to = type(extra) == "table" and extra.to or nil
+        craft = type(extra) == "table" and extra.craft or nil
     end
     local label = verdict and ns.Verdicts.LABELS[verdict]
     if not label then return nil end
     local left
+    local details = verdict == "craft" and type(craft) == "table" and type(craft.name) == "string"
+        and self:DetailsOn()
     if verdict == "mail" and type(to) == "string" and to ~= "" then
         left = L.Format("Butler: Mail to %s", to)
+    elseif details then
+        left = L.Format("Butler: Craft %s", craft.name)
     else
         left = L.Format("Butler: %s", label)
     end
     local right = (type(unit) == "number" and unit > 0) and L.Format("%s each", ns.Items.FormatMoney(unit)) or nil
+    -- Craft Details: the product and materials go under it.
     -- A mail says why under it (to disenchant, an upgrade, your list), so
-    -- "Mail to NAME" is never read as "NAME can wear it". The words are
-    -- the window's own reason, already in every language.
+    -- "Mail to NAME" is never read as "NAME can wear it".
     local why = nil
     if verdict == "mail" and type(reason) == "string" and reason ~= "" then why = reason end
+    if not why and details then why = VerdictTip.CraftWhy(craft) end
     return left, right, why
+end
+
+--- Whether "Craft Details:" is ticked: off unless the player ticks it
+--- (the owner said build it as an optional thing, 2026-11-14).
+function VerdictTip:DetailsOn()
+    return ns.db ~= nil and ns.db.craftDetails == true
+end
+
+function VerdictTip:SetDetails(on)
+    if not ns.db then return end
+    ns.db.craftDetails = on and true or false
+end
+
+--- The grey line under "Butler: Craft NAME": "With Tin Bar." for the other
+--- materials carried, "Needs 4 Tin Bar." for what is missing, then what it
+--- earns. Only from what Tradeskills already said; nothing is read again.
+function VerdictTip.CraftWhy(craft)
+    if type(craft) ~= "table" then return nil end
+    local parts, missing = {}, {}
+    local needs = type(craft.needs) == "table" and craft.needs or {}
+    for _, need in ipairs(needs) do missing[need.itemID] = true end
+    local with = {}
+    for _, other in ipairs(type(craft.others) == "table" and craft.others or {}) do
+        if other.itemID and not missing[other.itemID] then
+            with[#with + 1] = ns.Verdicts.NeedName(other.itemID)
+        end
+    end
+    if #with > 0 then parts[#parts + 1] = L.Format("With %s.", table.concat(with, ", ")) end
+    local short = {}
+    for _, need in ipairs(needs) do
+        short[#short + 1] = ("%d %s"):format(need.count, ns.Verdicts.NeedName(need.itemID))
+    end
+    if #short > 0 then parts[#parts + 1] = L.Format("Needs %s.", table.concat(short, ", ")) end
+    if type(craft.gain) == "number" and craft.gain > 0 then
+        parts[#parts + 1] = L.Format("About %s more than selling it.", ns.Items.FormatMoney(craft.gain))
+    end
+    if #parts == 0 then return nil end
+    return table.concat(parts, " ")
 end
 
 local function Decorates(tooltip)
@@ -251,3 +295,13 @@ ns.RegisterCommand("tooltip", L["show or hide Butler's advice on the tooltips of
     ns.Print(VerdictTip:Enabled() and L["item tooltips show what Butler would do with them."]
         or L["item tooltips no longer show what Butler would do with them."])
 end)
+
+-- Craft Details: typed only, so it stays out of the help line.
+ns.commands.craftdetails = { fn = function(arg)
+    arg = (arg or ""):lower():match("^%s*(.-)%s*$")
+    local on
+    if arg == "on" then on = true elseif arg == "off" then on = false
+    else on = not VerdictTip:DetailsOn() end
+    VerdictTip:SetDetails(on)
+    ns.Print(L["Craft Details:"] .. " " .. (on and L["On"] or L["Off"]))
+end }

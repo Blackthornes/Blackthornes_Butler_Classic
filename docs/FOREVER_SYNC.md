@@ -81,6 +81,12 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- Why it waits, Sell Anyway, Craft Details and the auction price (copied
+  2026-11-15): `a47ae72` (also on the Always Auction branch), `611e126`,
+  `851e00f`, `40fa73a`. Classic keeps its marks and coin columns on the
+  rows (`UI.SetMoney`) and its "Don't Suggest This Craft" row. The
+  tooltip's grey line under the verdict is only for Craft Details; the
+  Forever line that says why under a Mail verdict is not brought over.
 - Mail to anyone and Mail Rules (copied 2026-11-15): `6b54eb1`, `f43deae`,
   `9acaf07`, `bedb895`, `be6f9c3`, `983b0e7`, cherry-picked in that order.
   Era names are one word, so `MailRules:TypeName` and

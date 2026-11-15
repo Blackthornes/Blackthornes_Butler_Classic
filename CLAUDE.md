@@ -299,6 +299,19 @@ a loss" is off there; a player saw Butler say Auction for a craft
 Tradeskills called a loss, 2026-10-13). A better way (disenchant) still
 wins. Tested in `tools/test_waitprice.lua`. Not yet seen in game.
 
+Why it waits and Sell Anyway (the owner said build it from a mockup,
+2026-11-14): the wait verdict's extra carries `wait = { short, cost, now,
+usual, auction }`. The row shows `short` ("Costs more to make" or
+"Usually X, now Y") in amber with a Sell Anyway button, its hover lists
+Costs to Make:, Sells for Now: and Usual Price: (`UI.WaitLines`), and
+Sell Anyway leads the right-click menu. `Verdicts:SellAnyway(itemID)` moves
+it to Auction until `AUCTION_HOUSE_CLOSED` (`Verdicts.sellAnyway`, memory
+only, `SoldAnyway`, `ClearSellAnyway`). Tradeskills' auction house drawer
+reads, in a pcall, read only, `_G.BlackthornesButler.Verdicts:Waiting(itemID,
+bag, slot)` (`{ short, reason, cost, now, usual }` or nil) and calls
+`SellAnyway` and `SoldAnyway`; keep them stable, or change Tradeskills'
+`UI/PostPanel.lua` too.
+
 ## Levelling Enchanting with your own greens
 
 The owner asked (2026-10-13): a green that isn't crafted and breaks into a
@@ -389,6 +402,18 @@ Off:" with Show Again on the Selling page clears them. `CraftFor` gets the
 list as a third argument so Tradeskills passes over those recipes and
 offers the next best; Butler still drops a skipped answer from an older
 Tradeskills. Tested in `tools/test_craftpays.lua`.
+
+Craft Details (Trent said build it from a mockup, 2026-11-14): with
+"Craft Details:" ticked under TOOLTIPS on the General page
+(`craftDetails`, account wide, off unless ticked, never rename it;
+`/bbutler craftdetails [on|off]`, typed only), Butler's tooltip line for a
+Craft row reads "Butler: Craft PRODUCT" and a grey line under it says
+"With NAME." (the craft's other materials carried, from Tradeskills'
+`others`), "Needs N NAME." (its `needs`) and "About X more than selling
+it." (`VerdictTip.CraftWhy`). Direct crafts only. `CraftFor` gives
+`others = { { itemID, count } }` since that day; without it the "With"
+part is left out. Tested in `tools/test_craftdetails.lua`. Not yet seen
+in game.
 
 ## Disenchant greens here
 
