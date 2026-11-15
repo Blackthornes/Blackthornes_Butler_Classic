@@ -243,6 +243,19 @@ each kept; soulbound copies are kept first. Tradeskills' Sell list holds
 the same number (its `SisterKeeps`). Tested in
 `tools/test_upgradecopies.lua`.
 
+## Quest items that trade
+
+A player's report (2026-11-10, the owner said build it): a quest item that
+can go on the auction house was kept as "Quest item" and never followed
+Always mail or Auction. Now `STEPS.quests` keeps a quest item only while an
+open quest needs it (`Quests:Reason`), it is bound (`entry.bound`), or it
+binds on pickup or as a quest item (`Verdicts.QuestItemTrades`, bind type
+1 or 4; nil until the client loads it, which keeps it). Anything else
+falls through to the usual rules: the lists, the bank alt, mail, auction,
+sell or Look at it. An item that starts a quest is always kept. The trash
+can, Swap When Full and selling still guard quest items as before. Tested
+in `tools/test_tradequestitems.lua`.
+
 ## Always sell and upgrades
 
 The owner asked (2026-10-13) that an item on the Always sell list that is
@@ -258,6 +271,18 @@ Tradeskills' `mailTo`/`mailCount`), from the Always sell list, a learned
 keep and an item no vendor buys alike (a player's alchemist was never sent
 its materials, 2026-10-14); soulbound and the character playing never.
 Tested in `tools/test_altcraftfirst.lua`.
+
+## Soulbound gear your class can never wear
+
+A player asked (2026-11-10, the owner said build it): soulbound green or
+better gear went to Look at it even when nothing was left to weigh. Now
+`Verdicts:Best` says Sell when Equipment's Advise says `never` (this class
+can never wear it; never for mail or plate learned later, Best Armor Only
+or a hidden untrained weapon), Tradeskills answered, a vendor pays for it,
+and the disenchant value is known and lower (else Disenchant wins) or this
+character can't disenchant. With Tradeskills missing or the disenchant
+value not known yet, it stays Look at it. Selling is still the Sell button.
+Tested in `tools/test_sisters.lua`.
 
 ## Wait for a better price
 
@@ -288,7 +313,12 @@ pays. Only while this character can break it, only greens. Once the
 greens picked so far should give `short` (`yield` each), `Verdicts:Groups`
 judges the rest again without it (`Judge(entry, true)`), so it stops at
 enough. It wins even when the auction house pays more (the owner,
-2026-10-17: a skill point beats a better sale). The player still clicks
+2026-10-17: a skill point beats a better sale), but only up to twice as
+much (the owner, 2026-11-10, a player's green worth 20s at a vendor was
+broken for 4s of essence): when a vendor or the auction house pays more
+than `Verdicts.SKILL_LOSS` (2) times the disenchant value
+(`SellsForMore(entry, said, unit, times)`, asked in `STEPS.levelEnch`),
+the green goes on to its best price. "Always Disenchant" lifts the limit. The player still clicks
 Disenchant. Tested in `tools/test_levelenchanting.lua`.
 
 ## Always disenchant
@@ -375,7 +405,7 @@ that one; with that unticked too, nothing changes. Since 2026-10-16 (a player as
 a vendor or the auction house would (`Verdicts:SellsForMore`, the auction
 counted as `Best` counts it), unless "Always Disenchant" on the Selling page
 is ticked (`disenchantAnyPrice`, account wide, off unless ticked, never
-rename it). Levelling Enchanting no longer waits on it (2026-10-17). Disenchant greens here still takes every green. Tested in `tools/test_disenchantermail.lua`.
+rename it). Levelling Enchanting no longer waits on it (2026-10-17) unless a sale pays more than twice as much (2026-11-10). Disenchant greens here still takes every green. Tested in `tools/test_disenchantermail.lua`.
 
 ## The bank alt
 
@@ -403,8 +433,9 @@ when it is not). Auction Items (a player asked, the owner said build
 it, 2026-10-22): with "Auction Items:" ticked under WHAT GOES THERE
 (`bankAltAuctions`, off unless ticked), whatever Butler's final word is
 Auction goes to the bank alt too, whatever its kind and in any When;
-Wait, Sell and the rest stay, and a stack worth less than a mail's
-postage (`Funds.POSTAGE`) stays (`BankAlt:Verdict`'s `worth`,
+Wait, Sell and the rest stay, and a stack worth less than its share
+of a mail's postage (`BankAlt.StackPostage`: `Funds.POSTAGE` over the 12
+stacks a mail holds; 2026-11-09, from Forever) stays (`BankAlt:Verdict`'s `worth`,
 `MayTake`). A typed bank alt is also offered in the right-click
 Always mail menu (`Errands:MailNames`: `Characters()` plus the bank alt
 when it isn't one of them or the one playing; `Characters()` itself is
@@ -413,7 +444,13 @@ unchanged, so `IsKnown` still tells a typed name apart). Full Stacks Only
 Only:" ticked under WHAT GOES THERE (`bankAltFullStacks`, off unless
 ticked), `MayTake` lets only full stacks go (`BankAlt:FullStack`: the
 count reaches the item's stack size; an item that doesn't stack, or one
-the client can't size yet, goes), so smaller stacks stay in the bags. With it ticked a full
+the client can't size yet, goes), so smaller stacks stay in the bags. It covers every Always mail item too,
+whoever it goes to (2026-11-07 and 11-11, from Forever): a short stack is
+Keep, "On your Always mail list, waiting for a full stack"
+(`STEPS.mailList`), and so is a mail Butler learned, "You usually mail
+this to NAME, waiting for a full stack" (`STEPS.mailHabit`; both ask
+`Short` in `Logic/Verdicts.lua`). Queued crafts' shares, upgrades and the
+disenchanter still go as they are. With it ticked a full
 and a short stack of one item are judged apart (`Verdicts` keeps each by
 `|full` or `|short`), so a short stack is never mailed along with a full
 one. All account
@@ -924,6 +961,15 @@ or when a higher rank of the same name is known (the data skips a rank now
 and then; a player was told to train spells known a long time,
 2026-10-19). A trainer line in another language matches by name and the
 rank's number.
+Starter trainers stop early (a level 8 warlock was sent to Northshire's,
+which teaches nothing past 6, 2026-11-14): a trainer's window keeps
+`teaches`, the highest level it lists, and `CT:Nearest` passes by one
+that can't teach the highest level ready (`CT:NeedLevel`); an old record
+without it in a starting valley (`CT.STARTER_AREAS`) counts as teaching
+to `STARTER_TEACHES` (6). With none far enough, Show the way says the
+ones seen teach only up to level N. A trainer that stops early no longer
+marks later spells as taught by no trainer. Tested in
+`tools/test_classtraining.lua`.
 Skipping a spell (a player asked, the owner said build it,
 2026-10-22): right-click a spell in Equipment's Training drawer to skip
 it, and again to bring it back. Kept account wide in
@@ -1358,6 +1404,9 @@ Bank and Look at it never. The popup then says "Your bags are full. You
 need this for a quest." and the row "Quest item"
 (`tools/test_swapquest.lua`). Tested in
 `tools/test_swapwhenfull.lua`. Not yet seen in game.
+No swap is offered while two short stacks of one item fit in one slot
+(`Trash:Merge`, the same check the trash can makes first): stacking them
+makes room without destroying anything (2026-11-07, from Forever).
 
 ## The Bags window
 

@@ -9,12 +9,12 @@ local ns = env.Load()
 local fake = env.FakeBags({
     { bag = 0, slot = 1, id = 101, name = "Broken Fang", quality = 0, price = 12, count = 3 },
     { bag = 0, slot = 2, id = 102, name = "Linen Cloth", quality = 1, price = 13, count = 20 },
-    { bag = 0, slot = 3, id = 103, name = "Gnoll Paw", quality = 1, price = 0, quest = "item" },
+    { bag = 0, slot = 3, id = 103, name = "Gnoll Paw", quality = 1, price = 0, quest = "item", bind = 4 },
     { bag = 0, slot = 4, id = 104, name = "Torn Note", quality = 1, price = 0, quest = "starts" },
     { bag = 0, slot = 5, id = 105, name = "Hearthstone", quality = 1, price = 0, noValue = true },
     { bag = 0, slot = 6, id = 106, name = "Cracked Jar", quality = 0, price = nil },
     { bag = 0, slot = 7, id = 101, name = "Broken Fang", quality = 0, price = 12, count = 2 },
-    { bag = 0, slot = 8, id = 108, name = "Old Pole", quality = 1, price = 5, class = 12 },
+    { bag = 0, slot = 8, id = 108, name = "Old Pole", quality = 1, price = 5, class = 12, bind = 1 },
 })
 env.Enable(ns)
 

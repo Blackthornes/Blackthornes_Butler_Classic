@@ -128,6 +128,23 @@ suite.check("soulbound green is never sold for the player", bound.verdict == "lo
     and bound.reason:find("Not an upgrade", 1, true))
 suite.check("white gear Equipment has no use for is sold", Find("Patched Cloak").verdict == "sell")
 
+-- Soulbound green this class can never wear, with nothing left to weigh: Sell.
+local soul = { quality = 2, bound = true }
+local v, why = Verdicts:Best(soul, 150, { ts = { disenchant = 40, canDisenchant = true },
+    equipment = { never = true, sell = false } })
+suite.check("never wearable, disenchant known and lower: sell", v == "sell"
+    and why:find("can't use", 1, true) and why:find("disenchanting", 1, true), why)
+v, why = Verdicts:Best(soul, 150, { ts = { canDisenchant = false }, equipment = { never = true, sell = true } })
+suite.check("never wearable, can't disenchant: sell", v == "sell" and why:find("can't use", 1, true), why)
+v = Verdicts:Best(soul, 150, { ts = { canDisenchant = true }, equipment = { never = true } })
+suite.check("disenchant value not known yet: still look", v == "look")
+v = Verdicts:Best(soul, 150, { equipment = { never = true } })
+suite.check("without Tradeskills: still look", v == "look")
+v = Verdicts:Best(soul, 150, { ts = { canDisenchant = false }, equipment = { sell = true } })
+suite.check("wearable but no upgrade: still look", v == "look")
+v = Verdicts:Best(soul, 150, { ts = { disenchant = 400, canDisenchant = true }, equipment = { never = true } })
+suite.check("disenchant pays more: still disenchant", v == "disenchant")
+
 -- Asked once per item per look, not once per redraw.
 local before = asked.ts
 Verdicts:Groups()
