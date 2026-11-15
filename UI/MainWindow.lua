@@ -662,6 +662,11 @@ function UI.UpdateJobRow(row, data)
     row.reason:SetText(detail)
     if step.kind == "craft" and not step.ready then row.reason:SetTextColor(Theme.Unpack("accent")) end
     row.worth:SetText("")
+    -- Mail here running out (Logic/MailRunsOut.lua): orange on the right.
+    if step.kind == "pickup" and ns.MailRunsOut then
+        local soon = ns.MailRunsOut.HereText(ns.MailRunsOut:Here())
+        if soon then row.worth:SetText(ns.MailRunsOut.Orange(soon)) end
+    end
     -- At a vendor, Buy from a vendor says what this one has, with Buy.
     local atVendor = ns.Jobs.VendorText(step)
     if atVendor then
@@ -742,6 +747,11 @@ function UI.UpdateNextRow(row, data)
     row.name:SetText(data.isFirst and L.Format("First: %s", job.name)
         or data.isNext and L.Format("Next: %s", job.name) or L.Format("Then: %s", job.name))
     row.reason:SetText(ns.Jobs.Summary(job))
+    -- Their mail runs out (Logic/MailRunsOut.lua): that, in orange.
+    local first = job.steps[1]
+    if first and first.kind == "expiring" then
+        row.reason:SetText(ns.MailRunsOut.Orange(ns.MailRunsOut.ShortText(first.mail)))
+    end
     row.worth:SetText("")
 end
 
@@ -1167,12 +1177,31 @@ function UI:Enter(row, data)
     if data.type == "jobnext" then
         local job = data.job
         GameTooltip:AddLine(job.name, Theme.Unpack("accent"))
-        for _, step in ipairs(job.steps) do
-            local line = ns.Jobs.Short(step)
-            GameTooltip:AddLine(line:sub(1, 1):upper() .. line:sub(2), 1, 1, 1, true)
+        local first = job.steps[1]
+        if first and first.kind == "expiring" then
+            for _, line in ipairs(ns.MailRunsOut.TipLines(first.mail)) do
+                if line[2] == "orange" then
+                    GameTooltip:AddLine(line[1], 1, 0.6, 0.24, true)
+                elseif line[2] == "muted" then
+                    GameTooltip:AddLine(line[1], Theme.Unpack("muted"))
+                else
+                    GameTooltip:AddLine(line[1], 1, 1, 1, true)
+                end
+            end
         end
-        GameTooltip:AddLine(data.isNext and L["Click Log out to switch to them."]
-            or L["Do the steps above first."], Theme.Unpack("muted"))
+        local others = 0
+        for _, step in ipairs(job.steps) do
+            if step.kind ~= "expiring" then
+                others = others + 1
+                local line = ns.Jobs.Short(step)
+                GameTooltip:AddLine(line:sub(1, 1):upper() .. line:sub(2), 1, 1, 1, true)
+            end
+        end
+        -- The mail hover is the mockup's alone when that is all they have.
+        if others > 0 or not (first and first.kind == "expiring") then
+            GameTooltip:AddLine(data.isNext and L["Click Log out to switch to them."]
+                or L["Do the steps above first."], Theme.Unpack("muted"))
+        end
         GameTooltip:Show()
         return
     end
@@ -1386,6 +1415,8 @@ function UI:BuildMenu()
     menu.keep:SetPoint("TOPLEFT", 8, -26)
     menu.sell = UI.MenuRow(menu, L["Always Sell"], function() Pick("sell") end)
     menu.sell:SetPoint("TOPLEFT", menu.keep, "BOTTOMLEFT", 0, 0)
+    -- Always auction (a player asked, the owner said build it 2026-11-12).
+    menu.auction = UI.MenuRow(menu, L["Always Auction"], function() Pick("auction") end)
     menu.bank = UI.MenuRow(menu, L["Always Bank"], function() Pick("bank") end)
     menu.bank:SetPoint("TOPLEFT", menu.sell, "BOTTOMLEFT", 0, 0)
     -- Greens and better that sell for more go to auction; this breaks
@@ -1483,13 +1514,56 @@ function UI:BuildMenu()
         if UI.menu.data then UI:ShowMenu(UI.menu.data, true) end
     end)
 
+    -- The mail page's other players and Type a Name... (Logic/MailRules.lua,
+    -- the owner said build it 2026-11-12): any whole name, remembered.
+    menu.ownHead = Theme.CreateLabel(menu, "small", "muted")
+    menu.ownHead:SetText(L["YOUR CHARACTERS"])
+    menu.otherHead = Theme.CreateLabel(menu, "small", "muted")
+    menu.otherHead:SetText(L["OTHER PLAYERS"])
+    menu.others = {}
+    menu.typeName = UI.MenuRow(menu, L["Type a Name..."], function() UI:ShowMailBox() end)
+    local function SaveMailTo()
+        local data = UI.menu.data
+        local text = menu.mailBox.editBox:GetText()
+        if not data then return UI:HideMenu() end
+        -- Settings' Add Rule with nothing on the cursor: which item first.
+        if menu.askingItem then
+            local itemID = ns.KeepAcrossUI and ns.KeepAcrossUI.Find(text)
+            if not itemID then
+                menu.mailNote:SetText(L["Butler can't find that item. Try its name or ID."])
+                menu.mailNote:SetTextColor(Theme.Unpack("warn"))
+                return
+            end
+            menu.askingItem = nil
+            data.itemID = itemID
+            data.name = ns.KeepAcrossUI.ItemName(itemID)
+            return UI:ShowMailMenu()
+        end
+        local name, why = ns.MailRules:TypeName(text)
+        if not name then
+            if why then menu.mailNote:SetText(why) end
+            menu.mailNote:SetTextColor(Theme.Unpack("warn"))
+            return
+        end
+        UI.PickMailTo(name)
+    end
+    menu.mailBox = Widgets.CreateSearchBox(menu, "", nil, SaveMailTo, { plain = true })
+    menu.mailBox:SetSize(MENU_WIDTH - 16, 24)
+    menu.mailBox.editBox:SetMaxLetters(48)
+    menu.mailNote = Theme.CreateLabel(menu, "small", "muted")
+    menu.mailNote:SetWordWrap(true)
+    menu.mailSave = Widgets.CreateButton(menu, L["Save"], SaveMailTo,
+        { width = MENU_WIDTH - 16, height = 20, primary = true })
+
     -- Gone once the mouse has been off it for a moment, as the game's menus
     -- go. Only runs while the menu is up.
     menu:SetScript("OnUpdate", function(frame, elapsed)
         local ok, over = pcall(frame.IsMouseOver, frame)
         -- Never while the player types a number in it.
-        local typing = frame.keepBox and frame.keepBox:IsShown() and frame.keepBox.editBox.HasFocus
-            and frame.keepBox.editBox:HasFocus()
+        local function Typing(box)
+            return box and box:IsShown() and box.editBox.HasFocus and box.editBox:HasFocus()
+        end
+        local typing = Typing(frame.keepBox) or Typing(frame.mailBox)
         frame.away = ((ok and over) or typing) and 0 or (frame.away or 0) + (elapsed or 0)
         if frame.away > 1.5 then UI:HideMenu() end
     end)
@@ -1509,6 +1583,54 @@ function UI.ItemTitle(data)
     return Items:ColorName(data.name, data.itemID, data.quality)
 end
 
+--- Put away the mail page's own pieces (headings, other players, the box).
+function UI.HideMailPage(menu)
+    if not menu or not menu.ownHead then return end
+    menu.ownHead:Hide()
+    menu.otherHead:Hide()
+    for _, button in ipairs(menu.others) do button:Hide() end
+    menu.typeName:Hide()
+    menu.mailBox:Hide()
+    menu.mailNote:Hide()
+    menu.mailSave:Hide()
+end
+
+--- Send the menu's item (or the Settings rule it was opened for) to `name`.
+function UI.PickMailTo(name)
+    local menu = UI.menu
+    local data = menu and menu.data
+    UI:HideMenu()
+    if not (data and name) or not ns.MailRules then return end
+    if data.mailRule then
+        ns.MailRules:Change(data.mailRule, name)
+    elseif data.itemID then
+        ns.MailRules:Remember(name)
+        ns.Verdicts:SetChoice(data.itemID, "mail", name)
+    end
+    if ns.SettingsUI and ns.SettingsUI.SyncMailRules then ns.SettingsUI:SyncMailRules() end
+end
+
+--- Open the mail page by itself, at the cursor, for Settings' MAIL RULES:
+--- `data` is { itemID, name } for an item, or { mailRule, name } to change
+--- where a rule goes. There is no main page to go back to.
+function UI:ShowMailMenuFor(data)
+    local menu = self:BuildMenu()
+    menu.data = data
+    menu.away = 0
+    local x, y = 0, 0
+    if type(GetCursorPosition) == "function" then
+        x, y = GetCursorPosition()
+        local scale = UIParent:GetEffectiveScale() or 1
+        x, y = x / scale, y / scale
+    end
+    menu:ClearAllPoints()
+    menu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x - 10, y + 10)
+    menu:Show()
+    if data.askItem then return self:ShowMailBox(true) end
+    menu.askingItem = nil
+    self:ShowMailMenu()
+end
+
 --- Show the menu's main page for `data` (a row). `stay` keeps it where it
 --- is, coming back from the characters page.
 function UI:ShowMenu(data, stay)
@@ -1524,6 +1646,7 @@ function UI:ShowMenu(data, stay)
     menu.keepNote:Hide()
     menu.keepSave:Hide()
     menu.keepAll:Hide()
+    UI.HideMailPage(menu)
 
     local choice, mailTo = ns.Verdicts:Choice(data.itemID)
     menu.keep:SetText(choice == "keep" and L["Always Keep (now)"] or L["Always Keep"])
@@ -1533,6 +1656,7 @@ function UI:ShowMenu(data, stay)
     menu.keep:SetActive(choice == "keep")
     menu.sell:SetActive(choice == "sell")
     menu.bank:SetActive(choice == "bank")
+    menu.auction:SetActive(choice == "auction")
     menu.mail:SetActive(choice == "mail")
     menu.disenchant:SetActive(choice == "disenchant")
     menu.bought:SetActive(data.bought)
@@ -1548,6 +1672,15 @@ function UI:ShowMenu(data, stay)
     menu.sell:Show()
     menu.bank:Show()
 
+    -- Only what can go on the auction house: not soulbound.
+    local canList = choice == "auction" or not data.bound
+    menu.auction:SetShown(canList)
+    menu.auction:SetText(choice == "auction" and L["Always Auction (now)"] or L["Always Auction"])
+    menu.auction:ClearAllPoints()
+    menu.auction:SetPoint("TOPLEFT", menu.sell, "BOTTOMLEFT", 0, 0)
+    menu.bank:ClearAllPoints()
+    menu.bank:SetPoint("TOPLEFT", canList and menu.auction or menu.sell, "BOTTOMLEFT", 0, 0)
+
     -- Only gear worth breaking: green or better.
     local canBreak = choice == "disenchant" or (data.quality or 0) >= 2
     menu.disenchant:SetShown(canBreak)
@@ -1558,7 +1691,8 @@ function UI:ShowMenu(data, stay)
 
     -- Mail needs Tradeskills to know the player's characters, and gear
     -- bound to this one can't be mailed at all.
-    local canMail = choice == "mail" or (not data.bound and #ns.Errands:MailNames() > 0)
+    local canMail = choice == "mail" or (not data.bound
+        and (#ns.Errands:MailNames() > 0 or ns.Errands.Tradeskills("FillMail") ~= nil))
     menu.mail:SetShown(canMail)
 
     -- Marked or unmarked through Tradeskills, so only with it loaded.
@@ -1615,10 +1749,10 @@ function UI:ShowMenu(data, stay)
     menu.decide:SetShown(decides)
     menu.decide:SetText(learned and L["Forget what Butler learned"] or L["Let Butler Decide"])
 
-    local rows = 3 + (waits and 1 or 0) + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
+    local rows = 3 + (waits and 1 or 0) + (canList and 1 or 0) + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
         + (craft and 1 or 0) + (ns.KeepHere and 1 or 0) + (ns.KeepAcross and 1 or 0) + (decides and 1 or 0)
     menu:SetHeight(30 + rows * MENU_ROW)
-    UI.FitMenu(menu, { menu.sellAnyway, menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
+    UI.FitMenu(menu, { menu.sellAnyway, menu.keep, menu.sell, menu.auction, menu.bank, menu.disenchant, menu.bought, menu.mail,
         menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.keepAcross, menu.decide })
 
     if stay and menu:IsShown() then return end
@@ -1647,6 +1781,7 @@ function UI:ShowJobMenu(data)
     for _, button in ipairs(menu.characters) do button:Hide() end
     menu.keepBox:Hide()
     menu.keepNote:Hide()
+    UI.HideMailPage(menu)
 
     menu.ignoreJobs:ClearAllPoints()
     menu.ignoreJobs:SetPoint("TOPLEFT", 8, -26)
@@ -1688,67 +1823,125 @@ function UI.FitMenu(menu, buttons)
     menu:SetWidth(width + 16)
 end
 
---- The characters page: pick who this item always goes to.
+--- The characters page: pick who this item always goes to. YOUR
+--- CHARACTERS, then OTHER PLAYERS (names typed before, or already set),
+--- then Type a Name... for anyone else.
 function UI:ShowMailMenu()
     local menu = self.menu
     local data = menu and menu.data
     if not data then return end
     menu.away = 0
 
-    local choice, mailTo = ns.Verdicts:Choice(data.itemID)
+    local rule = data.mailRule
+    local choice, mailTo
+    if rule then
+        choice, mailTo = "mail", rule.to
+    elseif data.itemID then
+        choice, mailTo = ns.Verdicts:Choice(data.itemID)
+    end
     local names = ns.Errands:MailNames()
-    menu.title:SetText(L.Format("Always mail %s to", UI.ItemTitle(data)))
+    local others = ns.MailRules and ns.MailRules:OtherNames() or {}
+    menu.title:SetText(L.Format("Always mail %s to", rule and (rule.name or "?") or UI.ItemTitle(data)))
 
-    menu.sellAnyway:Hide()
-    menu.keep:Hide()
-    menu.sell:Hide()
-    menu.bank:Hide()
-    menu.mail:Hide()
-    menu.bought:Hide()
-    menu.hold:Hide()
-    menu.holdAll:Hide()
-    menu.skipCraft:Hide()
-    menu.decide:Hide()
-    menu.keepHere:Hide()
-    menu.keepAcross:Hide()
-    menu.disenchant:Hide()
-    menu.ignoreJobs:Hide()
+    for _, key in ipairs({ "sellAnyway", "keep", "sell", "bank", "mail", "bought", "hold", "holdAll", "skipCraft",
+        "decide", "keepHere", "keepAcross", "disenchant", "auction", "ignoreJobs", "clearItems",
+        "keepSave", "keepAll" }) do
+        local button = rawget(menu, key)
+        if button then button:Hide() end
+    end
+    menu.keepBox:Hide()
+    menu.keepNote:Hide()
+    UI.HideMailPage(menu)
 
+    local height, shown = 30, {}
     local above
-    for index, name in ipairs(names) do
-        local button = menu.characters[index]
-        if not button then
-            button = UI.MenuRow(menu, name, function(self)
-                menu.Pick("mail", self.character)
-            end)
-            menu.characters[index] = button
-        end
-        button.character = name
-        button:SetActive(choice == "mail" and mailTo == name)
-        button:SetText(choice == "mail" and mailTo == name and L.Format("%s (now)", name) or name)
-        button:ClearAllPoints()
+    local function Place(widget, gap)
+        widget:ClearAllPoints()
         if above then
-            button:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, 0)
+            widget:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -(gap or 0))
         else
-            button:SetPoint("TOPLEFT", 8, -26)
+            widget:SetPoint("TOPLEFT", 8, -26 - (gap or 0))
         end
-        button:Show()
-        above = button
+        widget:Show()
+        above = widget
+    end
+    local function Row(pool, index, name)
+        local button = pool[index]
+        if not button then
+            button = UI.MenuRow(menu, name, function(self) UI.PickMailTo(self.character) end)
+            pool[index] = button
+        end
+        local now = choice == "mail" and mailTo and mailTo:lower() == name:lower()
+        button.character = name
+        button:SetActive(now)
+        button:SetText(now and L.Format("%s (now)", name) or name)
+        Place(button)
+        height = height + MENU_ROW
+        shown[#shown + 1] = button
+    end
+    local function Head(label)
+        label:SetHeight(14)
+        Place(label, 4)
+        height = height + 18
+    end
+
+    if #names > 0 then
+        Head(menu.ownHead)
+        for index, name in ipairs(names) do Row(menu.characters, index, name) end
     end
     for index = #names + 1, #menu.characters do menu.characters[index]:Hide() end
+    Head(menu.otherHead)
+    for index, name in ipairs(others) do Row(menu.others, index, name) end
+    for index = #others + 1, #menu.others do menu.others[index]:Hide() end
+    Place(menu.typeName)
+    height = height + MENU_ROW
+    shown[#shown + 1] = menu.typeName
 
-    menu.back:ClearAllPoints()
-    if above then
-        menu.back:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, 0)
+    -- Opened from Settings there is no main page to go back to.
+    if not rule and data.itemID and not data.fromSettings then
+        Place(menu.back)
+        height = height + MENU_ROW
+        shown[#shown + 1] = menu.back
     else
-        menu.back:SetPoint("TOPLEFT", 8, -26)
+        menu.back:Hide()
     end
-    menu.back:Show()
-    menu:SetHeight(30 + (#names + 1) * MENU_ROW)
-    local buttons = {}
-    for index = 1, #names do buttons[#buttons + 1] = menu.characters[index] end
-    buttons[#buttons + 1] = menu.back
-    UI.FitMenu(menu, buttons)
+    menu:SetHeight(height)
+    UI.FitMenu(menu, shown)
+end
+
+--- The Type a Name... page: a box for any character's name.
+function UI:ShowMailBox(askItem)
+    local menu = self.menu
+    local data = menu and menu.data
+    if not data then return end
+    menu.away = 0
+    menu.askingItem = askItem and true or nil
+    for _, button in ipairs(menu.characters) do button:Hide() end
+    UI.HideMailPage(menu)
+    menu.back:Hide()
+    menu.title:SetText(askItem and L["ADD RULE"] or L["MAIL TO"])
+
+    menu.mailBox:ClearAllPoints()
+    menu.mailBox:SetPoint("TOPLEFT", 8, -26)
+    menu.mailBox:SetText("")
+    menu.mailBox:Show()
+    menu.mailNote:ClearAllPoints()
+    menu.mailNote:SetPoint("TOPLEFT", menu.mailBox, "BOTTOMLEFT", 0, -4)
+    menu.mailNote:SetPoint("RIGHT", menu, "RIGHT", -8, 0)
+    menu.mailNote:SetText(askItem and L["Type an item's name or ID."]
+        or L["Type the character's name."])
+    menu.mailNote:SetTextColor(Theme.Unpack("muted"))
+    menu.mailNote:Show()
+    menu.mailSave:ClearAllPoints()
+    menu.mailSave:SetPoint("TOPLEFT", menu.mailNote, "BOTTOMLEFT", 0, -6)
+    menu.mailSave:Show()
+    local inner = math.max((tonumber((menu:GetWidth())) or MENU_WIDTH) - 16, MENU_WIDTH - 16)
+    menu:SetWidth(inner + 16)
+    menu.mailBox:SetWidth(inner)
+    menu.mailSave:SetWidth(inner)
+    local noteHeight = menu.mailNote.GetStringHeight and tonumber((menu.mailNote:GetStringHeight())) or 0
+    menu:SetHeight(30 + 28 + math.max(noteHeight, 14) + 10 + 24)
+    if menu.mailBox.editBox.SetFocus then menu.mailBox.editBox:SetFocus() end
 end
 
 --- The menu's keep page: how many to keep on this character, typed in a
@@ -1764,6 +1957,7 @@ function UI:ShowKeepMenu()
         button:Hide()
     end
     for _, button in ipairs(menu.characters) do button:Hide() end
+    UI.HideMailPage(menu)
 
     local count = ns.KeepHere:Count(data.itemID)
     menu.keepBox:ClearAllPoints()
@@ -2623,6 +2817,7 @@ function UI:Say(which)
     local id = self.VOICE[which]
     if not id or not (ns.db and ns.db.voice ~= false) then return false end
     if self.AtAnNPC() then return false end
+    if ns.Muted and ns.Muted() then return false end
     local ok, now = pcall(GetTime)
     if not (ok and type(now) == "number") then return false end
     local last = self.voiceAt[which]

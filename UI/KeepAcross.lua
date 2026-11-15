@@ -146,6 +146,7 @@ function KeepAcrossUI:Build()
     self.cancelButton = cancel
 
     self.frame = frame
+    if ns.SharedWindow and ns.SharedWindow.KeepSpot then ns.SharedWindow.KeepSpot(frame, "butler.keepacross") end
     return frame
 end
 

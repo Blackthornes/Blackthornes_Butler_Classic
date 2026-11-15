@@ -73,7 +73,7 @@
 --
 -- The Always keep, Always sell and Always bank lists are the player's own
 -- choices, account wide, by item ID: BlackthornesButlerDB.alwaysKeep,
--- .alwaysSell, .alwaysBank and .alwaysDisenchant ([itemID] = true), and
+-- .alwaysSell, .alwaysBank, .alwaysDisenchant and .alwaysAuction ([itemID] = true), and
 -- .alwaysMail ([itemID] = the character's short name). Never rename them.
 --
 -- Sell below (a player asked, the owner agreed 2026-10-11) is
@@ -112,6 +112,12 @@ Verdicts.LABELS = {
 -- item sells slowly: a slow sale ties up the slot and the deposit.
 Verdicts.SLOW = 0.75
 
+-- A green broken for a skill point (Levelling Enchanting) goes on to its
+-- best price instead when a vendor or the auction house pays more than
+-- this many times what breaking it gives (the owner, 2026-11-10: a green
+-- worth 20s was broken for 4s of essence).
+Verdicts.SKILL_LOSS = 2
+
 -- An item to auction waits for a better price when today's cheapest listing
 -- by someone else (Tradeskills' auctionNow) would fetch less than this much
 -- of its usual price (auction). A little under is normal: the usual price is
@@ -143,12 +149,13 @@ local function List(name)
     return ns.db[name]
 end
 
---- "keep", "sell", "bank", "disenchant", "mail" or nil: what the player
+--- "keep", "sell", "auction", "bank", "disenchant", "mail" or nil: what the player
 --- said about this item. For "mail", the second return is who it goes to.
 function Verdicts:Choice(itemID)
     if not itemID then return nil end
     if List("alwaysKeep")[itemID] then return "keep" end
     if List("alwaysSell")[itemID] then return "sell" end
+    if List("alwaysAuction")[itemID] then return "auction" end
     if List("alwaysBank")[itemID] then return "bank" end
     if List("alwaysDisenchant")[itemID] then return "disenchant" end
     local to = List("alwaysMail")[itemID]
@@ -168,6 +175,7 @@ function Verdicts:SetChoice(itemID, choice, to)
     if choice == "mail" and not (type(to) == "string" and to ~= "") then return end
     List("alwaysKeep")[itemID] = (choice == "keep") or nil
     List("alwaysSell")[itemID] = (choice == "sell") or nil
+    List("alwaysAuction")[itemID] = (choice == "auction") or nil
     List("alwaysBank")[itemID] = (choice == "bank") or nil
     List("alwaysDisenchant")[itemID] = (choice == "disenchant") or nil
     List("alwaysMail")[itemID] = (choice == "mail") and to or nil
@@ -239,7 +247,7 @@ end
 -- judges exactly as it always has.
 Verdicts.FIRST = { "sets", "quests" }
 Verdicts.DEFAULT_ORDER = {
-    "keepHere", "keepList", "bankList", "mailList", "lists", "buyback", "noValue", "sellList", "disenchantList", "ammo",
+    "keepHere", "keepList", "bankList", "mailList", "lists", "buyback", "noValue", "sellList", "auctionList", "disenchantList", "ammo",
     "upgrades", "altCrafts", "goals", "queue", "altUpgrades", "petFood",
     "bought", "levelEnch", "greensHere", "disenchanter", "mailHabit",
     "sellHabit", "greys", "bankAlt", "sellBelow",
@@ -255,7 +263,7 @@ local OWN_SWITCH = {
         set = function(on) Verdicts:SetDisenchantGreens(on) end },
     -- These need an amount or a character, so their own page turns them on.
     sellBelow = { on = function() return Verdicts:SellBelow() ~= nil end },
-    bankAlt = { on = function() return ns.BankAlt ~= nil and ns.BankAlt:Name() ~= nil end },
+    bankAlt = { on = function() return ns.BankAlt ~= nil and ns.BankAlt:Active() end },
 }
 Verdicts.OWN_SWITCH = OWN_SWITCH
 
@@ -404,8 +412,8 @@ end
 
 -- Tradeskills' disenchanter only takes an item that pays as much broken
 -- as sold (a player asked, the owner said yes, 2026-10-16), unless
--- "Always Disenchant" is ticked. Levelling Enchanting takes it either way
--- (the owner, 2026-10-17): a skill point beats a better sale.
+-- "Always Disenchant" is ticked. Levelling Enchanting takes it while a sale
+-- pays at most Verdicts.SKILL_LOSS times as much (the owner, 2026-11-10).
 local function BreakIt(c)
     if c.breakIt == nil then
         c.breakIt = not Verdicts:SellsForMore(c.entry, Said(c), Unit(c))
@@ -434,12 +442,40 @@ function STEPS.sets(self, c)
     end
 end
 
+--- Can this quest item go on the auction house? By how it binds: not on
+--- pickup (1) or as a quest item (4). nil until the client has loaded it,
+--- and the quest rule keeps it until then.
+function Verdicts.QuestItemTrades(itemID)
+    if not Items or not itemID then return nil end
+    local ok, results = pcall(function()
+        return { Items.Call({ "C_Item.GetItemInfo", "GetItemInfo" }, itemID) }
+    end)
+    if not ok or type(results) ~= "table" then return nil end
+    local bind = tonumber(results[14])
+    if not results[1] or bind == nil then
+        if Items.RequestLoad then Items:RequestLoad(itemID) end
+        return nil
+    end
+    return bind ~= 1 and bind ~= 4
+end
+
 function STEPS.quests(self, c)
     local entry = c.entry
     if entry.quest == "starts" then
         return "keep", L["Starts a quest"], nil, true
     elseif entry.quest == "item" then
-        return "keep", L["Quest item"], nil, true
+        -- Kept while an open quest wants it or it can't be traded. A quest
+        -- item that can go on the auction house and that no open quest
+        -- needs (2026-11-10, a player's report) follows the usual rules:
+        -- their lists, the bank alt, mail, auction or sell.
+        local forQuest = ns.Quests and ns.Quests:Reason(c.itemID)
+        if forQuest then
+            return "keep", forQuest, nil, true
+        end
+        if entry.bound or not Verdicts.QuestItemTrades(c.itemID) then
+            return "keep", L["Quest item"], nil, true
+        end
+        return
     end
     -- An item an open quest collects, Murloc Eyes and the like, which the
     -- game does not mark as a quest item (Logic/Quests.lua).
@@ -489,6 +525,14 @@ function STEPS.bankList(self, c)
     return "bank", L["On your Always bank list"], Unit(c), true
 end
 
+-- Full Stacks Only (the bank alt page) is ticked and this carried stack
+-- is not full yet, so it waits in the bags rather than go in the mail.
+local function Short(entry)
+    local bankAlt = ns.BankAlt
+    return bankAlt and bankAlt.FullStacksOn and bankAlt:FullStacksOn()
+        and not bankAlt:FullStack(entry) or false
+end
+
 function STEPS.mailList(self, c)
     local choice, mailTo = Choice(c)
     if choice ~= "mail" then return nil end
@@ -503,6 +547,13 @@ function STEPS.mailList(self, c)
     local eq = Eq(c)
     if eq and eq.upgrade == "now" then
         return "look", L["On your Always mail list, but it's an upgrade for you"], Unit(c), true
+    end
+    -- With Full Stacks Only ticked, an Always mail item waits in the bags
+    -- until its stack is full, whoever it goes to, as the bank alt's own
+    -- picks do (players' reports, 2026-11-07 and 2026-11-11: herbs listed
+    -- for the Herbs character still went as small stacks).
+    if Short(entry) then
+        return "keep", L["On your Always mail list, waiting for a full stack"], Unit(c), true
     end
     -- This character's own queued crafts come first (the owner,
     -- 2026-10-14): Tradeskills' `need` is what they still use from the
@@ -611,6 +662,41 @@ function STEPS.sellList(self, c)
     return "sell", L["On your Always sell list"], unit, unit ~= nil
 end
 
+-- The player's Always auction list (a player asked, the owner said build
+-- it 2026-11-12): it goes under Auction whatever a vendor pays. It gives way
+-- as Always sell does: to an upgrade to wear now, another character's
+-- queued craft, a Farmer goal and this character's craft queue. Soulbound
+-- can't be listed, so it is Look at it.
+function STEPS.auctionList(self, c)
+    if Choice(c) ~= "auction" then return nil end
+    local entry, unit = c.entry, Unit(c)
+    local eq = Eq(c)
+    if eq and eq.upgrade == "now" then
+        return "look", L["On your Always auction list, but it's an upgrade for you"], unit, unit ~= nil
+    end
+    if entry.bound then
+        return "look", L["On your Always auction list, but it's soulbound"], unit, unit ~= nil
+    end
+    local share = self:AltCraftShare(entry)
+    if share then
+        return "mail", L.Format("Mail %d to %s for their crafts", share.count, share.to),
+            unit, unit ~= nil, share
+    end
+    local goalNeed = Sisters.Number(Sisters:Ask("farmer", entry), "need")
+    if goalNeed and goalNeed > 0 then
+        return "keep", L.Format("On your Always auction list, but your goal needs %d more", goalNeed),
+            unit, unit ~= nil
+    end
+    local ts = Said(c).ts
+    local queued = Sisters.Number(ts, "need")
+    if queued and queued > 0 then
+        return "keep", L.Format("On your Always auction list, but your craft queue needs %d", queued),
+            unit, unit ~= nil
+    end
+    local worth = Verdicts.AuctionPrice(ts) or unit
+    return "auction", L["On your Always auction list"], worth, true
+end
+
 -- The player's Always disenchant list (the owner, 2026-10-17: a green that
 -- sells for more goes to auction, unless the player says to break it).
 -- Broken here when this character can, else mailed to the enchanter
@@ -677,6 +763,7 @@ end
 
 function STEPS.levelEnch(self, c)
     if c.noAlt then return nil end
+    if self:SellsForMore(c.entry, Said(c), Unit(c), Verdicts.SKILL_LOSS) then return nil end
     return FromSister(c, self:ForEnchanting(c.entry, Said(c)))
 end
 
@@ -699,6 +786,10 @@ function STEPS.mailHabit(self, c)
     local learned, learnedTo = Learned(c)
     if learned == "mail" and not c.entry.bound and not self:IsMe(learnedTo) then
         local unit = Unit(c)
+        if Short(c.entry) then
+            return "keep", L.Format("You usually mail this to %s, waiting for a full stack", learnedTo),
+                unit, true
+        end
         return "mail", ns.Learning.Reason("mail", learnedTo), unit, unit ~= nil, { to = learnedTo }
     end
 end
@@ -1276,8 +1367,9 @@ end
 --- 2026-10-13). Tradeskills' `forEnchanting` names a green this character
 --- can break, not crafted, whose likely material its Enchanting still lacks
 --- for the crafts that give a point every time, after what it owns. Then
---- Disenchant, whatever the auction house or a vendor pays (the owner,
---- 2026-10-17: a skill point beats a better sale). Returns
+--- Disenchant (the owner, 2026-10-17: a skill point beats a better sale),
+--- unless a sale pays more than Verdicts.SKILL_LOSS times as much
+--- (STEPS.levelEnch asks first; the owner, 2026-11-10). Returns
 --- verdict, reason, worth and { enchanting, yield }; or nil.
 --- Verdicts:Groups stops once the greens already picked cover the shortfall.
 function Verdicts:ForEnchanting(entry, said)
@@ -1349,9 +1441,10 @@ end
 --- breaking it gives? Asked before Tradeskills' disenchanter (a player asked, the owner said yes, 2026-10-16), so a
 --- green that sells for more is sold instead. The auction house counts as
 --- Verdicts:Best counts it (after the cut, less when it sells slowly).
---- False when nothing says what breaking it gives, or while "Always
---- Disenchant" is ticked.
-function Verdicts:SellsForMore(entry, said, unit)
+--- `times` asks whether a sale pays more than that many times as much
+--- (Levelling Enchanting's Verdicts.SKILL_LOSS). False when nothing says
+--- what breaking it gives, or while "Always Disenchant" is ticked.
+function Verdicts:SellsForMore(entry, said, unit, times)
     if self:AlwaysDisenchantOn() then return false end
     local Number = Sisters.Number
     local ts = said and said.ts
@@ -1363,7 +1456,7 @@ function Verdicts:SellsForMore(entry, said, unit)
         if ts.fast == false then auction = math.floor(auction * Verdicts.SLOW) end
         most = math.max(most, auction)
     end
-    return most > disenchant
+    return most > disenchant * (times or 1)
 end
 
 --- Whether "Always Disenchant" is ticked: off unless the player ticks it.
@@ -1553,6 +1646,19 @@ function Verdicts:Best(entry, unit, said, noBelow)
                 Items.FormatMoney(auction), Items.FormatMoney(unit)), unit
         end
         return "sell", L.Format("Not an upgrade: %s each", Items.FormatMoney(unit)), unit
+    end
+
+    -- Soulbound green or better that this class can never wear (Equipment's
+    -- `never`), with nothing left to weigh: the disenchant value is known
+    -- and lower, or this character can't disenchant at all. Nothing to look
+    -- at, so say Sell (a player's report, 2026-11-10).
+    if bound and (entry.quality or 0) >= 2 and eq and True(eq, "never") and ts
+        and unit and unit > 0 and (disenchant or not canDisenchant) then
+        if disenchant then
+            return "sell", L.Format("Your class can't use it. Vendor pays more than disenchanting (about %s): %s each",
+                Items.FormatMoney(disenchant), Items.FormatMoney(unit)), unit
+        end
+        return "sell", L.Format("Your class can't use it. Vendor pays %s each", Items.FormatMoney(unit)), unit
     end
 
     if bound and (entry.quality or 0) >= 2 and eq and True(eq, "sell") then
@@ -1910,6 +2016,7 @@ ns.RegisterCommand("lists", L["show your Always keep, Always sell, Always bank a
     ns.Print(L["your lists (right-click a row in the Butler window to change them)"])
     PrintList("alwaysKeep", L["Always keep"])
     PrintList("alwaysSell", L["Always sell"])
+    PrintList("alwaysAuction", L["Always auction"])
     PrintList("alwaysBank", L["Always bank"])
     PrintList("alwaysDisenchant", L["Always disenchant"])
     PrintList("alwaysMail", L["Always mail"])

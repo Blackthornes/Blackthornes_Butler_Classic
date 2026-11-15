@@ -118,19 +118,20 @@ local function KeptRow(entry)
     return nil
 end
 
---- The line for a carried item: left ("Butler: Mail to Bob Stone") and
---- right (what one is worth, or nil). Nil when not carried.
+--- The line for a carried item: left ("Butler: Mail to Bob Stone"),
+--- right (what one is worth, or nil) and, for a mail, the reason it goes.
+--- Nil when not carried.
 function VerdictTip:Line(itemID, tooltip)
     local entry = itemID and self:Entry(itemID, tooltip)
     if not entry then return nil end
     ns.Verdicts:ForgetIfOld()
-    local verdict, unit, to, craft
+    local verdict, unit, to, craft, reason
     local row = KeptRow(entry)
     if row then
-        verdict, unit, to, craft = row.verdict, row.unit, row.mailTo, row.craft
+        verdict, unit, to, craft, reason = row.verdict, row.unit, row.mailTo, row.craft, row.reason
     else
         local extra
-        verdict, _, unit, extra = ns.Verdicts:Judge(entry)
+        verdict, reason, unit, extra = ns.Verdicts:Judge(entry)
         to = type(extra) == "table" and extra.to or nil
         craft = type(extra) == "table" and extra.craft or nil
     end
@@ -148,8 +149,11 @@ function VerdictTip:Line(itemID, tooltip)
     end
     local right = (type(unit) == "number" and unit > 0) and L.Format("%s each", ns.Items.FormatMoney(unit)) or nil
     -- Craft Details: the product and materials go under it.
+    -- A mail says why under it (to disenchant, an upgrade, your list), so
+    -- "Mail to NAME" is never read as "NAME can wear it".
     local why = nil
-    if details then why = VerdictTip.CraftWhy(craft) end
+    if verdict == "mail" and type(reason) == "string" and reason ~= "" then why = reason end
+    if not why and details then why = VerdictTip.CraftWhy(craft) end
     return left, right, why
 end
 
@@ -168,6 +172,7 @@ end
 --- materials carried, "Needs 4 Tin Bar." for what is missing, then what it
 --- earns. Only from what Tradeskills already said; nothing is read again.
 function VerdictTip.CraftWhy(craft)
+    if type(craft) ~= "table" then return nil end
     local parts, missing = {}, {}
     local needs = type(craft.needs) == "table" and craft.needs or {}
     for _, need in ipairs(needs) do missing[need.itemID] = true end

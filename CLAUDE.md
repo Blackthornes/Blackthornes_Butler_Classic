@@ -243,6 +243,19 @@ each kept; soulbound copies are kept first. Tradeskills' Sell list holds
 the same number (its `SisterKeeps`). Tested in
 `tools/test_upgradecopies.lua`.
 
+## Quest items that trade
+
+A player's report (2026-11-10, the owner said build it): a quest item that
+can go on the auction house was kept as "Quest item" and never followed
+Always mail or Auction. Now `STEPS.quests` keeps a quest item only while an
+open quest needs it (`Quests:Reason`), it is bound (`entry.bound`), or it
+binds on pickup or as a quest item (`Verdicts.QuestItemTrades`, bind type
+1 or 4; nil until the client loads it, which keeps it). Anything else
+falls through to the usual rules: the lists, the bank alt, mail, auction,
+sell or Look at it. An item that starts a quest is always kept. The trash
+can, Swap When Full and selling still guard quest items as before. Tested
+in `tools/test_tradequestitems.lua`.
+
 ## Always sell and upgrades
 
 The owner asked (2026-10-13) that an item on the Always sell list that is
@@ -258,6 +271,18 @@ Tradeskills' `mailTo`/`mailCount`), from the Always sell list, a learned
 keep and an item no vendor buys alike (a player's alchemist was never sent
 its materials, 2026-10-14); soulbound and the character playing never.
 Tested in `tools/test_altcraftfirst.lua`.
+
+## Soulbound gear your class can never wear
+
+A player asked (2026-11-10, the owner said build it): soulbound green or
+better gear went to Look at it even when nothing was left to weigh. Now
+`Verdicts:Best` says Sell when Equipment's Advise says `never` (this class
+can never wear it; never for mail or plate learned later, Best Armor Only
+or a hidden untrained weapon), Tradeskills answered, a vendor pays for it,
+and the disenchant value is known and lower (else Disenchant wins) or this
+character can't disenchant. With Tradeskills missing or the disenchant
+value not known yet, it stays Look at it. Selling is still the Sell button.
+Tested in `tools/test_sisters.lua`.
 
 ## Wait for a better price
 
@@ -301,7 +326,12 @@ pays. Only while this character can break it, only greens. Once the
 greens picked so far should give `short` (`yield` each), `Verdicts:Groups`
 judges the rest again without it (`Judge(entry, true)`), so it stops at
 enough. It wins even when the auction house pays more (the owner,
-2026-10-17: a skill point beats a better sale). The player still clicks
+2026-10-17: a skill point beats a better sale), but only up to twice as
+much (the owner, 2026-11-10, a player's green worth 20s at a vendor was
+broken for 4s of essence): when a vendor or the auction house pays more
+than `Verdicts.SKILL_LOSS` (2) times the disenchant value
+(`SellsForMore(entry, said, unit, times)`, asked in `STEPS.levelEnch`),
+the green goes on to its best price. "Always Disenchant" lifts the limit. The player still clicks
 Disenchant. Tested in `tools/test_levelenchanting.lua`.
 
 ## Always disenchant
@@ -316,6 +346,26 @@ Rule `disenchantList`, after the Always sell list: Disenchant when this
 character can break it, else Mail to the enchanter Tradeskills names,
 else Look at it; an upgrade to wear now is Look at it. Tested in
 `tools/test_alwaysdisenchant.lua`.
+
+## Always auction
+
+A player asked for an auction choice, the owner said build it
+(2026-11-12): the right-click menu's "Always Auction" (under Always Sell,
+hidden for a soulbound item not on the list) puts an item on the
+player's Always auction list (`alwaysAuction`, `[itemID] = true`,
+account wide, never rename it; `Verdicts:Choice` "auction"). Rule
+`auctionList`, after the Always sell list ("Always Auction List:" on the
+Order page): Auction, at Tradeskills' auction price when it has one,
+even when a vendor pays more. An upgrade to wear now and a soulbound
+copy are Look at it; another character's queued craft takes its share
+first; a Farmer goal or this character's craft queue keeps it. Posting
+is still done by hand or with Tradeskills; there is no post button yet.
+Tested in `tools/test_alwaysauction.lua`.
+The auction price everywhere is `Verdicts.AuctionPrice`: Tradeskills'
+usual price, or today's cheapest listing by someone else when that is
+higher and the scan is fresh (2026-11-11); a slow seller is weighed at
+less only to choose between the auction house and a vendor. Tested in
+`tools/test_auctionprice.lua`.
 
 ## Craft When It Pays More
 
@@ -400,7 +450,7 @@ that one; with that unticked too, nothing changes. Since 2026-10-16 (a player as
 a vendor or the auction house would (`Verdicts:SellsForMore`, the auction
 counted as `Best` counts it), unless "Always Disenchant" on the Selling page
 is ticked (`disenchantAnyPrice`, account wide, off unless ticked, never
-rename it). Levelling Enchanting no longer waits on it (2026-10-17). Disenchant greens here still takes every green. Tested in `tools/test_disenchantermail.lua`.
+rename it). Levelling Enchanting no longer waits on it (2026-10-17) unless a sale pays more than twice as much (2026-11-10). Disenchant greens here still takes every green. Tested in `tools/test_disenchantermail.lua`.
 
 ## The bank alt
 
@@ -428,8 +478,9 @@ when it is not). Auction Items (a player asked, the owner said build
 it, 2026-10-22): with "Auction Items:" ticked under WHAT GOES THERE
 (`bankAltAuctions`, off unless ticked), whatever Butler's final word is
 Auction goes to the bank alt too, whatever its kind and in any When;
-Wait, Sell and the rest stay, and a stack worth less than a mail's
-postage (`Funds.POSTAGE`) stays (`BankAlt:Verdict`'s `worth`,
+Wait, Sell and the rest stay, and a stack worth less than its share
+of a mail's postage (`BankAlt.StackPostage`: `Funds.POSTAGE` over the 12
+stacks a mail holds; 2026-11-09, from Forever) stays (`BankAlt:Verdict`'s `worth`,
 `MayTake`). A typed bank alt is also offered in the right-click
 Always mail menu (`Errands:MailNames`: `Characters()` plus the bank alt
 when it isn't one of them or the one playing; `Characters()` itself is
@@ -438,13 +489,35 @@ unchanged, so `IsKnown` still tells a typed name apart). Full Stacks Only
 Only:" ticked under WHAT GOES THERE (`bankAltFullStacks`, off unless
 ticked), `MayTake` lets only full stacks go (`BankAlt:FullStack`: the
 count reaches the item's stack size; an item that doesn't stack, or one
-the client can't size yet, goes), so smaller stacks stay in the bags. With it ticked a full
+the client can't size yet, goes), so smaller stacks stay in the bags. It covers every Always mail item too,
+whoever it goes to (2026-11-07 and 11-11, from Forever): a short stack is
+Keep, "On your Always mail list, waiting for a full stack"
+(`STEPS.mailList`), and so is a mail Butler learned, "You usually mail
+this to NAME, waiting for a full stack" (`STEPS.mailHabit`; both ask
+`Short` in `Logic/Verdicts.lua`). Queued crafts' shares, upgrades and the
+disenchanter still go as they are. With it ticked a full
 and a short stack of one item are judged apart (`Verdicts` keeps each by
 `|full` or `|short`), so a short stack is never mailed along with a full
 one. All account
 wide, never rename them. A BANK ALT page in Settings and `/bbutler
 bankalt [Full Name|off|first|vendor|leftovers]`. Tested in
 `tools/test_bankalt.lua`.
+
+Each kind to its own character (a player asked, the owner said build it
+from a mockup, 2026-11-09): beside each kind's tick box under WHAT GOES
+THERE a drop-down picks Bank Alt (the usual), one of the player's
+characters on this realm and side (`Errands:Characters`) or Type a
+Name... (`BankAlt:TypeKindTo`, the same whole-name rule as `TypeName`).
+Kept account wide in `bankAltKindTo[kind] = full name` (nil is the bank
+alt, the table made only when one is picked; never rename it).
+`BankAlt:Takes` sends a ticked kind with its own character there
+(`OwnTarget`, `MayTakeFor`), even with no bank alt set (`BankAlt:Active`
+keeps the rule on), under the same When, Full Stacks Only, bound, grey
+and `IsMe` rules; the row reads "Cloth, for NAME". On the character a
+kind points to (`BankAlt:Stays`) the bank alt rule passes the item by,
+so the usual rules decide it there. The shopping list and Auction Items
+still go to the bank alt. `/bbutler bankalt` lists the kinds with their
+own character. Tested in `tools/test_bankalt.lua`.
 
 ## All characters
 
@@ -607,6 +680,26 @@ it works from addon code), one stack every `Errands.STEP`, each slot read
 again first; a stack that does not move means the other side is full, and
 the run stops and says so. Nothing in combat. The bank is read only for a
 click. Not yet seen in game.
+
+## The name picker
+
+A player compared mail features, and the owner said build it from a
+mockup (2026-11-09), off unless ticked since 2026-11-10: a small Pick button right of the
+game's To box on the Send Mail page opens LAST MAILED (the last name this
+account mailed, from any character, never the one playing) and YOUR
+CHARACTERS (`Errands:Characters`: this realm and side, whole names, the
+one playing left out). A click puts the name in the box
+(`SendMailNameEditBox:SetText`, the only call into the game's mail frames)
+and closes the list. `UI/MailPicker.lua`: the button and list are Butler's
+own frames on UIParent, placed by screen position beside the box
+(`MailPicker.BoxSpot`), looked at every `LOOK` seconds only while a
+mailbox is open; hidden in a fight, when Send Mail is not up, or when
+there is nothing to list (without Tradeskills only LAST MAILED). The last
+name is kept on `MAIL_SEND_SUCCESS` from a SendMail post-hook, not on
+`MAIL_FAILED`. "Name Picker:" under MAIL AND BANK on the Errands page.
+Saved, account wide, never rename them: `namePicker` (nil reads as off, so only a tick turns it on) and
+`namePickerLast`. Tested in `tools/test_mailpicker.lua`. Not yet seen in
+game.
 
 ## The gold fund
 
@@ -851,6 +944,31 @@ Smooth play: Tradeskills is asked only while the window draws the list,
 again only when `Bags.version` or `Jobs.version` (moved as the window
 opens) moves; no timer. Tested in `tools/test_jobs.lua`.
 
+## Mail running out
+
+The owner said build it (2026-11-09, from a mockup whose words he
+approved): a mail left 30 days goes back to its sender, or is gone for
+good when it can't go back. Tradeskills reads each character's inbox at
+the mailbox and keeps, on its `Butler:Holdings()` entries, `mailAt`,
+`mailCount`, `mailSoonest` (days left on the soonest then),
+`mailSoonCount` (how many within 3 days), `mailReturns` and `mailGone`.
+`Logic/MailRunsOut.lua` counts on from `mailAt` (`MailRunsOut.Read`), so
+a box read a week ago still says the right thing. With "Mail Running
+Out:" ticked under MAILBOX on the Errands page (`mailRunsOut`, account
+wide, off unless ticked, never rename it): this character's Get your mail
+step says "Runs out in N days" in orange at 3 days or less; another
+character on this realm and side (`Everyone.SameSide`, never `IsMe`)
+whose mail runs out that soon gets an `expiring` step first in its jobs,
+ranked above everything (`Jobs.DAYS_RANK`), so its line is "First: NAME"
+with Log out (`plan.mailFirst`, the row's `isFirst`); its hover says how
+many mails, how many run out, where they go and when the box was last
+seen (`MailRunsOut.TipLines`). At login the shared note slot says "You
+have mail that runs out in N days." once (`Greet`). An alt set aside with
+Ignore Until Next Login is left alone. Nothing is taken out of a mailbox
+and nothing is saved. Tested in `tools/test_mailrunsout.lua`. If
+Tradeskills changes those fields, change `MailRunsOut.Read` too. Not yet
+seen in game.
+
 ## Items for your quests
 
 A player asked (2026-10-14, the owner said build it) to buy what open
@@ -949,6 +1067,15 @@ or when a higher rank of the same name is known (the data skips a rank now
 and then; a player was told to train spells known a long time,
 2026-10-19). A trainer line in another language matches by name and the
 rank's number.
+Starter trainers stop early (a level 8 warlock was sent to Northshire's,
+which teaches nothing past 6, 2026-11-14): a trainer's window keeps
+`teaches`, the highest level it lists, and `CT:Nearest` passes by one
+that can't teach the highest level ready (`CT:NeedLevel`); an old record
+without it in a starting valley (`CT.STARTER_AREAS`) counts as teaching
+to `STARTER_TEACHES` (6). With none far enough, Show the way says the
+ones seen teach only up to level N. A trainer that stops early no longer
+marks later spells as taught by no trainer. Tested in
+`tools/test_classtraining.lua`.
 Skipping a spell (a player asked, the owner said build it,
 2026-10-22): right-click a spell in Equipment's Training drawer to skip
 it, and again to bring it back. Kept account wide in
@@ -1140,6 +1267,22 @@ set only when the number or its colour changed. `/bbutler probe` says
 whether the button was found. Tested in `tools/test_freespace.lua`. Not
 yet seen in game.
 
+## Mail contents on inbox hover
+
+The owner said build it from a mockup (2026-11-09; off unless ticked since 2026-11-10):
+hovering a mail in the inbox adds IN THIS MAIL under the game's tooltip
+lines, then each attachment (icon, name in its quality colour, "xN"),
+"Gold:" (the mail's money), "Items worth:" (Butler's usual prices, greys
+at vendor; left out when nothing is priced), "Runs out in:" (orange at 3
+days or less) and, for cash on delivery, "Costs:" in red. A mail with no
+items or money shows only Runs out in. `UI/MailContents.lua`: the inbox
+rows (`MailItemNButton`) only get an OnEnter post hook (HookScript), only
+lines are added to GameTooltip, everything is read in a pcall, nothing
+is saved. "Mail Contents:" under MAILBOX on the Errands page
+(`mailContents`, account wide, off unless ticked since 2026-11-10, never
+rename it; nil reads as off).
+Tested in `tools/test_mailcontents.lua`. Not yet seen in game.
+
 ## Who has it
 
 The owner said build it (2026-10-11). `UI/WhoHas.lua` adds lines to every item's tooltip
@@ -1215,6 +1358,34 @@ or "Short N"), a click shows each character's whole name with "60 bags,
 30 bank", right-click changes it; Count Bank and Count Mail; the open rows
 last the session. Tested in `tools/test_keepacross.lua`. Not yet seen in
 game.
+
+## Mail to anyone and Mail Rules
+
+A player asked for several mail rules (a guildie getting all their Light
+Feathers), and the owner said build it from a mockup (2026-11-12, words
+approved). `Logic/MailRules.lua`:
+
+- Always Mail To takes any whole name, not only the player's own
+  characters: the item menu's mail page has YOUR CHARACTERS, OTHER PLAYERS
+  (names typed before and anyone an item already mails to,
+  `MailRules:OtherNames`) and Type a Name... (`MailRules:TypeName`: first
+  and last unless it is one of the player's own, never the one playing).
+  Typed names are kept account wide in `mailNames` (newest last, at most
+  `MailRules.KEEP`; never rename it). Nothing else is new in the save.
+- Settings, Bank Alt page, MAIL RULES: one dark glass list of every mail
+  rule (`MailRules:All`): Always Mail items, your lists' Mail To and mail
+  Butler learned, and with Show Kinds each ticked kind and where it goes.
+  Columns ITEM OR KIND, GOES TO and FROM sort for the session. A name
+  that isn't one of the player's characters shows in amber. A click
+  changes who gets it (`MailRules:Change`, the item menu's mail page;
+  a learned mail becomes Always mail), right-click has Change and Remove
+  (`MailRules:Remove`, where each rule lives). Add Rule takes the item on
+  the cursor, else asks for a name or ID (`KeepAcrossUI.Find`).
+  `SettingsUI:SyncMailRules`. Tested in `tools/test_mailrules.lua`. Not
+  yet seen in game.
+
+On Era a name is one word, so a typed name is taken as typed
+(`MailRules:TypeName`, `BankAlt:TypeKindTo`); never the one playing.
 
 ## Your Tradeskills lists
 
@@ -1383,6 +1554,9 @@ Bank and Look at it never. The popup then says "Your bags are full. You
 need this for a quest." and the row "Quest item"
 (`tools/test_swapquest.lua`). Tested in
 `tools/test_swapwhenfull.lua`. Not yet seen in game.
+No swap is offered while two short stacks of one item fit in one slot
+(`Trash:Merge`, the same check the trash can makes first): stacking them
+makes room without destroying anything (2026-11-07, from Forever).
 
 ## The Bags window
 
@@ -2026,6 +2200,41 @@ moved; never rename it); the Gold page has an ARROW section; the Lists
 page joined the Bank Alt page. The Bags window hangs Bags, Bank and
 Everyone below it like every window's tabs, its chips are house chips, and
 an empty list offers Clear Search.
+
+## Window spots
+
+A player asked, the owner said build it (2026-11-12), in all five
+addons: windows remember where they were dragged. `UI/SharedWindow.lua`
+(FILE_VERSION 9 in the Classic copies; `UI/WhatsNew.lua` FILE_VERSION 7) keeps the one
+window's spot beside each game window it docks to, once the player drags
+it there (`SharedWindow.Dropped`, account wide in every save as
+`oneWindowDockSpots[place]`), and small windows signed up with
+`SharedWindow.KeepSpot(frame, key)` keep their top left in
+`windowSpots[key] = { x, y }`, kept on screen when placed again. Never
+rename either. Tradeskills' sell list drawer can be dragged too
+(`PostPanel:MakeDraggable`, `SaveSpot`, `ns.db.postPanelSpot`). "Window
+Spots:" Set Default on the General page (Tradeskills: its look page) and
+`windows reset` on each addon's command run `SharedWindow.ResetAllSpots`,
+which clears both keys and calls each addon's own reset
+(`SharedWindow.AddSpotReset(name, fn)`); sizes, settings and data stay.
+Chat says "Every window is back in its first spot." Tested in
+`tools/test_sharedwindow.lua` and each addon's settings test
+(Tradeskills: `tools/test_resetwindows.lua`).
+## Mute All Sounds
+
+A player asked, the owner said build it (2026-11-12), in all five addons:
+one box quiets every sound every Blackthornes addon plays. "Mute All
+Sounds:" on the General page under Effects and `/bbutler mute [on|off]`; off unless ticked. It lives on
+the shared choices board (`UI/SharedChoices.lua`, the same file in all
+five): `SharedChoices:SetMute(on)` sets it and tells the others,
+`ns.Muted()` answers every play call, and each addon keeps it in its own
+account save as `muteSounds` and `muteSoundsAt` (never rename them). Each
+joins with a reader of those two (`Join(name, write, readMute)`), read at
+the first sound after its save loads, the newest winning, so an addon that
+was off when the box was ticked still goes quiet. Every `PlaySound` and
+`PlaySoundFile` asks `ns.Muted()` first, fallbacks too; a new sound must
+as well. Warnings still show on screen and in chat. Tested in
+`tools/test_housekit.lua`.
 
 ## Writing for players
 
