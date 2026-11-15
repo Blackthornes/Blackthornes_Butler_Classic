@@ -130,6 +130,13 @@ function Sisters:QueueCraft(recipeID, crafts)
     return ok and done == true
 end
 
+--- Whether Tradeskills can forget a character's saved items (Classic:
+--- only once its ClearHoldings is in), so Clear Items shows only then.
+function Sisters:CanClearHoldings()
+    local butler = Sisters.Butler("ts")
+    return butler ~= nil and type(butler.ClearHoldings) == "function"
+end
+
 --- Ask Tradeskills to forget one character's saved bags, bank, mail and
 --- gold (its Characters tab's Clear Items).
 -- @return true and the full name, or false and why

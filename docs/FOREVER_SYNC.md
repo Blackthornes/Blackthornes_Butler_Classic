@@ -81,5 +81,10 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- Clear Items (copied 2026-11-15): `f154f3b`, `9753fbd`. Clear Items
+  shows on the jobs menu only once Tradeskills has `Butler:ClearHoldings`
+  (Forever Tradeskills `16a6195`, not yet in Tradeskills Classic;
+  `Sisters:CanClearHoldings`).
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.

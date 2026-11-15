@@ -1636,7 +1636,8 @@ function UI:ShowJobMenu(data)
     -- Clear Items under it, never for the character playing.
     UI.ArmClear(menu.clearItems, false)
     local rows = 1
-    if not data.job.isCurrent and not (ns.Jobs and ns.Jobs.IsPlaying(data.job.name)) then
+    if not data.job.isCurrent and not (ns.Jobs and ns.Jobs.IsPlaying(data.job.name))
+        and ns.Sisters:CanClearHoldings() then
         menu.clearItems:ClearAllPoints()
         menu.clearItems:SetPoint("TOPLEFT", menu.ignoreJobs, "BOTTOMLEFT", 0, 0)
         menu.clearItems:Show()
