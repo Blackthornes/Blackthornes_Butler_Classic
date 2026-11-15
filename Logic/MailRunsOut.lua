@@ -105,7 +105,7 @@ function MailRunsOut:Scan()
             if info and mine then
                 if not here or info.left < here.left then here = info end
             elseif info and info.name and not seen[info.name]
-                and ns.Everyone.SameSide(entry, me)
+                and ns.Everyone.Ours(entry, me)
                 and not (ns.Errands.IsMe and ns.Errands:IsMe(info.name)) then
                 seen[info.name] = true
                 alts[#alts + 1] = info

@@ -81,5 +81,14 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- Mail helpers (copied 2026-11-15): `13f4c3f` the Pick button by the
+  mail To box, `2ecadaf` what a mail holds on its inbox tooltip,
+  `0d94ee7` Mail Running Out and `5819493` (Name Picker and Mail Contents
+  start off). All three are off unless ticked. Mail Running Out asks
+  `Everyone.Ours` (Classic's same realm and side test) where Forever asks
+  `Everyone.SameSide`, and needs Tradeskills Classic to give the inbox
+  fields on Holdings (Forever Tradeskills' `776effe`); without them it
+  says nothing.
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
