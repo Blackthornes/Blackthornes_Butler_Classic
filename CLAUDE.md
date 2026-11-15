@@ -640,6 +640,26 @@ again first; a stack that does not move means the other side is full, and
 the run stops and says so. Nothing in combat. The bank is read only for a
 click. Not yet seen in game.
 
+## The name picker
+
+A player compared mail features, and the owner said build it from a
+mockup (2026-11-09), off unless ticked since 2026-11-10: a small Pick button right of the
+game's To box on the Send Mail page opens LAST MAILED (the last name this
+account mailed, from any character, never the one playing) and YOUR
+CHARACTERS (`Errands:Characters`: this realm and side, whole names, the
+one playing left out). A click puts the name in the box
+(`SendMailNameEditBox:SetText`, the only call into the game's mail frames)
+and closes the list. `UI/MailPicker.lua`: the button and list are Butler's
+own frames on UIParent, placed by screen position beside the box
+(`MailPicker.BoxSpot`), looked at every `LOOK` seconds only while a
+mailbox is open; hidden in a fight, when Send Mail is not up, or when
+there is nothing to list (without Tradeskills only LAST MAILED). The last
+name is kept on `MAIL_SEND_SUCCESS` from a SendMail post-hook, not on
+`MAIL_FAILED`. "Name Picker:" under MAIL AND BANK on the Errands page.
+Saved, account wide, never rename them: `namePicker` (nil reads as off, so only a tick turns it on) and
+`namePickerLast`. Tested in `tools/test_mailpicker.lua`. Not yet seen in
+game.
+
 ## The gold fund
 
 The owner asked (2026-10-11) for a minimum gold balance on his characters,
@@ -882,6 +902,31 @@ rename it; `/bbutler joblogin`). Once the last step here is gone,
 Smooth play: Tradeskills is asked only while the window draws the list,
 again only when `Bags.version` or `Jobs.version` (moved as the window
 opens) moves; no timer. Tested in `tools/test_jobs.lua`.
+
+## Mail running out
+
+The owner said build it (2026-11-09, from a mockup whose words he
+approved): a mail left 30 days goes back to its sender, or is gone for
+good when it can't go back. Tradeskills reads each character's inbox at
+the mailbox and keeps, on its `Butler:Holdings()` entries, `mailAt`,
+`mailCount`, `mailSoonest` (days left on the soonest then),
+`mailSoonCount` (how many within 3 days), `mailReturns` and `mailGone`.
+`Logic/MailRunsOut.lua` counts on from `mailAt` (`MailRunsOut.Read`), so
+a box read a week ago still says the right thing. With "Mail Running
+Out:" ticked under MAILBOX on the Errands page (`mailRunsOut`, account
+wide, off unless ticked, never rename it): this character's Get your mail
+step says "Runs out in N days" in orange at 3 days or less; another
+character on this realm and side (`Everyone.SameSide`, never `IsMe`)
+whose mail runs out that soon gets an `expiring` step first in its jobs,
+ranked above everything (`Jobs.DAYS_RANK`), so its line is "First: NAME"
+with Log out (`plan.mailFirst`, the row's `isFirst`); its hover says how
+many mails, how many run out, where they go and when the box was last
+seen (`MailRunsOut.TipLines`). At login the shared note slot says "You
+have mail that runs out in N days." once (`Greet`). An alt set aside with
+Ignore Until Next Login is left alone. Nothing is taken out of a mailbox
+and nothing is saved. Tested in `tools/test_mailrunsout.lua`. If
+Tradeskills changes those fields, change `MailRunsOut.Read` too. Not yet
+seen in game.
 
 ## Items for your quests
 
@@ -1180,6 +1225,22 @@ the number is visible (its `OnShow` reads what it missed), and the text is
 set only when the number or its colour changed. `/bbutler probe` says
 whether the button was found. Tested in `tools/test_freespace.lua`. Not
 yet seen in game.
+
+## Mail contents on inbox hover
+
+The owner said build it from a mockup (2026-11-09; off unless ticked since 2026-11-10):
+hovering a mail in the inbox adds IN THIS MAIL under the game's tooltip
+lines, then each attachment (icon, name in its quality colour, "xN"),
+"Gold:" (the mail's money), "Items worth:" (Butler's usual prices, greys
+at vendor; left out when nothing is priced), "Runs out in:" (orange at 3
+days or less) and, for cash on delivery, "Costs:" in red. A mail with no
+items or money shows only Runs out in. `UI/MailContents.lua`: the inbox
+rows (`MailItemNButton`) only get an OnEnter post hook (HookScript), only
+lines are added to GameTooltip, everything is read in a pcall, nothing
+is saved. "Mail Contents:" under MAILBOX on the Errands page
+(`mailContents`, account wide, off unless ticked since 2026-11-10, never
+rename it; nil reads as off).
+Tested in `tools/test_mailcontents.lua`. Not yet seen in game.
 
 ## Who has it
 

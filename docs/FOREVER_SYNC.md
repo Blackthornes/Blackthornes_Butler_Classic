@@ -81,6 +81,14 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- Mail helpers (copied 2026-11-15): `13f4c3f` the Pick button by the
+  mail To box, `2ecadaf` what a mail holds on its inbox tooltip,
+  `0d94ee7` Mail Running Out and `5819493` (Name Picker and Mail Contents
+  start off). All three are off unless ticked. Mail Running Out asks
+  `Everyone.Ours` (Classic's same realm and side test) where Forever asks
+  `Everyone.SameSide`, and needs Tradeskills Classic to give the inbox
+  fields on Holdings (Forever Tradeskills' `776effe`); without them it
+  says nothing.
 - Always Auction (copied 2026-11-15): `a47ae72` (the real auction
   price, and today's cheapest when it is higher, `Verdicts.AuctionPrice`;
   Classic's `SellsForMore` keeps its three arguments), `a1c2b6b` and
