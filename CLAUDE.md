@@ -478,6 +478,22 @@ wide, never rename them. A BANK ALT page in Settings and `/bbutler
 bankalt [Full Name|off|first|vendor|leftovers]`. Tested in
 `tools/test_bankalt.lua`.
 
+Each kind to its own character (a player asked, the owner said build it
+from a mockup, 2026-11-09): beside each kind's tick box under WHAT GOES
+THERE a drop-down picks Bank Alt (the usual), one of the player's
+characters on this realm and side (`Errands:Characters`) or Type a
+Name... (`BankAlt:TypeKindTo`, the same whole-name rule as `TypeName`).
+Kept account wide in `bankAltKindTo[kind] = full name` (nil is the bank
+alt, the table made only when one is picked; never rename it).
+`BankAlt:Takes` sends a ticked kind with its own character there
+(`OwnTarget`, `MayTakeFor`), even with no bank alt set (`BankAlt:Active`
+keeps the rule on), under the same When, Full Stacks Only, bound, grey
+and `IsMe` rules; the row reads "Cloth, for NAME". On the character a
+kind points to (`BankAlt:Stays`) the bank alt rule passes the item by,
+so the usual rules decide it there. The shopping list and Auction Items
+still go to the bank alt. `/bbutler bankalt` lists the kinds with their
+own character. Tested in `tools/test_bankalt.lua`.
+
 ## All characters
 
 A player asked for an account-wide inventory and the owner said build it
@@ -1317,6 +1333,34 @@ or "Short N"), a click shows each character's whole name with "60 bags,
 30 bank", right-click changes it; Count Bank and Count Mail; the open rows
 last the session. Tested in `tools/test_keepacross.lua`. Not yet seen in
 game.
+
+## Mail to anyone and Mail Rules
+
+A player asked for several mail rules (a guildie getting all their Light
+Feathers), and the owner said build it from a mockup (2026-11-12, words
+approved). `Logic/MailRules.lua`:
+
+- Always Mail To takes any whole name, not only the player's own
+  characters: the item menu's mail page has YOUR CHARACTERS, OTHER PLAYERS
+  (names typed before and anyone an item already mails to,
+  `MailRules:OtherNames`) and Type a Name... (`MailRules:TypeName`: first
+  and last unless it is one of the player's own, never the one playing).
+  Typed names are kept account wide in `mailNames` (newest last, at most
+  `MailRules.KEEP`; never rename it). Nothing else is new in the save.
+- Settings, Bank Alt page, MAIL RULES: one dark glass list of every mail
+  rule (`MailRules:All`): Always Mail items, your lists' Mail To and mail
+  Butler learned, and with Show Kinds each ticked kind and where it goes.
+  Columns ITEM OR KIND, GOES TO and FROM sort for the session. A name
+  that isn't one of the player's characters shows in amber. A click
+  changes who gets it (`MailRules:Change`, the item menu's mail page;
+  a learned mail becomes Always mail), right-click has Change and Remove
+  (`MailRules:Remove`, where each rule lives). Add Rule takes the item on
+  the cursor, else asks for a name or ID (`KeepAcrossUI.Find`).
+  `SettingsUI:SyncMailRules`. Tested in `tools/test_mailrules.lua`. Not
+  yet seen in game.
+
+On Era a name is one word, so a typed name is taken as typed
+(`MailRules:TypeName`, `BankAlt:TypeKindTo`); never the one playing.
 
 ## Your Tradeskills lists
 
