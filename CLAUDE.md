@@ -1232,6 +1232,9 @@ approved). `Logic/MailRules.lua`:
   `SettingsUI:SyncMailRules`. Tested in `tools/test_mailrules.lua`. Not
   yet seen in game.
 
+On Era a name is one word, so a typed name is taken as typed
+(`MailRules:TypeName`, `BankAlt:TypeKindTo`); never the one playing.
+
 ## Your Tradeskills lists
 
 The owner said build it (2026-10-19, from a mockup), with Tradeskills'

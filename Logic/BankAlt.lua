@@ -215,16 +215,13 @@ function BankAlt:SetKindTo(key, name)
     self:Changed()
 end
 
---- A name the player typed for a kind: the same rules as TypeName, so a
---- name that isn't one of theirs must be whole. Returns the name kept, or
+--- A name the player typed for a kind: any character's name, as TypeName
+--- takes it (Era names are one word). Returns the name kept, or
 --- nil and why.
 function BankAlt:TypeKindTo(key, name)
     name = Text(name)
     if not name then return nil end
     if ns.Errands and ns.Errands.FullName then name = ns.Errands:FullName(name) end
-    if not self:IsKnown(name) and not name:find("%S%s+%S") then
-        return nil, L["Type the whole name, first and last."]
-    end
     self:SetKindTo(key, name)
     return self:KindTo(key)
 end

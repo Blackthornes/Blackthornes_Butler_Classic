@@ -1205,3 +1205,5 @@ L["That's the character you're playing."] = "Это персонаж, за ко�
 L["This isn't one of your characters."] = "Это не твой персонаж."
 L["Type an item's name or ID."] = "Введи название или ID предмета."
 L["Your List"] = "Твой список"
+L["YOUR CHARACTERS"] = "ТВОИ ПЕРСОНАЖИ"
+L["Type the character's name."] = "Введи имя персонажа."

@@ -3,8 +3,8 @@
 -- mockup, 2026-11-12).
 --
 -- What must hold:
---   1. A typed name must be whole unless it is one of the player's own,
---      and is never the character playing.
+--   1. A typed name is taken as typed (an Era name is one word), and is
+--      never the character playing.
 --   2. Typed names are remembered once each, newest last, at most KEEP;
 --      never the one playing or one of the player's own characters.
 --   3. OTHER PLAYERS lists typed names and anyone an item mails to.
@@ -37,7 +37,7 @@ env.Enable(ns)
 local MR, Verdicts = ns.MailRules, ns.Verdicts
 
 -- 1. Typing a name.
-suite.check("a first name alone is refused", MR:TypeName("Ana") == nil)
+suite.check("an Era name is one word, so it is taken", MR:TypeName("Ana") == "Ana")
 suite.check("a whole name is taken", MR:TypeName("  Ana Stone ") == "Ana Stone", MR:TypeName("Ana Stone"))
 suite.check("the one playing is refused", MR:TypeName("Me Here") == nil)
 suite.check("one of your own needs no last name", MR.IsOwn("Bob Wither"))

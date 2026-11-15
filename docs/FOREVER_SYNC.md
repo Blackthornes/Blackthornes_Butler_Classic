@@ -81,5 +81,12 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- Mail to anyone and Mail Rules (copied 2026-11-15): `6b54eb1`, `f43deae`,
+  `9acaf07`, `bedb895`, `be6f9c3`, `983b0e7`, cherry-picked in that order.
+  Era names are one word, so `MailRules:TypeName` and
+  `BankAlt:TypeKindTo` take a name as typed (no first and last check), the
+  kind box shows "Name" and the mail box says "Type the character's
+  name." The menu's mail page reads `Errands:MailNames()`.
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.

@@ -1419,7 +1419,7 @@ function SettingsUI:BuildPages()
             picker:Show()
             SettingsUI:SyncBankAlt()
         end
-        typed = Widgets.CreateSearchBox(row, L["First Last"], nil, function(text)
+        typed = Widgets.CreateSearchBox(row, L["Name"], nil, function(text)
             local name, why = ns.BankAlt:TypeKindTo(key, text)
             if not name and why then ns.Print(why) end
             Back()

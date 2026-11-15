@@ -15,8 +15,8 @@
 --   6. Gear that binds when worn is a kind; gear that binds on pickup isn't.
 --   7. Everything on the picked shopping list goes, whatever its kind.
 --   8. The command and Settings change the same saved values.
---   9. A name typed for another account's character must be whole, first
---      and last, and is known as not one of this account's characters.
+--   9. A name typed for another account's character is taken as typed (an
+--      Era name is one word), and is known as not one of this account's characters.
 --  10. A kind can go to its own character, with or without a bank alt;
 --      on that character it stays, the list and Auction Items still go to
 --      the bank alt, and the character playing never gets mail.
@@ -297,8 +297,8 @@ suite.check("on the character a kind points to, it stays", wool.verdict ~= "mail
 suite.check("the character playing is never mailed", wool.mailTo ~= "Me Here")
 BankAlt:SetName(nil)
 BankAlt:SetKindTo("cloth", "Cara Reed")
-suite.check("a typed kind name must be whole", BankAlt:TypeKindTo("cloth", "Otto") == nil
-    and BankAlt:KindTo("cloth") == "Cara Reed")
+suite.check("an Era name is one word, so it is taken", BankAlt:TypeKindTo("cloth", "Otto") == "Otto"
+    and BankAlt:KindTo("cloth") == "Otto")
 suite.check("a whole typed name is kept", BankAlt:TypeKindTo("cloth", "Otto Faraway") == "Otto Faraway"
     and BankAlt:KindTo("cloth") == "Otto Faraway")
 ns.HandleSlash("bankalt")

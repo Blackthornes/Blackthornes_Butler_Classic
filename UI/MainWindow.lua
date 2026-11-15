@@ -1759,7 +1759,8 @@ function UI:ShowMailMenu()
     for _, key in ipairs({ "keep", "sell", "bank", "mail", "bought", "hold", "holdAll", "skipCraft",
         "decide", "keepHere", "keepAcross", "disenchant", "auction", "ignoreJobs", "clearItems",
         "keepSave", "keepAll" }) do
-        if menu[key] then menu[key]:Hide() end
+        local button = rawget(menu, key)
+        if button then button:Hide() end
     end
     menu.keepBox:Hide()
     menu.keepNote:Hide()
@@ -1821,7 +1822,7 @@ function UI:ShowMailMenu()
     UI.FitMenu(menu, shown)
 end
 
---- The Type a Name... page: a box for any whole name, first and last.
+--- The Type a Name... page: a box for any character's name.
 function UI:ShowMailBox(askItem)
     local menu = self.menu
     local data = menu and menu.data
@@ -1841,7 +1842,7 @@ function UI:ShowMailBox(askItem)
     menu.mailNote:SetPoint("TOPLEFT", menu.mailBox, "BOTTOMLEFT", 0, -4)
     menu.mailNote:SetPoint("RIGHT", menu, "RIGHT", -8, 0)
     menu.mailNote:SetText(askItem and L["Type an item's name or ID."]
-        or L["Type the whole name, first and last."])
+        or L["Type the character's name."])
     menu.mailNote:SetTextColor(Theme.Unpack("muted"))
     menu.mailNote:Show()
     menu.mailSave:ClearAllPoints()

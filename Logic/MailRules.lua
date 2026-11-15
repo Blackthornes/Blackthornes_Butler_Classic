@@ -84,17 +84,14 @@ function MailRules:OtherNames()
     return names
 end
 
---- A name the player typed: it must be whole, first and last, unless it is
---- one of their characters, and never the character playing. Returns the
+--- A name the player typed: any character's name (Era names are one word),
+--- never the character playing. Returns the
 --- name, or nil and why.
 function MailRules:TypeName(name)
     name = Text(name)
     if not name then return nil end
     if ns.Errands and ns.Errands.FullName then name = ns.Errands:FullName(name) end
     if IsMe(name) then return nil, L["That's the character you're playing."] end
-    if not self.IsOwn(name) and not name:find("%S%s+%S") then
-        return nil, L["Type the whole name, first and last."]
-    end
     return name
 end
 

@@ -82,6 +82,9 @@ Every Forever catch-up checks this note first, before sorting commits into
 - One-word names (the owner, 2026-10-25): Era characters have one name.
   `BankAlt:TypeName` takes any typed name, and the bank alt hint and the
   `bankalt` and `upgrademail` help say "Name", not "Full Name".
+  The same goes for `MailRules:TypeName` and `BankAlt:TypeKindTo`
+  (2026-11-15): the kind box shows "Name" and the mail box says "Type the
+  character's name."
 
 ### Era bug pass (2026-10-27)
 - Riding: `GG.RidingSkill` reads the race's riding skill (75, then 150) from
