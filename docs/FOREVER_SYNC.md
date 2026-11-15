@@ -81,5 +81,10 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- `670e463` Windows remember where they were dragged, and Window Spots: Set
+  Default (copied 2026-11-15). `UI/SharedWindow.lua` (FILE_VERSION 9),
+  `UI/WhatsNew.lua` (FILE_VERSION 7) and `tools/test_sharedwindow.lua` are
+  taken from the Classic copies so all five stay the same.
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.

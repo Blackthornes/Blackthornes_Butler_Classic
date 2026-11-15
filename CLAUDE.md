@@ -2002,6 +2002,26 @@ page joined the Bank Alt page. The Bags window hangs Bags, Bank and
 Everyone below it like every window's tabs, its chips are house chips, and
 an empty list offers Clear Search.
 
+## Window spots
+
+A player asked, the owner said build it (2026-11-12), in all five
+addons: windows remember where they were dragged. `UI/SharedWindow.lua`
+(FILE_VERSION 9 in the Classic copies; `UI/WhatsNew.lua` FILE_VERSION 7) keeps the one
+window's spot beside each game window it docks to, once the player drags
+it there (`SharedWindow.Dropped`, account wide in every save as
+`oneWindowDockSpots[place]`), and small windows signed up with
+`SharedWindow.KeepSpot(frame, key)` keep their top left in
+`windowSpots[key] = { x, y }`, kept on screen when placed again. Never
+rename either. Tradeskills' sell list drawer can be dragged too
+(`PostPanel:MakeDraggable`, `SaveSpot`, `ns.db.postPanelSpot`). "Window
+Spots:" Set Default on the General page (Tradeskills: its look page) and
+`windows reset` on each addon's command run `SharedWindow.ResetAllSpots`,
+which clears both keys and calls each addon's own reset
+(`SharedWindow.AddSpotReset(name, fn)`); sizes, settings and data stay.
+Chat says "Every window is back in its first spot." Tested in
+`tools/test_sharedwindow.lua` and each addon's settings test
+(Tradeskills: `tools/test_resetwindows.lua`).
+
 ## Writing for players
 
 Every word a player reads (labels, buttons, tooltips, Settings rows and
