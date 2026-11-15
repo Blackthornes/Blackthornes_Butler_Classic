@@ -12,6 +12,9 @@
 --   6. Once its slot is empty, Butler loots the item it named.
 --   7. A slot that changed under it is left alone, nothing deleted.
 --   8. Not Now hides it until the next loot window; a fight hides it.
+--   9. A quest item in the bags is never destroyed.
+--  10. Two short stacks that fit in one slot: nothing offered, since
+--      stacking them makes room without destroying anything.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("swapwhenfull")
@@ -158,5 +161,22 @@ Swap:Take()
 Swap.IsQuestLoot = realQuest
 suite.check("a quest item in the bags: nothing deleted", deleted == 1, tostring(deleted))
 suite.check("and nothing picked up", #picked == 0 and holding == nil, table.concat(picked, ","))
+
+-- 10. Two short stacks that fit in one slot make room: nothing offered.
+env.Fire("LOOT_CLOSED")
+fake.info[704] = { id = 704, name = "Peacebloom", quality = 1, price = 2, stack = 20 }
+fake.Put({ bag = 0, slot = 3, id = 704, name = "Peacebloom", quality = 1, price = 2, count = 10, stack = 20 })
+fake.Put({ bag = 0, slot = 4, id = 704, name = "Peacebloom", quality = 1, price = 2, count = 5, stack = 20 })
+env.Fire("BAG_UPDATE_DELAYED")
+Open({ { id = 801, name = "Ringed Helm", quality = 2 } })
+suite.check("two stacks that fit in one slot: nothing offered", not Showing())
+suite.check("and nothing deleted", deleted == 1, tostring(deleted))
+env.Fire("LOOT_CLOSED")
+fake.bags[0][4] = nil
+env.Fire("BAG_UPDATE_DELAYED")
+Open({ { id = 801, name = "Ringed Helm", quality = 2 } })
+suite.check("one stack left: the popup is back", Showing())
+env.Fire("LOOT_CLOSED")
+fake.bags[0][3] = nil
 
 suite.done()

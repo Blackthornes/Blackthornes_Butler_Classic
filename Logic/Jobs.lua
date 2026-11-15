@@ -46,6 +46,9 @@ local Items = ns.Items
 -- other addons read their saves and the bags first.
 Jobs.LOGIN_DELAY = 5
 
+-- Mail running out ranks by how few days are left, under this many.
+Jobs.DAYS_RANK = 4
+
 -- Moves whenever the jobs should be asked for again.
 Jobs.version = 0
 
@@ -447,7 +450,7 @@ end
 function Jobs.Ready(job)
     for _, step in ipairs(job.steps) do
         if step.kind == "mail" or step.kind == "pickup" or step.kind == "buy" or step.kind == "gather"
-            or step.kind == "cooldown"
+            or step.kind == "cooldown" or step.kind == "expiring"
             or step.ready then return true end
     end
     return false
@@ -474,6 +477,33 @@ function Jobs:Plan()
             others[#others + 1] = job
         end
     end
+    -- Mail running out on another character (Logic/MailRunsOut.lua): a
+    -- step of its own on that character's line, first, so it goes first.
+    local runsOut = ns.MailRunsOut and ns.MailRunsOut:Alts() or {}
+    for _, info in ipairs(runsOut) do
+      if not Jobs:Ignored(info.name) then
+        local job
+        for _, other in ipairs(others) do
+            if Jobs.SameName(other.name, info.name) then job = other break end
+        end
+        if not job then
+            job = { name = info.name, steps = {} }
+            others[#others + 1] = job
+        else
+            -- A copy, so Tradeskills' kept answer is never changed.
+            local steps = {}
+            for index, step in ipairs(job.steps) do steps[index] = step end
+            local copy = {}
+            for key, value in pairs(job) do copy[key] = value end
+            copy.steps = steps
+            for index, other in ipairs(others) do
+                if other == job then others[index] = copy end
+            end
+            job = copy
+        end
+        table.insert(job.steps, 1, { kind = "expiring", mail = info })
+      end
+    end
     -- Next: one that can get on with it. First one whose mail or craft
     -- unblocks a craft here, then one with mail waiting for its crafts, then one with
     -- any mail waiting (the owner, 2026-10-13: a mailbox visit for
@@ -490,6 +520,8 @@ function Jobs:Plan()
     local function Rank(job)
         local rank = 0
         for _, step in ipairs(job.steps) do
+            -- Mail about to run out goes before everything (the owner, 2026-11-09).
+            if step.kind == "expiring" then return 10 + (Jobs.DAYS_RANK - step.mail.left) end
             if step.kind == "mail" and step.forCraft and here and Jobs.SameName(step.to, here.name) then return 3 end
             if step.kind == "craft" and step.ready and step.itemID and wantedHere[step.itemID] then return 3 end
             if step.kind == "pickup" then rank = math.max(rank, step.forCraft and 2 or 1) end
@@ -510,7 +542,11 @@ function Jobs:Plan()
         table.insert(others, 1, nextJob)
     end
     local goFirst = here ~= nil and nextJob ~= nil and not Jobs.Ready(here)
-    return { here = here, nextJob = nextJob or others[1], others = others, goFirst = goFirst }
+    -- The next one's mail runs out: its line reads First:, under this
+    -- character's own steps (the mockup).
+    local mailFirst = nextJob ~= nil and nextJob.steps[1] ~= nil and nextJob.steps[1].kind == "expiring"
+    return { here = here, nextJob = nextJob or others[1], others = others, goFirst = goFirst,
+        mailFirst = mailFirst }
 end
 
 --------------------------------------------------------------------------------
@@ -683,6 +719,7 @@ end
 
 --- A step in one line, for the line about another character.
 function Jobs.Short(step)
+    if step.kind == "expiring" then return ns.MailRunsOut.ShortText(step.mail) end
     if step.kind == "quest" then
         return L.Format("get %s for your quests", Jobs.ItemsText(step.items))
     end
@@ -722,7 +759,7 @@ function Jobs.Summary(job)
 end
 
 function Jobs.Icon(step)
-    if step.kind == "mail" or step.kind == "pickup" then return [[Interface\Icons\INV_Letter_15]] end
+    if step.kind == "mail" or step.kind == "pickup" or step.kind == "expiring" then return [[Interface\Icons\INV_Letter_15]] end
     if step.kind == "buy" or step.kind == "gather" or step.kind == "quest" then
         return ItemIcon(step.items[1] and step.items[1].itemID) or [[Interface\Icons\INV_Misc_Coin_01]]
     end
@@ -768,7 +805,8 @@ function Jobs:Lines()
     end
     for index, job in ipairs(plan.others) do
         if not (plan.goFirst and index == 1) then
-            rows[#rows + 1] = { type = "jobnext", job = job, isNext = index == 1 }
+            rows[#rows + 1] = { type = "jobnext", job = job, isNext = index == 1,
+                isFirst = index == 1 and plan.mailFirst or nil }
         end
     end
     return rows

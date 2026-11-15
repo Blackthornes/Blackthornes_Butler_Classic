@@ -650,6 +650,11 @@ function UI.UpdateJobRow(row, data)
     row.reason:SetText(detail)
     if step.kind == "craft" and not step.ready then row.reason:SetTextColor(Theme.Unpack("accent")) end
     row.worth:SetText("")
+    -- Mail here running out (Logic/MailRunsOut.lua): orange on the right.
+    if step.kind == "pickup" and ns.MailRunsOut then
+        local soon = ns.MailRunsOut.HereText(ns.MailRunsOut:Here())
+        if soon then row.worth:SetText(ns.MailRunsOut.Orange(soon)) end
+    end
     -- At a vendor, Buy from a vendor says what this one has, with Buy.
     local atVendor = ns.Jobs.VendorText(step)
     if atVendor then
@@ -730,6 +735,11 @@ function UI.UpdateNextRow(row, data)
     row.name:SetText(data.isFirst and L.Format("First: %s", job.name)
         or data.isNext and L.Format("Next: %s", job.name) or L.Format("Then: %s", job.name))
     row.reason:SetText(ns.Jobs.Summary(job))
+    -- Their mail runs out (Logic/MailRunsOut.lua): that, in orange.
+    local first = job.steps[1]
+    if first and first.kind == "expiring" then
+        row.reason:SetText(ns.MailRunsOut.Orange(ns.MailRunsOut.ShortText(first.mail)))
+    end
     row.worth:SetText("")
 end
 
@@ -1155,12 +1165,31 @@ function UI:Enter(row, data)
     if data.type == "jobnext" then
         local job = data.job
         GameTooltip:AddLine(job.name, Theme.Unpack("accent"))
-        for _, step in ipairs(job.steps) do
-            local line = ns.Jobs.Short(step)
-            GameTooltip:AddLine(line:sub(1, 1):upper() .. line:sub(2), 1, 1, 1, true)
+        local first = job.steps[1]
+        if first and first.kind == "expiring" then
+            for _, line in ipairs(ns.MailRunsOut.TipLines(first.mail)) do
+                if line[2] == "orange" then
+                    GameTooltip:AddLine(line[1], 1, 0.6, 0.24, true)
+                elseif line[2] == "muted" then
+                    GameTooltip:AddLine(line[1], Theme.Unpack("muted"))
+                else
+                    GameTooltip:AddLine(line[1], 1, 1, 1, true)
+                end
+            end
         end
-        GameTooltip:AddLine(data.isNext and L["Click Log out to switch to them."]
-            or L["Do the steps above first."], Theme.Unpack("muted"))
+        local others = 0
+        for _, step in ipairs(job.steps) do
+            if step.kind ~= "expiring" then
+                others = others + 1
+                local line = ns.Jobs.Short(step)
+                GameTooltip:AddLine(line:sub(1, 1):upper() .. line:sub(2), 1, 1, 1, true)
+            end
+        end
+        -- The mail hover is the mockup's alone when that is all they have.
+        if others > 0 or not (first and first.kind == "expiring") then
+            GameTooltip:AddLine(data.isNext and L["Click Log out to switch to them."]
+                or L["Do the steps above first."], Theme.Unpack("muted"))
+        end
         GameTooltip:Show()
         return
     end
@@ -1348,6 +1377,8 @@ function UI:BuildMenu()
     menu.keep:SetPoint("TOPLEFT", 8, -26)
     menu.sell = UI.MenuRow(menu, L["Always Sell"], function() Pick("sell") end)
     menu.sell:SetPoint("TOPLEFT", menu.keep, "BOTTOMLEFT", 0, 0)
+    -- Always auction (a player asked, the owner said build it 2026-11-12).
+    menu.auction = UI.MenuRow(menu, L["Always Auction"], function() Pick("auction") end)
     menu.bank = UI.MenuRow(menu, L["Always Bank"], function() Pick("bank") end)
     menu.bank:SetPoint("TOPLEFT", menu.sell, "BOTTOMLEFT", 0, 0)
     -- Greens and better that sell for more go to auction; this breaks
@@ -1587,12 +1618,22 @@ function UI:ShowMenu(data, stay)
     menu.keep:SetActive(choice == "keep")
     menu.sell:SetActive(choice == "sell")
     menu.bank:SetActive(choice == "bank")
+    menu.auction:SetActive(choice == "auction")
     menu.mail:SetActive(choice == "mail")
     menu.disenchant:SetActive(choice == "disenchant")
     menu.bought:SetActive(data.bought)
     menu.keep:Show()
     menu.sell:Show()
     menu.bank:Show()
+
+    -- Only what can go on the auction house: not soulbound.
+    local canList = choice == "auction" or not data.bound
+    menu.auction:SetShown(canList)
+    menu.auction:SetText(choice == "auction" and L["Always Auction (now)"] or L["Always Auction"])
+    menu.auction:ClearAllPoints()
+    menu.auction:SetPoint("TOPLEFT", menu.sell, "BOTTOMLEFT", 0, 0)
+    menu.bank:ClearAllPoints()
+    menu.bank:SetPoint("TOPLEFT", canList and menu.auction or menu.sell, "BOTTOMLEFT", 0, 0)
 
     -- Only gear worth breaking: green or better.
     local canBreak = choice == "disenchant" or (data.quality or 0) >= 2
@@ -1662,10 +1703,10 @@ function UI:ShowMenu(data, stay)
     menu.decide:SetShown(decides)
     menu.decide:SetText(learned and L["Forget what Butler learned"] or L["Let Butler Decide"])
 
-    local rows = 3 + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
+    local rows = 3 + (canList and 1 or 0) + (canBreak and 1 or 0) + (canMark and 1 or 0) + (canMail and 1 or 0) + (upgradeTo and 2 or 0)
         + (craft and 1 or 0) + (ns.KeepHere and 1 or 0) + (ns.KeepAcross and 1 or 0) + (decides and 1 or 0)
     menu:SetHeight(30 + rows * MENU_ROW)
-    UI.FitMenu(menu, { menu.keep, menu.sell, menu.bank, menu.disenchant, menu.bought, menu.mail,
+    UI.FitMenu(menu, { menu.keep, menu.sell, menu.auction, menu.bank, menu.disenchant, menu.bought, menu.mail,
         menu.hold, menu.holdAll, menu.skipCraft, menu.keepHere, menu.keepAcross, menu.decide })
 
     if stay and menu:IsShown() then return end
@@ -2730,6 +2771,7 @@ function UI:Say(which)
     local id = self.VOICE[which]
     if not id or not (ns.db and ns.db.voice ~= false) then return false end
     if self.AtAnNPC() then return false end
+    if ns.Muted and ns.Muted() then return false end
     local ok, now = pcall(GetTime)
     if not (ok and type(now) == "number") then return false end
     local last = self.voiceAt[which]

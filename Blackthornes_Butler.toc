@@ -72,12 +72,14 @@ UI\MainWindow.lua
 UI\FreeSpace.lua
 UI\WhoHas.lua
 UI\VerdictTip.lua
+UI\MailContents.lua
 UI\Trash.lua
 UI\SwapWhenFull.lua
 
 Logic\Selling.lua
 Logic\Disenchanting.lua
 Logic\Errands.lua
+UI\MailPicker.lua
 Logic\Funds.lua
 Logic\Ammo.lua
 Logic\BuyMany.lua
@@ -85,6 +87,7 @@ UI\BuyMany.lua
 UI\KeepAcross.lua
 Logic\Learning.lua
 Logic\Jobs.lua
+Logic\MailRunsOut.lua
 Logic\SkillUp.lua
 Logic\Travel.lua
 Logic\ClassTraining.lua
