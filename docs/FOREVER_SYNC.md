@@ -81,5 +81,11 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- Bags window (copied 2026-11-15): `1ff74f5` By Bag, `50e1245` the Bank
+  tab remembers the bank, `17f9613` Alt + right-click a square for
+  Butler's item menu. Classic's Sort stays on the tabs' row and the search
+  box keeps its place (`PlaceSearch`); the hint sits at the foot beside
+  the gold (`PlaceHint`).
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
