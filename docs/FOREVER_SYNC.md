@@ -81,6 +81,10 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- `670e463` Windows remember where they were dragged, and Window Spots: Set
+  Default (copied 2026-11-15). `UI/SharedWindow.lua` (FILE_VERSION 9),
+  `UI/WhatsNew.lua` (FILE_VERSION 7) and `tools/test_sharedwindow.lua` are
+  taken from the Classic copies so all five stay the same.
 - `b6ba9c5` Mute All Sounds (copied 2026-11-15): `UI/SharedChoices.lua` as
   it is (the same in all five Classic repos); Classic's own Bags window
   sort sound and Butler's voice ask `ns.Muted()` too. No Arrow Size here.
