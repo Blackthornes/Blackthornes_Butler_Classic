@@ -81,5 +81,9 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- `b6ba9c5` Mute All Sounds (copied 2026-11-15): `UI/SharedChoices.lua` as
+  it is (the same in all five Classic repos); Classic's own Bags window
+  sort sound and Butler's voice ask `ns.Muted()` too. No Arrow Size here.
+
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
