@@ -1227,3 +1227,8 @@ L["Short %d"] = "还差%d"
 L["Your characters have enough."] = "你的角色拥有足够数量。"
 L["Your characters keep every one."] = "你的角色全部保留。"
 L["Your characters need %d more."] = "你的角色还需要%d个。"
+-- Mute All Sounds (2026-11-12)
+L["Mute All Sounds:"] = "全部静音："
+L["turn every Blackthornes sound off or back on (on/off)"] = "关闭或重新打开所有 Blackthornes 音效（on/off）"
+L["All Blackthornes sounds are off. /bbutler mute off turns them back on."] = "所有 Blackthornes 音效已关闭。输入 /bbutler mute off 可重新打开。"
+L["Blackthornes sounds are back on."] = "Blackthornes 音效已重新打开。"

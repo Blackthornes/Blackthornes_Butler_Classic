@@ -81,6 +81,9 @@ Copied over since, one at a time:
   `Trash:Pick`, else the cheapest Wait item (`Swap.QUEST_FROM`);
   `tools/test_swapquest.lua` as it is.
 
+- `b6ba9c5` Mute All Sounds (copied 2026-11-15): `UI/SharedChoices.lua` as
+  it is (the same in all five Classic repos); Classic's own Bags window
+  sort sound and Butler's voice ask `ns.Muted()` too. No Arrow Size here.
 - Fixes from the idea check of 2026-11-14 (copied 2026-11-15, cherry-picked;
   Classic's own CLAUDE.md notes kept and Forever's added by hand):
   `0a4760a` Show the way skips class trainers that don't teach your level

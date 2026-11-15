@@ -648,12 +648,12 @@ function BagWindow:Sort()
     -- No channel, as the game's button: it follows the player's sound effects.
     local play = rawget(_G, "PlaySound")
     if BagWindow.GameSorts() then
-        if type(play) == "function" then pcall(play, BagWindow.SortSound()) end
+        if type(play) == "function" and not (ns.Muted and ns.Muted()) then pcall(play, BagWindow.SortSound()) end
         pcall(C_Container.SortBags)
         return
     end
     if ns.BagSort:Running() then return end
-    if ns.BagSort:Start() and type(play) == "function" then pcall(play, BagWindow.SortSound()) end
+    if ns.BagSort:Start() and type(play) == "function" and not (ns.Muted and ns.Muted()) then pcall(play, BagWindow.SortSound()) end
     self:UpdateFoot()
 end
 
