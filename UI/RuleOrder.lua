@@ -45,6 +45,7 @@ RuleOrderUI.RULES = {
     buyback = { L["Things You Bought Back:"], "keep", L["Butler sold it and you bought it back, so it stays from now on."] },
     noValue = { L["Vendors Won't Buy It:"], "keep", L["No vendor pays for it, so it stays. A queued craft on another character still gets its share."] },
     sellList = { L["Always Sell List:"], "sell", L["Sold at a vendor, unless a goal, a craft or an upgrade still needs it."] },
+    auctionList = { L["Always Auction List:"], "auction", L["Goes to the auction house even when a vendor pays more. An upgrade you can wear now stays."] },
     disenchantList = { L["Always Disenchant List:"], "disenchant", L["Broken even when selling would pay more. An upgrade you can wear now stays."] },
     ammo = { L["Your Ammo:"], "keep", L["Arrows or bullets for the weapon you use."] },
     upgrades = { L["Upgrades and Tools:"], "keep", L["Gear you can wear, gear for a later level, and tools like a skinning knife."] },
@@ -72,6 +73,7 @@ local CHIPS = {
     bank = { L["Bank"], { 0.722, 0.808, 0.957 } },
     mail = { L["Mail"], { 0.945, 0.831, 0.533 } },
     sell = { L["Sell"], { 0.784, 0.643, 0.302 } },
+    auction = { L["Auction"], { 0.957, 0.722, 0.380 } },
     disenchant = { L["Disenchant"], { 0.761, 0.580, 0.957 } },
     best = { L["Best"], { 0.902, 0.910, 0.925 } },
     look = { L["Look"], { 0.478, 0.502, 0.541 } },
@@ -123,8 +125,12 @@ local function Tooltip(row)
             or L["Off. Set an amount on the Errands page."], Theme.Unpack("text"))
     elseif row.id == "bankAlt" then
         local name = ns.BankAlt and ns.BankAlt:Name()
-        GameTooltip:AddLine(name and L.Format("Now: %s.", name)
-            or L["Off. Pick a character on the Bank Alt page."], Theme.Unpack("text"))
+        if name then
+            GameTooltip:AddLine(L.Format("Now: %s.", name), Theme.Unpack("text"))
+        elseif not (ns.BankAlt and ns.BankAlt:Active()) then
+            -- A kind sent to its own character keeps the rule on with no bank alt.
+            GameTooltip:AddLine(L["Off. Pick a character on the Bank Alt page."], Theme.Unpack("text"))
+        end
     elseif not row.locked then
         GameTooltip:AddLine(L["Drag it up or down to change when Butler asks it."], Theme.Unpack("dim"))
     end

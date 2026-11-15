@@ -617,6 +617,44 @@ function BagWindow:BuildFoot()
     sort:SetShown(BagWindow.CanSort())
 
     self:PlaceSearch(self.tab == "bags")
+    -- How to choose for one item from here: a small dim line, Bags tab only.
+    local hint = Theme.CreateLabel(frame, "small", "muted")
+    hint:SetText(L["Alt + right-click an item to choose what Butler does with it."])
+    if hint.SetWordWrap then hint:SetWordWrap(true) end
+    self.hintLabel = hint
+end
+
+-- Room the hint needs beside the gold before it takes a line of its own.
+BagWindow.HINT_ROOM = 150
+
+--- Beside the gold on the right when it fits in two lines, else on a line
+--- of its own under the gold, which moves up to make room.
+function BagWindow:PlaceHint()
+    local hint, gold, mine = self.hintLabel, self.goldLabel, self.myGoldLabel
+    if not hint then return end
+    local frame = self.frame
+    local shown = (self.tab or "bags") == "bags"
+    hint:SetShown(shown)
+    local width = tonumber(frame:GetWidth()) or WIDTH
+    local used = PADDING + Theme.TextWidth(Theme.sizes.large + BagWindow.FREE_SIZE_UP, self.freeLabel:GetText() or "") + 16
+        + Theme.TextWidth("normal", mine:GetText() or "") + 16
+        + Theme.TextWidth("small", gold:GetText() or "") + 16
+    local room = width - PADDING - used
+    hint:ClearAllPoints()
+    mine:ClearAllPoints()
+    if not shown or room >= BagWindow.HINT_ROOM then
+        mine:SetPoint("LEFT", self.freeLabel, "RIGHT", 16, 0)
+        if shown then
+            hint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -PADDING, 8)
+            hint:SetWidth(room)
+            if hint.SetJustifyH then hint:SetJustifyH("RIGHT") end
+        end
+    else
+        mine:SetPoint("BOTTOMLEFT", self.freeLabel, "BOTTOMRIGHT", 16, 12)
+        hint:SetPoint("TOPLEFT", mine, "BOTTOMLEFT", 0, -2)
+        hint:SetPoint("RIGHT", frame, "RIGHT", -PADDING, 0)
+        if hint.SetJustifyH then hint:SetJustifyH("LEFT") end
+    end
 end
 
 
@@ -648,12 +686,12 @@ function BagWindow:Sort()
     -- No channel, as the game's button: it follows the player's sound effects.
     local play = rawget(_G, "PlaySound")
     if BagWindow.GameSorts() then
-        if type(play) == "function" then pcall(play, BagWindow.SortSound()) end
+        if type(play) == "function" and not (ns.Muted and ns.Muted()) then pcall(play, BagWindow.SortSound()) end
         pcall(C_Container.SortBags)
         return
     end
     if ns.BagSort:Running() then return end
-    if ns.BagSort:Start() and type(play) == "function" then pcall(play, BagWindow.SortSound()) end
+    if ns.BagSort:Start() and type(play) == "function" and not (ns.Muted and ns.Muted()) then pcall(play, BagWindow.SortSound()) end
     self:UpdateFoot()
 end
 
@@ -674,6 +712,7 @@ function BagWindow:UpdateFoot()
         local busy = ns.BagSort and ns.BagSort:Running()
         self.sortButton:SetEnabled(not InCombat() and not busy)
     end
+    self:PlaceHint()
 end
 
 --------------------------------------------------------------------------------
@@ -795,6 +834,13 @@ local function MakeButton(bag, slot)
     end
     button:HookScript("OnShow", QuietTemplateGlow)
 
+    -- Alt + right-click opens Butler's item menu (a player asked, the owner
+    -- said build it, 2026-11-12). Only hooked, so the game's own click runs
+    -- as before; an Alt click has no use of its own on a bag item.
+    button:HookScript("OnClick", function(self, which)
+        BagWindow:AltClick(self, which)
+    end)
+
     button:HookScript("OnEnter", function(self)
         local entry = ns.Bags.slots[self.bfrBag .. ":" .. self.bfrSlot]
         if entry and BagWindow.newShown and BagWindow.newShown[self] then
@@ -810,6 +856,46 @@ local function MakeButton(bag, slot)
     button:Hide()
     buttons[place] = button
     return button
+end
+
+--- The row Butler's window shows for this bag slot's item, or one made
+--- from the slot alone when the list isn't laid out yet.
+function BagWindow.MenuData(entry)
+    if type(entry) ~= "table" or not entry.itemID then return nil end
+    local ok, groups = pcall(ns.Verdicts.Groups, ns.Verdicts)
+    if ok and type(groups) == "table" then
+        for _, group in ipairs(groups) do
+            for _, row in ipairs(group.rows or {}) do
+                for _, slot in ipairs(row.slots or {}) do
+                    if slot == entry then return row end
+                end
+            end
+        end
+    end
+    return {
+        type = "item",
+        itemID = entry.itemID,
+        link = entry.link,
+        name = Items.NameFromLink(entry.link),
+        quality = entry.quality,
+        bound = entry.bound,
+        count = entry.count,
+        slots = { entry },
+    }
+end
+
+--- Alt + right-click on a square on the Bags tab: Butler's item menu, the
+--- same one a right-click on a row in Butler's window opens. Not in a fight.
+function BagWindow:AltClick(button, which)
+    if which ~= "RightButton" then return false end
+    local alt = rawget(_G, "IsAltKeyDown")
+    if type(alt) ~= "function" or not alt() then return false end
+    if InCombat() or (self.tab or "bags") ~= "bags" or not ns.UI then return false end
+    local entry = ns.Bags.slots[(button.bfrBag or "") .. ":" .. (button.bfrSlot or "")]
+    local data = BagWindow.MenuData(entry)
+    if not data then return false end
+    ns.UI:ShowMenu(data)
+    return true
 end
 
 --- Make every square the bags need, a few a frame, out of combat. `done`
@@ -967,6 +1053,12 @@ end
 
 local headings = {}
 
+-- The bag's name as the game gives it, for a tooltip with no bag item.
+local function BagName(section)
+    local name = ns.BagView.BagInfo(section.bag)
+    return name
+end
+
 local function Heading(index)
     local heading = headings[index]
     if heading then return heading end
@@ -979,9 +1071,32 @@ local function Heading(index)
     line:SetHeight(1)
     line:SetColorTexture(Theme.Unpack("border", 0.6))
 
+    -- By Bag: the bag's own icon before its name, and the game's tooltip
+    -- for the bag on hover.
+    local icon = heading:CreateTexture(nil, "OVERLAY")
+    icon:SetSize(HEADING - 8, HEADING - 8)
+    icon:SetPoint("LEFT", 6, 0)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    icon:Hide()
+    heading.icon = icon
+
     local name = Theme.CreateLabel(heading, "small", "accent", "LEFT")
     name:SetPoint("LEFT", 6, 0)
     heading.nameLabel = name
+    heading:SetScript("OnEnter", function(self)
+        local section = self.section
+        if not (section and section.bag) then return end
+        GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+        local shown = false
+        if section.invSlot then
+            shown = pcall(GameTooltip.SetInventoryItem, GameTooltip, "player", section.invSlot)
+        end
+        if not shown or (GameTooltip.NumLines and GameTooltip:NumLines() == 0) then
+            GameTooltip:SetText(BagName(section) or "", 1, 1, 1)
+        end
+        GameTooltip:Show()
+    end)
+    heading:SetScript("OnLeave", function() GameTooltip:Hide() end)
     local count = Theme.CreateLabel(heading, "small", "muted", "LEFT")
     count:SetPoint("LEFT", name, "RIGHT", 6, 0)
     heading.countLabel = count
@@ -1100,9 +1215,24 @@ function BagWindow:DrawBags(width, search)
             heading:ClearAllPoints()
             heading:SetPoint("TOPLEFT", self.content, "TOPLEFT", 0, -y)
             heading:SetPoint("RIGHT", self.content, "RIGHT", 0, 0)
+            heading.section = section
+            heading:EnableMouse(section.bag ~= nil)
+            heading.nameLabel:ClearAllPoints()
+            if section.bag and section.icon then
+                heading.icon:SetTexture(section.icon)
+                heading.icon:Show()
+                heading.nameLabel:SetPoint("LEFT", heading.icon, "RIGHT", 5, 0)
+            else
+                heading.icon:Hide()
+                heading.nameLabel:SetPoint("LEFT", 6, 0)
+            end
             heading.nameLabel:SetText(section.label)
             heading.countLabel:SetText(tostring(#section.places))
-            heading.worthLabel:SetText(section.worth and Items.FormatMoney(section.worth) or "")
+            if section.bag then
+                heading.worthLabel:SetText(L.Format("%d free", section.free or 0))
+            else
+                heading.worthLabel:SetText(section.worth and Items.FormatMoney(section.worth) or "")
+            end
             heading:Show()
             local kind = (section.verdict == "mail" and errands and errands.mailOpen and "mail")
                 or (section.verdict == "bank" and errands and errands.bankOpen and "bank") or nil

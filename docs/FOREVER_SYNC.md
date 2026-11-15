@@ -85,6 +85,55 @@ Copied over since, one at a time:
   shows on the jobs menu only once Tradeskills has `Butler:ClearHoldings`
   (Forever Tradeskills `16a6195`, not yet in Tradeskills Classic;
   `Sisters:CanClearHoldings`).
+- Bags window (copied 2026-11-15): `1ff74f5` By Bag, `50e1245` the Bank
+  tab remembers the bank, `17f9613` Alt + right-click a square for
+  Butler's item menu. Classic's Sort stays on the tabs' row and the search
+  box keeps its place (`PlaceSearch`); the hint sits at the foot beside
+  the gold (`PlaceHint`).
+- Why it waits, Sell Anyway, Craft Details and the auction price (copied
+  2026-11-15): `a47ae72` (also on the Always Auction branch), `611e126`,
+  `851e00f`, `40fa73a`. Classic keeps its marks and coin columns on the
+  rows (`UI.SetMoney`) and its "Don't Suggest This Craft" row. The
+  tooltip's grey line under the verdict is only for Craft Details; the
+  Forever line that says why under a Mail verdict is not brought over.
+- Mail to anyone and Mail Rules (copied 2026-11-15): `6b54eb1`, `f43deae`,
+  `9acaf07`, `bedb895`, `be6f9c3`, `983b0e7`, cherry-picked in that order.
+  Era names are one word, so `MailRules:TypeName` and
+  `BankAlt:TypeKindTo` take a name as typed (no first and last check), the
+  kind box shows "Name" and the mail box says "Type the character's
+  name." The menu's mail page reads `Errands:MailNames()`.
+- Mail helpers (copied 2026-11-15): `13f4c3f` the Pick button by the
+  mail To box, `2ecadaf` what a mail holds on its inbox tooltip,
+  `0d94ee7` Mail Running Out and `5819493` (Name Picker and Mail Contents
+  start off). All three are off unless ticked. Mail Running Out asks
+  `Everyone.Ours` (Classic's same realm and side test) where Forever asks
+  `Everyone.SameSide`, and needs Tradeskills Classic to give the inbox
+  fields on Holdings (Forever Tradeskills' `776effe`); without them it
+  says nothing.
+- Always Auction (copied 2026-11-15): `a47ae72` (the real auction
+  price, and today's cheapest when it is higher, `Verdicts.AuctionPrice`;
+  Classic's `SellsForMore` keeps its three arguments), `a1c2b6b` and
+  `1b2346b` (the right-click menu's "Always Auction", `alwaysAuction`,
+  nothing changes until an item is put on it). Classic's "Don't Suggest
+  This Craft" row stays in the menu and its row count.
+- `670e463` Windows remember where they were dragged, and Window Spots: Set
+  Default (copied 2026-11-15). `UI/SharedWindow.lua` (FILE_VERSION 9),
+  `UI/WhatsNew.lua` (FILE_VERSION 7) and `tools/test_sharedwindow.lua` are
+  taken from the Classic copies so all five stay the same.
+- `b6ba9c5` Mute All Sounds (copied 2026-11-15): `UI/SharedChoices.lua` as
+  it is (the same in all five Classic repos); Classic's own Bags window
+  sort sound and Butler's voice ask `ns.Muted()` too. No Arrow Size here.
+- Fixes from the idea check of 2026-11-14 (copied 2026-11-15, cherry-picked;
+  Classic's own CLAUDE.md notes kept and Forever's added by hand):
+  `0a4760a` Show the way skips class trainers that don't teach your level
+  (Classic's `CT.Spells` list kept; `Logic/ClassTraining.lua` is shared with
+  Equipment Classic), `c36335e` no swap while two stacks can merge,
+  `3ed0f0b` and `730a6d8` Full Stacks Only covers every Always mail and
+  learned mail, `0b081fe` bank alt postage per mail, `339ca70` Levelling
+  Enchanting only while a sale pays at most twice as much, `d986bfe`
+  tradeable quest items follow the usual rules, `3ceeca8` sell soulbound
+  gear the class can never wear (needs Equipment's `never`), `b23ca20` the
+  mail line's reason on the tooltip.
 
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.

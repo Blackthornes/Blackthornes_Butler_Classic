@@ -98,7 +98,7 @@ end
 
 --- The known craft that makes one of an item worth the most, from
 --- Tradeskills, or nil. `carried` is how many the bags hold. The answer is
---- checked field by field: { recipeID, name, crafts, per, perItem, needs }.
+--- checked field by field: { recipeID, name, crafts, per, perItem, needs, others }.
 --- `skip` ({ [recipeID] = true-ish }) names recipes to pass over; an older
 --- Tradeskills ignores it, and Verdicts still checks the answer.
 function Sisters:CraftFor(itemID, carried, skip)
@@ -110,15 +110,19 @@ function Sisters:CraftFor(itemID, carried, skip)
         Sisters.Number(answer, "perItem")
     local name, per = Sisters.String(answer, "name"), Sisters.Number(answer, "per") or 1
     if not (recipeID and crafts and crafts >= 1 and perItem and name and per >= 1) then return nil end
-    local needs = {}
-    if type(answer.needs) == "table" then
-        for _, need in ipairs(answer.needs) do
-            local id, count = Sisters.Number(need, "itemID"), Sisters.Number(need, "count")
-            if id and count and count > 0 then needs[#needs + 1] = { itemID = id, count = count } end
+    local function Lines(list)
+        local out = {}
+        if type(list) == "table" then
+            for _, line in ipairs(list) do
+                local id, count = Sisters.Number(line, "itemID"), Sisters.Number(line, "count")
+                if id and count and count > 0 then out[#out + 1] = { itemID = id, count = count } end
+            end
         end
+        return out
     end
+    -- others (since 2026-11-14): every other material the crafts use, carried or not
     return { recipeID = recipeID, name = name, crafts = math.floor(crafts), per = math.floor(per),
-        perItem = perItem, needs = needs }
+        perItem = perItem, needs = Lines(answer.needs), others = Lines(answer.others) }
 end
 
 --- Queue at least `crafts` of a recipe in Tradeskills.

@@ -854,6 +854,7 @@ function Errands:Arrived(place)
         -- in the meantime must not bring the window up afterwards.
         local open = place == "mail" and Errands.mailOpen or place ~= "mail" and Errands.bankOpen
         if not open or Errands.visit ~= visit then return end
+        if place ~= "mail" and ns.BagView then ns.BagView:NoteBank() end
         if ns.UI then ns.UI:AtPlace(place) end
         Errands:Update()
     end)
@@ -870,6 +871,8 @@ function Errands:Left(place)
         self.sendCall = nil
         if ns.Funds then ns.Funds.waiting = nil end
     else
+        -- The last look before it shuts, so what was moved in is kept.
+        if self.bankOpen and ns.BagView then pcall(ns.BagView.NoteBank, ns.BagView) end
         self.bankOpen = false
         self:ForgetBankUpgrades()
     end
@@ -897,6 +900,7 @@ function Errands:OnEnable()
         Errands.bankWaiting = true
         C_Timer.After(0.2, function()
             Errands.bankWaiting = false
+            if Errands.bankOpen and ns.BagView then ns.BagView:NoteBank() end
             Errands:Update()
         end)
     end)
