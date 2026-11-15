@@ -221,7 +221,7 @@ suite.check("the command buttons run their commands",
 local covered = { tooltip = true, sisters = true, whatsnew = true, window = true, all = true,
     vendor = true, mailbox = true, bank = true, settings = true, reset = true,
     sellbelow = true, freespace = true, whohas = true, goldmin = true, fillnext = true, altupgrades = true,
-    joblogin = true, trash = true, quests = true, bankalt = true, greens = true, buy = true, order = true, skillup = true, bags = true }
+    joblogin = true, trash = true, quests = true, bankalt = true, greens = true, buy = true, order = true, skillup = true, bags = true, windows = true, mute = true }
 -- Chat-only commands are typed only (the owner, 2026-10-15): they print a
 -- list in chat, so they have no button here. Their settings parts (training
 -- on|off, goals on|off, upgrademail undo) still have controls.
@@ -231,12 +231,26 @@ for _, name in ipairs(ns.commandOrder) do
     suite.check("/bbutler " .. name .. " has a place in Settings", covered[name] == true)
 end
 
+-- Mute All Sounds: the box and /bbutler mute, off unless ticked.
+suite.check("the mute box starts unticked", controls.muteSounds ~= nil and not controls.muteSounds:GetChecked())
+controls.muteSounds:GetScript("OnClick")(controls.muteSounds)
+suite.check("ticking it mutes every sound", ns.Muted() == true and ns.db.muteSounds == true)
+suite.check("and keeps when it was ticked", ns.db.muteSoundsAt ~= nil)
+ns.HandleSlash("mute off")
+suite.check("/bbutler mute off brings them back", ns.Muted() == false and ns.db.muteSounds == false)
+ns.HandleSlash("mute")
+suite.check("/bbutler mute alone flips it", ns.Muted() == true)
+ns.HandleSlash("mute off")
+
 -- Position.
 ns.db.settingsX = 400
 ns.db.x = 200
 SettingsUI:ResetPositions()
 suite.check("putting it back forgets where it was dragged", ns.db.settingsX == nil)
 suite.check("and where the Butler window was", ns.db.x == nil)
+ns.db.x = 200
+ns.commands.windows.fn("reset")
+suite.check("/bbutler windows reset puts it back too", ns.db.x == nil)
 
 -- A client with neither options API still loads.
 local ns2 = env.Load()
