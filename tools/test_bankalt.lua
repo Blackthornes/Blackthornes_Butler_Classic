@@ -32,7 +32,7 @@ env.FakeBags({
     { bag = 0, slot = 7, id = 3001, name = "Bound Helm", quality = 2, price = 500, class = 4, bind = 1 },
     { bag = 0, slot = 8, id = 3002, name = "Soulbound Cloth", quality = 1, price = 13, class = 7, subclass = 5, bound = true },
     { bag = 0, slot = 9, id = 3003, name = "Grey Scrap", quality = 0, price = 3, class = 7, subclass = 6 },
-    { bag = 0, slot = 10, id = 3004, name = "Quest Hide", quality = 1, price = 4, class = 7, subclass = 6, quest = "item" },
+    { bag = 0, slot = 10, id = 3004, name = "Quest Hide", quality = 1, price = 4, class = 7, subclass = 6, quest = "item", bind = 4 },
     { bag = 0, slot = 11, id = 3005, name = "Wool Cloth", quality = 1, price = 30, count = 10, class = 7, subclass = 5 },
     { bag = 0, slot = 12, id = 3006, name = "Shiny Pebble", quality = 1, price = 7, class = 15 },
     { bag = 0, slot = 13, id = 2589, name = "Linen Cloth", quality = 1, price = 13, count = 7, class = 7, subclass = 5 },
@@ -179,6 +179,10 @@ suite.check("with its kind unticked, a vendor sale is not sent", Row("Linen Clot
 BankAlt:SetName("Me Here")
 suite.check("on the bank alt itself it stays Auction", Row("Light Leather").verdict == "auction", Row("Light Leather").verdict)
 BankAlt:SetName("Banky Vault")
+-- Postage is paid once a mail of 12 stacks, so a stack needs only its share.
+suite.check("a stack's share of postage is about 3c", BankAlt.StackPostage() == 3, BankAlt.StackPostage())
+suite.check("a 10c stack goes", BankAlt:Verdict({ itemID = 2318, count = 1, quality = 1 }, "auction", 10) == "mail")
+suite.check("a 2c stack stays", BankAlt:Verdict({ itemID = 2318, count = 1, quality = 1 }, "auction", 2) == nil)
 BankAlt:SetAuctions(false)
 suite.check("unticked it stays Auction", Row("Light Leather").verdict == "auction" and ns.db.bankAltAuctions == nil)
 BankAlt:SetKind("cloth", true)
@@ -220,6 +224,32 @@ for _, recipient in ipairs(ns.Errands:Recipients()) do
     end
 end
 suite.check("Fill mail asks for the full stack only", mailed == 20, tostring(mailed))
+-- Always mail waits for a full stack too, whoever it goes to.
+Verdicts:SetChoice(2318, "mail", "Banky Vault")
+suite.check("an Always mail short stack for the bank alt stays", Row("Light Leather").verdict == "keep"
+    and Row("Light Leather").reason == "On your Always mail list, waiting for a full stack",
+    Row("Light Leather").verdict)
+Verdicts:SetChoice(2318, "mail", "Cara Reed")
+suite.check("an Always mail short stack for another character stays too",
+    Row("Light Leather").verdict == "keep"
+    and Row("Light Leather").reason == "On your Always mail list, waiting for a full stack",
+    Row("Light Leather").verdict)
+Verdicts:SetChoice(2318, nil)
+-- A habit of mailing it waits the same way (a player's report, 2026-11-11).
+ns.db.learned = ns.db.learned or {}
+ns.db.learned[2318] = { verdict = "mail", to = "Cara Reed", at = 1 }
+Verdicts:Changed(true)
+suite.check("a short stack Butler learned to mail stays",
+    Row("Light Leather").verdict == "keep"
+    and Row("Light Leather").reason == "You usually mail this to Cara Reed, waiting for a full stack",
+    Row("Light Leather").verdict .. " " .. tostring(Row("Light Leather").reason))
+BankAlt:SetFullStacks(false)
+suite.check("unticked, the learned mail goes again",
+    Row("Light Leather").verdict == "mail" and Row("Light Leather").mailTo == "Cara Reed",
+    Row("Light Leather").verdict)
+BankAlt:SetFullStacks(true)
+ns.db.learned[2318] = nil
+Verdicts:Changed(true)
 BankAlt:SetFullStacks(false)
 suite.check("unticked, the smaller stack goes again", ToBank("Light Leather") and ns.db.bankAltFullStacks == nil)
 BankAlt:SetName(nil)

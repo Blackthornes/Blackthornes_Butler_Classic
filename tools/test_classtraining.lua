@@ -168,6 +168,25 @@ local spot = data.trainers.MAGE and data.trainers.MAGE[5498]
 suite.check("the trainer's spot is kept", spot and spot.name == "Jennea Cannon" and spot.mapID == 1453
     and spot.x == 0.38 and spot.zone == "Stormwind City")
 suite.check("it says where", CT.Where(spot) == "Wizard's Sanctum in Stormwind City")
+suite.check("the highest level it lists is kept", spot and spot.teaches == 14, tostring(spot and spot.teaches))
+
+-- 3b. A starter trainer stops early (a level 8 warlock was sent to the
+-- Northshire trainer, which teaches nothing past 6, 2026-11-14): one that
+-- doesn't teach far enough is passed by, even in the zone you're in.
+local mageSpots = data.trainers.MAGE
+mageSpots[1] = { name = "Old Starter", zone = "Elwynn Forest", sub = "Northshire Valley", mapID = 1453,
+    x = 0.5, y = 0.4, faction = "Alliance", at = 9e9 }
+mageSpots[2] = { name = "Seen Starter", zone = "Elwynn Forest", sub = "Somewhere", mapID = 1453,
+    x = 0.5, y = 0.4, faction = "Alliance", at = 9e9, teaches = 10 }
+suite.check("an old starter valley spot counts as teaching up to 6", CT.Teaches(mageSpots[1]) == 6)
+suite.check("an old spot elsewhere is taken to teach everything", CT.Teaches({ sub = "Wizard's Sanctum" }) == nil)
+suite.check("the starter trainers are passed by", CT:Nearest() == spot, tostring((CT:Nearest() or {}).name))
+mageSpots[5498] = nil
+local none, most = CT:Nearest()
+suite.check("with none far enough, nothing, and how far they go", none == nil and most == 10, tostring(most))
+suite.check("Show the way says so", CT:ShowTheWay() == false
+    and env.ChatText():find("only teach up to level 10", 1, true) ~= nil)
+mageSpots[5498], mageSpots[1], mageSpots[2] = spot, nil, nil
 plan = CT:Plan()
 suite.check("the trainer's own price wins", plan.guessed == 0)
 suite.check("the quest spell leaves the list", #plan.ready == 3 and plan.cost == 600 and plan.unknown == 0,

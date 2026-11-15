@@ -16,7 +16,7 @@
 --   classTrainingData = {
 --       prices = { [spell ID] = copper },
 --       notTaught = { [spell ID] = true },        -- no trainer lists it
---       trainers = { [CLASS] = { [NPC ID] = { name, zone, sub, mapID, x, y, faction, at } } },
+--       trainers = { [CLASS] = { [NPC ID] = { name, zone, sub, mapID, x, y, faction, at, teaches } } },
 --       characters = { [GUID] = { name, class, level, realm, faction, ready = { spell IDs }, at } },
 --       learned = { [GUID] = { [spell ID] = true } },  -- the trainer says known
 --       skipped = { [GUID] = { [spell ID] = time } },  -- the player skipped it
@@ -572,22 +572,69 @@ end
 -- Trainers
 --------------------------------------------------------------------------------
 
---- The trainer to go to for the character playing: one of its side in the
---- zone it is in first, else the last one visited. { name, zone, sub,
---- mapID, x, y } or nil when none has been visited yet.
+--- Starter trainers stop early (Forever's Northshire warlock trainer
+--- teaches nothing past level 6; a level 8 warlock was sent there,
+--- 2026-11-14). A trainer seen since then keeps `teaches`, the highest
+--- level its window listed. One kept before has none, so a spot in a
+--- starting valley counts as teaching up to STARTER_TEACHES; any other old
+--- spot is taken to teach everything until it is seen again.
+CT.STARTER_TEACHES = 6
+CT.STARTER_AREAS = {
+    ["Northshire Valley"] = true, ["Coldridge Valley"] = true, ["Shadowglen"] = true,
+    ["Valley of Trials"] = true, ["Camp Narache"] = true, ["Deathknell"] = true,
+    ["Nordhaintal"] = true, ["Eisklammtal"] = true, ["Schattenhain"] = true,
+    ["Tal der Prüfungen"] = true, ["Todesmark"] = true,
+}
+
+--- The highest level a trainer is known to teach, or nil when not known.
+function CT.Teaches(spot)
+    if type(spot) ~= "table" then return nil end
+    local teaches = Number(spot.teaches)
+    if teaches then return teaches end
+    local sub = Text(spot.sub)
+    if sub and CT.STARTER_AREAS[sub] then return CT.STARTER_TEACHES end
+    return nil
+end
+
+--- The level a trainer has to teach for the character playing: the
+--- highest of the spells ready now, else the character's level.
+function CT:NeedLevel()
+    local need = 0
+    local ok, plan = pcall(self.Plan, self)
+    if ok and type(plan) == "table" and type(plan.ready) == "table" then
+        for _, spell in ipairs(plan.ready) do
+            if spell.level and spell.level > need then need = spell.level end
+        end
+    end
+    if need == 0 then need = self.Player().level or 0 end
+    return need
+end
+
+--- The trainer to go to for the character playing: one of its side that
+--- teaches what it needs (NeedLevel), in the zone it is in first, else the
+--- last one visited. { name, zone, sub, mapID, x, y } or nil when none
+--- fits; the second answer is the highest level the trainers seen teach,
+--- when some were seen but none teaches far enough.
 function CT:Nearest()
     local player = self.Player()
     local trainers = player.class and self:Data().trainers[player.class]
     if type(trainers) ~= "table" then return nil end
+    local need = self:NeedLevel()
     local mapID = Number(Call("C_Map.GetBestMapForUnit", "player"))
-    local best, bestScore
+    local best, bestScore, most
     for _, spot in pairs(trainers) do
         if type(spot) == "table" and (not spot.faction or not player.faction or spot.faction == player.faction) then
-            local score = (spot.at or 0) + ((mapID and spot.mapID == mapID) and 1e12 or 0)
-            if not bestScore or score > bestScore then best, bestScore = spot, score end
+            local teaches = CT.Teaches(spot)
+            if teaches and teaches < need then
+                if not most or teaches > most then most = teaches end
+            else
+                local score = (spot.at or 0) + ((mapID and spot.mapID == mapID) and 1e12 or 0)
+                if not bestScore or score > bestScore then best, bestScore = spot, score end
+            end
         end
     end
-    return best
+    if best then return best end
+    return nil, most
 end
 
 --- Where a trainer stands, in words: "Wizard's Sanctum in Stormwind".
@@ -615,10 +662,14 @@ end
 --- else TomTom, else the game's map pin. Says where in chat. True when
 --- there was somewhere to go.
 function CT:ShowTheWay()
-    local spot = self:Nearest()
+    local spot, most = self:Nearest()
     local player = self.Player()
     if not spot then
-        ns.Print(L.Format("no %s trainer seen yet. Open one once and it's remembered.", player.className or ""))
+        if most then
+            ns.Print(L.Format("the %s trainers you've seen only teach up to level %d. Visit one in a big city once and it's remembered.", player.className or "", most))
+        else
+            ns.Print(L.Format("no %s trainer seen yet. Open one once and it's remembered.", player.className or ""))
+        end
         return false
     end
     local title = L.Format("%s trainer: %s", player.className or "", spot.name or "")
@@ -799,15 +850,19 @@ function CT:ReadTrainer()
         end
         if next(learned) then data.learned[player.guid] = learned end
     end
-    local listed, upTo = {}, player.level
+    local listed, upTo, teaches = {}, player.level, 0
     for _, service in ipairs(services) do
         listed[service.entry[1]] = true
+        local level = Number(service.entry[2]) or service.level
+        if level and level > teaches then teaches = level end
         data.notTaught[service.entry[1]] = nil
         if service.cost and service.cost >= 0 then data.prices[service.entry[1]] = service.cost end
     end
     -- A spell up to the level the list covers that it doesn't teach, and
     -- this character doesn't know, comes from somewhere else (a quest).
-    if sawLater then upTo = math.huge end
+    -- A starter trainer's list stops early: past its last level, a spell
+    -- missing from it may be taught elsewhere, so it isn't marked.
+    if sawLater then upTo = math.huge elseif teaches > 0 and teaches < upTo then upTo = teaches end
     local classList = CT.Spells(player.class) or {}
     local knownIn = self.KnownIn(classList)
     for _, entry in ipairs(classList) do
@@ -835,7 +890,7 @@ function CT:ReadTrainer()
         trainers[player.class][npcID] = {
             name = Text(Call("UnitName", "npc")), zone = Text(Call("GetRealZoneText")) or Text(Call("GetZoneText")),
             sub = Text(Call("GetSubZoneText")), mapID = mapID, x = x, y = y,
-            faction = player.faction, at = Now(),
+            faction = player.faction, at = Now(), teaches = teaches > 0 and teaches or nil,
         }
     end
     self:Changed()

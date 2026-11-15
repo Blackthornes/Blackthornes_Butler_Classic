@@ -10,9 +10,10 @@
 --      usual verdict.
 --   3. Keeping and the Always sell list still win.
 --   4. Not when this character can't break it, and never for a blue.
---   5. With "Always Disenchant" unticked (the default) too, even when the
---      auction house pays more (the owner, 2026-10-17: a skill point beats
---      a better sale).
+--   5. With "Always Disenchant" unticked (the default) too, while a vendor
+--      or the auction house pays at most twice what breaking it gives
+--      (Verdicts.SKILL_LOSS; the owner, 2026-11-10: a green worth 20s at a
+--      vendor was broken for 4s of essence). Past that, the best price.
 
 local env = dofile(lfs_cwd .. "/tools/testenv.lua")
 local suite = env.NewSuite("levelenchanting")
@@ -38,12 +39,12 @@ local function Find(name)
     end
 end
 
-local can, short, upgrade, auction = true, 2, false, 50000
+local can, short, upgrade, auction, breaks = true, 2, false, 50000, 900
 local wanted = { recipe = "Enchant Bracer - Minor Health", material = 10940,
     materialName = "Strange Dust", yield = 1.125 }
 _G.BlackthornesTS = { Butler = {
     Advise = function(_, id)
-        local answer = { auction = auction, disenchant = 900, canDisenchant = can }
+        local answer = { auction = auction, disenchant = breaks, canDisenchant = can }
         if id ~= 704 then
             answer.forEnchanting = { recipe = wanted.recipe, material = wanted.material,
                 materialName = wanted.materialName, yield = wanted.yield, short = short }
@@ -95,11 +96,31 @@ short = 0
 Verdicts:Changed(true)
 suite.check("nothing short: its usual verdict", Verdict("Ridge Cleaver") == "auction", Verdict("Ridge Cleaver"))
 
--- 5. Unticked: a skill point still beats a better sale.
+-- 5. Unticked: a skill point beats a sale up to twice as good, no more.
 short = 2
 Verdicts:SetAlwaysDisenchant(false)
-suite.check("selling pays more: still for Enchanting", Verdict("Ridge Cleaver") == "disenchant",
+suite.check("auction pays far more: auction", Verdict("Ridge Cleaver") == "auction",
     Verdict("Ridge Cleaver"))
+auction = 1500
+Verdicts:Changed(true)
+suite.check("auction pays under twice as much: still for Enchanting",
+    Verdict("Ridge Cleaver") == "disenchant", Verdict("Ridge Cleaver"))
+auction = 1800
+Verdicts:Changed(true)
+suite.check("auction pays just twice as much: still for Enchanting",
+    Verdict("Ridge Cleaver") == "disenchant", Verdict("Ridge Cleaver"))
+-- The player's report: a vendor paying five times what breaking gives.
+auction, breaks = nil, 80
+Verdicts:Changed(true)
+-- Not broken: the best price decides what it is (here Look at it, with no
+-- auction price to weigh a green by).
+suite.check("vendor pays far more: not broken", Verdict("Ridge Cleaver") ~= "disenchant",
+    Verdict("Ridge Cleaver"))
+breaks = 300
+Verdicts:Changed(true)
+suite.check("vendor pays under twice as much: still for Enchanting",
+    Verdict("Ridge Cleaver") == "disenchant", Verdict("Ridge Cleaver"))
+auction, breaks = 50000, 900
 short = 0
 Verdicts:Changed(true)
 suite.check("no skill point: selling pays more, so auction", Verdict("Ridge Cleaver") == "auction",

@@ -85,6 +85,20 @@ Copied over since, one at a time:
   Default (copied 2026-11-15). `UI/SharedWindow.lua` (FILE_VERSION 9),
   `UI/WhatsNew.lua` (FILE_VERSION 7) and `tools/test_sharedwindow.lua` are
   taken from the Classic copies so all five stay the same.
+- `b6ba9c5` Mute All Sounds (copied 2026-11-15): `UI/SharedChoices.lua` as
+  it is (the same in all five Classic repos); Classic's own Bags window
+  sort sound and Butler's voice ask `ns.Muted()` too. No Arrow Size here.
+- Fixes from the idea check of 2026-11-14 (copied 2026-11-15, cherry-picked;
+  Classic's own CLAUDE.md notes kept and Forever's added by hand):
+  `0a4760a` Show the way skips class trainers that don't teach your level
+  (Classic's `CT.Spells` list kept; `Logic/ClassTraining.lua` is shared with
+  Equipment Classic), `c36335e` no swap while two stacks can merge,
+  `3ed0f0b` and `730a6d8` Full Stacks Only covers every Always mail and
+  learned mail, `0b081fe` bank alt postage per mail, `339ca70` Levelling
+  Enchanting only while a sale pays at most twice as much, `d986bfe`
+  tradeable quest items follow the usual rules, `3ceeca8` sell soulbound
+  gear the class can never wear (needs Equipment's `never`), `b23ca20` the
+  mail line's reason on the tooltip.
 
 Every catch-up reads `docs/CLASSIC_DIFFERENCES.md` first, and the PR that
 brings Forever commits over updates the line above to the newest one it took.
