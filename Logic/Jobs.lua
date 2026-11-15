@@ -421,6 +421,31 @@ function Jobs:Ignore(name)
     if ns.UI and ns.UI.IsShown and ns.UI:IsShown() then ns.UI:Refresh(true) end
 end
 
+--- Clear Items (a player's report, the owner said build it, 2026-11-10):
+--- Tradeskills forgets that character's saved bags, bank, mail and gold,
+--- and the gold Butler noted on its way to them goes too. Never the
+--- character playing.
+-- @return true and the full name, or false and why
+function Jobs:ClearItems(name)
+    if type(name) ~= "string" or name == "" then return false, "unknown" end
+    if Jobs.IsPlaying(name) then return false, "playing" end
+    local ok, full = ns.Sisters:ClearHoldings(name)
+    if not ok then return false, full end
+    local sent = ns.db and ns.db.goldSent
+    if type(sent) == "table" then
+        for kept in pairs(sent) do
+            if kept == name or kept == full or Jobs.SameName(kept, full) then sent[kept] = nil end
+        end
+    end
+    ns.Print(L.Format("Cleared saved items for %s.", full))
+    if ns.Everyone and ns.Everyone.Changed then ns.Everyone:Changed() end
+    if ns.Funds and ns.Funds.Changed then ns.Funds:Changed() end
+    if ns.Verdicts then ns.Verdicts:Changed(true) end
+    self:Changed()
+    if ns.UI and ns.UI.IsShown and ns.UI:IsShown() then ns.UI:Refresh(true) end
+    return true, full
+end
+
 --- Is `name` the character playing? Its own name first, so this works
 --- before Tradeskills has read the characters.
 function Jobs.IsPlaying(name)

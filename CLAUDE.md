@@ -721,7 +721,10 @@ alone. The player presses Send. Gold Butler filled and then saw leave the
 purse (`Funds:Filled`, `PLAYER_MONEY`) is kept in `goldSent[full name]`
 (never rename it) and counted toward that character until its own record
 shows it took it, or 30 days pass (unclaimed mail goes back), so it is
-never sent twice. `/bbutler gold` lists everyone. Smooth play: the plan is
+never sent twice; a note also goes once that character's mailbox was
+read after the send holding less gold than it (`mailMoney`, `mailAt` from
+`Holdings()`) or the character was cleared after it (`clearedAt`;
+`Funds.Taken`). `/bbutler gold` lists everyone. Smooth play: the plan is
 worked out only while the window draws it, again only when the purse
 (debounced 0.2 s) or a setting moves. Tested in `tools/test_funds.lua`.
 Not yet seen in game.
@@ -863,6 +866,19 @@ leaves that character out, and at that character's next initial login
 (`PLAYER_ENTERING_WORLD`, again `LOGIN_DELAY` later once Tradeskills
 knows its names) `Jobs:Welcome` brings it back; a /reload does not.
 Nothing in the queue changes. No setting. Tested in `tools/test_jobs.lua`.
+
+Clear Items (a player's report, the owner said build it from a mockup,
+2026-11-10: Jobs asked for mail of items alts had long since got rid of):
+the same right-click menu has "Clear Items" under Ignore Until Next Login,
+never for the character playing. The first click arms it (red "Confirm"
+for `UI.CLEAR_ARMED` seconds, `UI.ArmClear`), the second calls
+`Jobs:ClearItems(name)`, which asks Tradeskills, inside a pcall,
+`_G.BlackthornesTS.Butler:ClearHoldings(name)` (`Sisters:ClearHoldings`;
+true and the full name, or false and why) to forget that character's
+saved bags, bank, mail and gold, and drops Butler's `goldSent` notes for
+it. Nothing else is touched; logging in on that character reads it again.
+Tradeskills' Jobs also skip an alt not seen in 30 days
+(`Butler.STALE_DAYS`). Tested in `tools/test_jobs.lua`.
 
 Mail waiting (the owner, 2026-10-13: "if a character needs to visit the
 mail for something sent to it, butler should move that up the priority

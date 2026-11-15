@@ -1207,6 +1207,10 @@ L["Short %d"] = "Не хватает %d"
 L["Your characters have enough."] = "Твоим персонажам хватает."
 L["Your characters keep every one."] = "Твои персонажи оставляют все."
 L["Your characters need %d more."] = "Твоим персонажам не хватает ещё %d."
+L["Clear Items"] = "Забыть предметы"
+L["Forget this character's saved bags, bank, mail and gold. Log in on them to read it again."] = "Забывает сохранённые сумки, банк, почту и золото этого персонажа. Зайди за него, чтобы прочитать всё снова."
+L["Cleared saved items for %s."] = "Сохранённые предметы %s забыты."
+L["Confirm"] = "Подтвердить"
 L["Sell Anyway"] = "Всё равно продать"
 L["Costs more to make"] = "Делать дороже"
 L["Usually %s, now %s"] = "Обычно %s, сейчас %s"
@@ -1246,7 +1250,6 @@ L["That's the character you're playing."] = "Это персонаж, за ко�
 L["This isn't one of your characters."] = "Это не твой персонаж."
 L["Type an item's name or ID."] = "Введи название или ID предмета."
 L["Your List"] = "Твой список"
-L["YOUR CHARACTERS"] = "ТВОИ ПЕРСОНАЖИ"
 L["Type the character's name."] = "Введи имя персонажа."
 
 -- Mail running out

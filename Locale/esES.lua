@@ -1251,6 +1251,10 @@ L["Short %d"] = "Faltan %d"
 L["Your characters have enough."] = "Tus personajes tienen suficiente."
 L["Your characters keep every one."] = "Tus personajes los guardan todos."
 L["Your characters need %d more."] = "A tus personajes les faltan %d."
+L["Clear Items"] = "Olvidar objetos"
+L["Forget this character's saved bags, bank, mail and gold. Log in on them to read it again."] = "Olvida las bolsas, el banco, el correo y el oro guardados de este personaje. Conéctate con él para volver a leerlos."
+L["Cleared saved items for %s."] = "Objetos guardados de %s olvidados."
+L["Confirm"] = "Confirmar"
 L["Sell Anyway"] = "Vender igual"
 L["Costs more to make"] = "Cuesta más fabricarlo"
 L["Usually %s, now %s"] = "Suele valer %s, ahora %s"
@@ -1290,7 +1294,6 @@ L["That's the character you're playing."] = "Ese es el personaje que estás juga
 L["This isn't one of your characters."] = "Ese no es uno de tus personajes."
 L["Type an item's name or ID."] = "Escribe el nombre o la ID de un objeto."
 L["Your List"] = "Tu lista"
-L["YOUR CHARACTERS"] = "TUS PERSONAJES"
 L["Type the character's name."] = "Escribe el nombre del personaje."
 
 -- Mail running out
